@@ -1,0 +1,98 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Presupuesto · Catálogo de Precios — Flujo Fase I",
+    "subtitle": "BPMN PR-09 (2026-08-10) + Visual mapping 32 HU (2026-08-06) · Revisión 2026-09-09",
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "frontend": { "label": "Inicio del flujo" },
+        "backend": { "label": "Acción del Admin" },
+        "messagebus": { "label": "Carga masiva" },
+        "database": { "label": "Versionado" },
+        "security": { "label": "Control y traza" },
+        "cloud": { "label": "Evento / automático" },
+        "external": { "label": "Usuario autorizado" }
+      }
+    },
+    "views": [
+      { "id": "ruta-catalogo", "label": "Ruta del catálogo", "focus": ["inicio", "catalogo", "niveles", "valor", "items", "activacion"], "note": "El camino que recorre el Admin Naowee para dejar un catálogo vigente." },
+      { "id": "carga-version", "label": "Carga, versiones y traza", "focus": ["carga", "items", "version", "activacion", "auditoria"], "note": "Cómo entra el volumen, cómo evoluciona el catálogo y dónde queda registrado." },
+      { "id": "lectura", "label": "Lectura del usuario", "focus": ["activacion", "consulta"], "note": "Lo único que ve el usuario autorizado: consulta y uso, sin edición." },
+      { "id": "fase-2", "label": "Fase 2 · Parámetros", "focus": ["inicio", "tipo_param", "regla", "calculo"], "note": "Rama paralela del BPMN que no entra en esta demo." }
+    ]
+  },
+  "lanes": [
+    { "id": "admin", "label": "Admin Naowee · construcción del catálogo" },
+    { "id": "apoyo", "label": "Admin Naowee · carga, versiones y auditoría" },
+    { "id": "usuario", "label": "Usuarios autorizados · solo lectura" },
+    { "id": "fase2", "label": "Parámetros de costos · Fase 2", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "estructura", "label": "Estructura", "fromCol": 0, "toCol": 2 },
+    { "id": "contenido", "label": "Contenido y valores", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "publicacion", "label": "Publicación y uso", "fromCol": 5, "toCol": 5 }
+  ],
+  "groups": [
+    { "id": "proceso_a", "label": "Proceso A · construido en la demo (PPTO-01 a 21)", "lane": "admin", "fromCol": 1, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["inicio", "catalogo", "niveles", "valor", "items", "activacion", "consulta"],
+  "semanticChecks": {
+    "allowedRoots": ["inicio", "carga"],
+    "allowedTerminals": ["consulta", "auditoria", "calculo"],
+    "requiredPaths": [{ "from": "inicio", "to": "consulta" }]
+  },
+  "nodes": [
+    { "id": "inicio", "lane": "admin", "col": 0, "type": "frontend", "label": "Inicio", "sublabel": "arma insumos", "width": 100 },
+    { "id": "catalogo", "lane": "admin", "col": 1, "type": "backend", "label": "Crear catálogo", "sublabel": "región + vigencia", "tag": "PPTO-01 a 03", "width": 112 },
+    { "id": "niveles", "lane": "admin", "col": 2, "type": "backend", "label": "Niveles", "sublabel": "estructura jerárquica", "tag": "PPTO-04 a 07", "width": 128 },
+    { "id": "valor", "lane": "admin", "col": 3, "type": "backend", "label": "Valor y fórmula", "sublabel": "campos del ítem", "tag": "PPTO-08·09", "width": 112 },
+    { "id": "items", "lane": "admin", "col": 4, "type": "backend", "label": "Ítems", "sublabel": "alta y edición", "tag": "PPTO-10·11", "width": 100 },
+    { "id": "activacion", "lane": "admin", "col": 5, "type": "cloud", "label": "Activación", "sublabel": "queda vigente", "tag": "evento sin dueño", "width": 105 },
+
+    { "id": "carga", "lane": "apoyo", "col": 3, "type": "messagebus", "label": "Carga masiva", "sublabel": "plantilla y errores", "tag": "PPTO-12 a 14", "width": 118 },
+    { "id": "version", "lane": "apoyo", "col": 4, "type": "database", "label": "Versionamiento", "sublabel": "anterior histórica", "tag": "PPTO-15·16", "width": 118 },
+    { "id": "auditoria", "lane": "apoyo", "col": 5, "type": "security", "label": "Auditoría", "sublabel": "traza completa", "tag": "PPTO-19 a 21", "width": 105 },
+
+    { "id": "consulta", "lane": "usuario", "col": 5, "type": "external", "label": "Consulta y uso", "sublabel": "solo lectura", "tag": "PPTO-17·18", "width": 105 },
+
+    { "id": "tipo_param", "lane": "fase2", "col": 1, "type": "backend", "label": "Tipo de parámetro", "sublabel": "AIU, % o fijo", "tag": "PPTO-22 a 24", "width": 125 },
+    { "id": "regla", "lane": "fase2", "col": 2, "type": "security", "label": "Reglas y topes", "sublabel": "rol, zona, año", "tag": "PPTO-25 a 27", "width": 105 },
+    { "id": "calculo", "lane": "fase2", "col": 3, "type": "cloud", "label": "Cálculo y tope", "sublabel": "lo hace el Sistema", "tag": "PPTO-28 a 32", "width": 112 }
+  ],
+  "edges": [
+    { "from": "inicio", "to": "catalogo" },
+    { "from": "catalogo", "to": "niveles" },
+    { "from": "niveles", "to": "valor", "label": "¿lleva valor o fórmula?", "variant": "emphasis" },
+    { "from": "valor", "to": "items" },
+    { "from": "items", "to": "activacion", "label": "catálogo listo", "variant": "emphasis" },
+    { "from": "activacion", "to": "consulta", "label": "catálogo vigente", "variant": "emphasis" },
+
+    { "from": "carga", "to": "items", "label": "ítems en lote", "role": "branch" },
+    { "from": "items", "to": "version", "label": "hay edición", "role": "branch" },
+    { "from": "version", "to": "activacion", "label": "versión activa", "role": "branch" },
+    { "from": "activacion", "to": "auditoria", "label": "todo queda registrado", "role": "async", "variant": "dashed" },
+
+    { "from": "inicio", "to": "tipo_param", "label": "rama paralela", "variant": "dashed", "role": "branch" },
+    { "from": "tipo_param", "to": "regla", "variant": "dashed" },
+    { "from": "regla", "to": "calculo", "variant": "dashed" }
+  ],
+  "cards": [
+    { "dot": "emerald", "title": "Construido · 21 HU", "items": [
+      "Proceso A completo, de crear catálogo a auditoría exportable",
+      "Los campos del ítem se configuran por nivel y mandan sobre tabla, formulario y plantilla",
+      "Catálogo: Borrador → Activo → al versionar, la anterior queda Histórica"
+    ]},
+    { "dot": "rose", "title": "Para decidir con Danna", "items": [
+      "H-6: no hay revisión ni aprobación antes de activar un catálogo",
+      "La activación es un evento sin dueño: ¿quién la dispara y cuándo?",
+      "¿«Borrador» es un estado formal? ¿«Otro administrador de cara al cliente» es un cuarto rol?"
+    ]},
+    { "dot": "slate", "title": "Frontera de la Fase I", "items": [
+      "Se construyen los insumos, NO el armado del presupuesto por el gestor",
+      "Parámetros de costos (PPTO-22 a 32) queda para Fase 2"
+    ]}
+  ]
+}
