@@ -19,6 +19,15 @@
   function closeAllDD(except) {
     document.querySelectorAll('.naowee-dropdown--open').forEach(function (d) { if (d !== except) d.classList.remove('naowee-dropdown--open'); });
   }
+  // Dropdowns y datepickers son mutuamente excluyentes: solo un popover abierto a la vez.
+  function closeAllDP(except) {
+    document.querySelectorAll('[data-dp]').forEach(function (dp) {
+      if (dp === except) return;
+      var pop = dp.querySelector('[data-dp-pop]');
+      if (pop) pop.classList.remove('open');
+      dp.classList.remove('naowee-datepicker-field--active');
+    });
+  }
 
   // Wire de un .naowee-dropdown. Convención DS: --open en el WRAPPER.
   function wireDropdown(dd) {
@@ -55,6 +64,7 @@
         e.stopPropagation();
         var willOpen = !dd.classList.contains('naowee-dropdown--open');
         closeAllDD(dd);
+        closeAllDP(null);
         dd.classList.toggle('naowee-dropdown--open', willOpen);
         var si = dd.__search;
         if (willOpen && si) { si.value = ''; si.dispatchEvent(new Event('input')); setTimeout(function () { si.focus(); }, 30); }
@@ -139,7 +149,7 @@
       var wk = '<div class="naowee-datepicker__week">' + DOW.map(function (d) { return '<div class="naowee-datepicker__weekday">' + d + '</div>'; }).join('') + '</div>';
       pop.innerHTML = '<div class="naowee-datepicker"><div class="naowee-datepicker__calendar"><div class="naowee-datepicker__header"><div class="naowee-datepicker__month-selector"><span class="naowee-datepicker__month">' + MES[m] + ' de ' + y + '</span></div><div class="naowee-datepicker__controls"><button class="naowee-datepicker__nav" data-nav="-1" aria-label="Mes anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button><button class="naowee-datepicker__nav" data-nav="1" aria-label="Mes siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button></div></div><div class="naowee-datepicker__content">' + wk + weeks + '</div></div></div>';
     }
-    function open() { render(); closeAllDD(null); pop.classList.add('open'); dp.classList.add('naowee-datepicker-field--active'); }
+    function open() { render(); closeAllDD(null); closeAllDP(dp); pop.classList.add('open'); dp.classList.add('naowee-datepicker-field--active'); }
     function close() { pop.classList.remove('open'); dp.classList.remove('naowee-datepicker-field--active'); }
     field.addEventListener('click', function (e) { e.stopPropagation(); pop.classList.contains('open') ? close() : open(); });
     field.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); field.click(); } });
