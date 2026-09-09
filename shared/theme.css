@@ -19,6 +19,9 @@
 .naowee-modal__dismiss:hover { color: var(--t-text); }
 /* Validación de obligatorios */
 .naowee-textfield__input-wrap.t-invalid { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(218, 22, 48, .12); }
+/* Textarea: usar el modificador canónico del DS y darle algo más de aire al placeholder */
+.naowee-textfield--textarea .naowee-textfield__input-wrap { padding: 10px 12px; min-height: 96px; }
+.naowee-textfield--textarea .naowee-textfield__input { line-height: 1.55; min-height: 72px; }
 
 /* ── Tabs (beneficiarios.html / validacion.html) ──────────────────────────── */
 .t-tabs-wrap { margin-bottom: 22px; }

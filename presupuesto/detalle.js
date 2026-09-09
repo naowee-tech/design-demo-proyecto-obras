@@ -1,8 +1,9 @@
 /* ============================================================================
- * Proyecto de Obras — Detalle de catálogo (Estructura · Ítems · Carga · Versiones · Auditoría)
+ * Proyecto de Obras — Detalle de catálogo
  * HU PPTO-04..16, 19..21. Componentes del espejo: .naowee-tabs/.t-panel,
  * .naowee-table + .t-kebab/.t-rowmenu, .t-empty/.t-icontile, .t-drop, .vg-card,
  * .t-esq-panel/.t-esq-chips/.t-esq-add (configurador de campos del ítem).
+ * Versionamiento manual con contador de cambios sin publicar + snapshot histórico.
  * ========================================================================== */
 (function () {
   'use strict';
@@ -10,11 +11,13 @@
   function qs(k) { return new URLSearchParams(location.search).get(k); }
   function esc(s) { return (s || '').toString().replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
-  function slugKey(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').toLowerCase() || ('c' + Date.now()); }
+  function slugKey(s) { return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '').toLowerCase() || 'campo'; }
+  function num(v) { var n = parseFloat(v); return isNaN(n) ? null : n; }
 
   var cat = null, nivelEditId = null, nivelDesId = null, itemEditId = null, camposDraft = [];
   var badgeMap = { Activo: 'positive', Borrador: 'caution', Inactivo: 'neutral' };
   var STD = { cod: 1, nombre: 1, uni: 1, cantidad: 1, valorUnit: 1 };
+  var NUMERICO = { numero: 1, moneda: 1 };
 
   function loadCat() {
     var id = qs('cat');
@@ -31,6 +34,8 @@
     if (c.tipo === 'moneda') return D.fmtCOP(v);
     return esc(v);
   }
+  // Toda mutación cuenta como cambio pendiente de publicar (versionamiento manual).
+  function tocado() { D.marcarCambio(cat); renderVersiones(); }
 
   // ── Cabecera ──
   function renderHead() {
@@ -45,7 +50,8 @@
     document.getElementById('catChips').innerHTML =
       '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
       '<span class="naowee-badge naowee-badge--' + (badgeMap[cat.estado] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + cat.estado + '</span>' +
-      '<span class="t-esq-chip">' + cat.niveles.filter(function (n) { return n.activo; }).length + ' niveles</span>';
+      '<span class="t-esq-chip">' + cat.niveles.filter(function (n) { return n.activo; }).length + ' niveles</span>' +
+      (cat.cambiosSinVersionar ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">' + cat.cambiosSinVersionar + ' sin versionar</span>' : '');
   }
 
   window.selTab = function (id) {
@@ -102,12 +108,11 @@
     var ns = cat.niveles.slice().sort(function (a, b) { return a.orden - b.orden; });
     document.getElementById('nivelBody').innerHTML = ns.map(function (n, i) {
       var valor = n.valorTipo === 'formula' ? 'Fórmula' : n.valorTipo === 'fijo' ? D.fmtCOP(n.valorFijo) : 'Sin valor';
-      var nc = camposDe(n).length;
       return '<tr>' +
         '<td data-label="#">' + (n.codigo || (i + 1)) + '</td>' +
         '<td data-label="Nivel"><span class="t-cname" title="' + esc(n.nombre) + '">' + esc(n.nombre) + '</span></td>' +
         '<td data-label="Valor">' + valor + '</td>' +
-        '<td data-label="Campos">' + (n.admiteItems ? nc + ' campos' : '—') + '</td>' +
+        '<td data-label="Campos">' + (n.admiteItems ? camposDe(n).length + ' campos' : '—') + '</td>' +
         '<td data-label="Ítems">' + (n.admiteItems ? itemsDe(n.id).length : '—') + '</td>' +
         '<td data-label="Estado">' + (n.activo
           ? '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Activo</span>'
@@ -129,9 +134,10 @@
   }
 
   // PPTO-09 · configurador de campos del ítem
+  var TIPO_LBL = { texto: 'texto', numero: 'número', moneda: 'moneda', unidad: 'unidad' };
   function renderCampos() {
     document.getElementById('nvCampos').innerHTML = camposDraft.map(function (c, i) {
-      return '<span class="t-esq-chip">' + esc(c.label) +
+      return '<span class="t-esq-chip" title="Tipo: ' + (TIPO_LBL[c.tipo] || c.tipo) + '">' + esc(c.label) +
         (c.req ? '<span class="req">*</span>' : '') +
         (c.core ? '' : '<button type="button" class="x" data-i="' + i + '" aria-label="Quitar ' + esc(c.label) + '">&times;</button>') +
         '</span>';
@@ -140,12 +146,9 @@
       b.onclick = function (e) { e.stopPropagation(); camposDraft.splice(+b.dataset.i, 1); renderCampos(); };
     });
   }
-  function toggleCamposWrap() {
-    document.getElementById('camposWrap').style.display = getSwitch('nvAdmiteItems') ? '' : 'none';
-  }
+  function toggleCamposWrap() { document.getElementById('camposWrap').style.display = getSwitch('nvAdmiteItems') ? '' : 'none'; }
   function addCampo() {
-    var inp = document.getElementById('nvAddIn');
-    var label = inp.value.trim();
+    var inp = document.getElementById('nvAddIn'), label = inp.value.trim();
     if (!label) { inp.focus(); return; }
     var key = slugKey(label);
     if (camposDraft.some(function (c) { return c.key === key; })) { inp.select(); return; }
@@ -169,18 +172,18 @@
     camposDraft = camposDe(n).map(function (c) { return Object.assign({}, c); });
     renderCampos(); toggleCamposWrap();
     document.getElementById('nvAddForm').classList.remove('open');
-    document.getElementById('nvNombre').closest('.naowee-textfield__input-wrap').classList.remove('t-invalid');
+    clearInvalid('#mNivel');
     openModal('mNivel');
   }
   function saveNivel() {
     var el = document.getElementById('nvNombre'), nombre = el.value.trim();
-    if (!nombre) { el.closest('.naowee-textfield__input-wrap').classList.add('t-invalid'); el.focus(); return; }
+    if (!nombre) { markInvalid(el); el.focus(); return; }
     var tipo = UI.getDD('nvValorTipo') || 'formula';
     var admite = getSwitch('nvAdmiteItems');
     var data = {
       nombre: nombre, orden: parseInt(document.getElementById('nvOrden').value, 10) || 1,
       descripcion: document.getElementById('nvDesc').value.trim(), valorTipo: tipo,
-      valorFijo: tipo === 'fijo' ? (parseFloat(document.getElementById('nvValorFijo').value) || 0) : null,
+      valorFijo: tipo === 'fijo' ? (num(document.getElementById('nvValorFijo').value) || 0) : null,
       formula: tipo === 'formula' ? document.getElementById('nvFormula').value.trim() : null,
       admiteItems: admite, campos: admite ? camposDraft.slice() : [], activo: true
     };
@@ -194,8 +197,8 @@
       cat.niveles.push(data);
       D.logAudit(cat, 'Crear nivel', 'Nivel · ' + nombre, 'Jesús Díaz');
     }
-    D.saveCatalogo(cat); closeModal('mNivel');
-    renderNiveles(); renderItems(); renderHead(); renderAuditoria();
+    D.saveCatalogo(cat); closeModal('mNivel'); tocado();
+    renderNiveles(); renderItems(); renderHead(); renderAuditoria(); renderCarga();
   }
   function openDesactivar(id) {
     nivelDesId = id;
@@ -204,20 +207,35 @@
       ? 'El nivel <b>' + esc(n.nombre) + '</b> tiene <b>' + cnt + ' ítems</b> asociados. Se retira de la estructura pero se conserva la trazabilidad.'
       : 'El nivel <b>' + esc(n.nombre) + '</b> se retira de la estructura. Se conserva la trazabilidad.';
     document.getElementById('motivoTxt').value = '';
-    document.getElementById('motivoTxt').closest('.naowee-textfield__input-wrap').classList.remove('t-invalid');
+    clearInvalid('#mMotivo');
     openModal('mMotivo');
   }
   function confirmDesactivar() {
     var el = document.getElementById('motivoTxt'), motivo = el.value.trim();
-    if (!motivo) { el.closest('.naowee-textfield__input-wrap').classList.add('t-invalid'); el.focus(); return; }
+    if (!motivo) { markInvalid(el); el.focus(); return; }
     var n = nivelById(nivelDesId);
     n.activo = false; n.motivoBaja = motivo;
     D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre, 'Jesús Díaz');
-    closeModal('mMotivo'); renderNiveles(); renderItems(); renderHead(); renderAuditoria();
+    closeModal('mMotivo'); tocado();
+    renderNiveles(); renderItems(); renderHead(); renderAuditoria();
+  }
+
+  // ── Validación / helpers de formulario ──
+  function markInvalid(el) { var w = el.closest('.naowee-textfield__input-wrap'); if (w) w.classList.add('t-invalid'); }
+  function clearInvalid(sel) { document.querySelectorAll((sel || '') + ' .naowee-textfield__input-wrap.t-invalid').forEach(function (w) { w.classList.remove('t-invalid'); }); }
+  // Campos numéricos: solo dígitos y un separador decimal. Sin spinners.
+  function soloNumeros(input) {
+    input.setAttribute('inputmode', 'decimal');
+    input.addEventListener('input', function () {
+      var limpio = input.value.replace(/,/g, '.').replace(/[^0-9.]/g, '');
+      var partes = limpio.split('.');
+      if (partes.length > 2) limpio = partes[0] + '.' + partes.slice(1).join('');
+      if (input.value !== limpio) input.value = limpio;
+      var w = input.closest('.naowee-textfield__input-wrap'); if (w) w.classList.remove('t-invalid');
+    });
   }
 
   // ── ÍTEMS ──
-  // Columnas de la tabla = unión de los campos configurados en los niveles activos.
   function tableCampos() {
     var seen = {}, out = [];
     cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).forEach(function (n) {
@@ -241,14 +259,13 @@
     });
     document.getElementById('itemsBody').innerHTML = rows.map(function (it) {
       var n = nivelById(it.nivelId);
-      return '<tr>' +
+      return '<tr' + (it.nuevo ? ' class="t-row-new"' : '') + '>' +
         '<td data-label="Código">' + esc(it.cod) + '</td>' +
         '<td data-label="Ítem"><span class="t-cname" title="' + esc(it.nombre) + '">' + esc(it.nombre) + '</span></td>' +
         '<td data-label="Nivel">' + esc(n ? n.nombre : '—') + '</td>' +
         cols.map(function (c) {
           var v = itemVal(it, c.key);
-          var num = (c.tipo === 'moneda' || c.tipo === 'numero');
-          return '<td data-label="' + esc(c.label) + '"' + (num ? ' class="tnum"' : '') + '>' + fmtCampo(c, v) + '</td>';
+          return '<td data-label="' + esc(c.label) + '"' + (NUMERICO[c.tipo] ? ' class="tnum"' : '') + '>' + fmtCampo(c, v) + '</td>';
         }).join('') +
         '<td data-label="V. total" class="tnum">' + D.fmtCOP(it.valorTotal) + '</td>' +
         '<td data-label="Acciones">' + kebab('item', it.id, 'Acciones del ítem') + '</td>' +
@@ -263,30 +280,86 @@
     var activos = cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).map(function (n) { return { value: n.id, label: n.nombre }; });
     UI.fillDD('itNivel', activos, 'Seleccione una opción');
   }
-  // Genera los inputs del ítem a partir de los campos del nivel (PPTO-09/10)
+
+  var DD_TRIGGER = '<button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value naowee-dropdown__placeholder">Seleccione</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div>';
+
+  // Genera los inputs del ítem según los campos configurados en el nivel (PPTO-09/10)
   function renderItemFields(nivelId, it) {
     var grid = document.getElementById('itGrid');
     grid.querySelectorAll('[data-campo]').forEach(function (e) { e.remove(); });
     var n = nivelById(nivelId);
     document.getElementById('itHint').style.display = n ? 'none' : '';
     if (!n) return;
-    camposDe(n).forEach(function (c) {
+    var campos = camposDe(n);
+
+    campos.forEach(function (c) {
       var v = it ? itemVal(it, c.key) : '';
       var wide = (c.key === 'nombre');
-      var type = (c.tipo === 'numero' || c.tipo === 'moneda') ? 'number' : 'text';
       var div = document.createElement('div');
-      div.className = 'naowee-textfield' + (wide ? ' t-col-full' : '');
       div.setAttribute('data-campo', c.key);
-      div.innerHTML = '<label class="naowee-textfield__label' + (c.req ? ' naowee-textfield__label--required' : '') + '">' + esc(c.label) + (c.tipo === 'moneda' ? ' (COP)' : '') + '</label>' +
-        '<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="itf-' + c.key + '" type="' + type + '" value="' + (v == null ? '' : esc(v)) + '"></div>';
-      grid.appendChild(div);
+
+      if (c.tipo === 'unidad') {
+        div.className = wide ? 't-col-full' : '';
+        div.innerHTML = '<label class="naowee-textfield__label' + (c.req ? ' naowee-textfield__label--required' : '') + '" style="display:block;margin-bottom:6px">' + esc(c.label) + '</label>' +
+          '<div class="naowee-dropdown" id="itf-' + c.key + '" data-search style="width:100%">' + DD_TRIGGER + '</div>';
+        grid.appendChild(div);
+        UI.fillDD('itf-' + c.key, D.UNIDADES, 'Selecciona unidad');
+        if (v) UI.setDD('itf-' + c.key, v, v);
+      } else {
+        div.className = 'naowee-textfield' + (wide ? ' t-col-full' : '');
+        div.innerHTML = '<label class="naowee-textfield__label' + (c.req ? ' naowee-textfield__label--required' : '') + '">' + esc(c.label) + (c.tipo === 'moneda' ? ' (COP)' : '') + '</label>' +
+          '<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="itf-' + c.key + '" type="text" value="' + (v == null ? '' : esc(v)) + '"></div>';
+        grid.appendChild(div);
+        var inp = document.getElementById('itf-' + c.key);
+        if (NUMERICO[c.tipo]) soloNumeros(inp);
+        else inp.addEventListener('input', function () { var w = inp.closest('.naowee-textfield__input-wrap'); if (w) w.classList.remove('t-invalid'); });
+      }
     });
+
+    // V. total: se calcula solo. Si lo escribes tú, el sistema deriva el V. unitario.
+    var tieneUnit = campos.some(function (c) { return c.key === 'valorUnit'; });
+    if (tieneUnit) {
+      var tdiv = document.createElement('div');
+      tdiv.className = 'naowee-textfield'; tdiv.setAttribute('data-campo', '__total');
+      tdiv.innerHTML = '<label class="naowee-textfield__label">V. total (COP)</label>' +
+        '<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="itf-total" type="text" value="' + (it && it.valorTotal != null ? it.valorTotal : '') + '"></div>' +
+        '<div class="naowee-helper naowee-helper--informative" id="itCalcHint" style="margin-top:5px">Se calcula solo: cantidad × V. unitario. Si escribes el total, se deriva el V. unitario.</div>';
+      grid.appendChild(tdiv);
+      soloNumeros(document.getElementById('itf-total'));
+      wireCalculo();
+    }
+
     var f = document.createElement('div');
     f.className = 'naowee-textfield t-col-full'; f.setAttribute('data-campo', '__formula');
     f.innerHTML = '<label class="naowee-textfield__label">Fórmula (opcional)</label>' +
       '<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="itFormula" placeholder="cantidad × valor unitario" value="' + (it && it.formula ? esc(it.formula) : '') + '"></div>';
     grid.appendChild(f);
   }
+
+  // Cálculo automático en las 3 direcciones (PPTO-10 criterio 3)
+  function wireCalculo() {
+    var cant = document.getElementById('itf-cantidad');
+    var unit = document.getElementById('itf-valorUnit');
+    var total = document.getElementById('itf-total');
+    var hint = document.getElementById('itCalcHint');
+    if (!unit || !total) return;
+    function q() { return cant ? (num(cant.value) == null ? 1 : num(cant.value)) : 1; }
+    function haciaTotal() {
+      var u = num(unit.value); if (u == null) return;
+      total.value = Math.round(u * q());
+      if (hint) hint.textContent = 'V. total calculado: ' + q() + ' × ' + D.fmtCOP(u);
+    }
+    function haciaUnit() {
+      var t = num(total.value), c = q();
+      if (t == null || !c) return;
+      unit.value = Math.round(t / c);
+      if (hint) hint.textContent = 'V. unitario derivado: ' + D.fmtCOP(t) + ' ÷ ' + c;
+    }
+    if (cant) cant.addEventListener('input', haciaTotal);
+    unit.addEventListener('input', haciaTotal);
+    total.addEventListener('input', haciaUnit);
+  }
+
   function openItem(id, presetNivel) {
     itemEditId = id || null;
     fillNivelDD();
@@ -297,74 +370,104 @@
     if (nivelId) { var n = nivelById(nivelId); UI.setDD('itNivel', nivelId, n ? n.nombre : ''); }
     else { UI.setDD('itNivel', '', 'Seleccione una opción'); document.getElementById('itNivel').querySelector('.naowee-dropdown__value').classList.add('naowee-dropdown__placeholder'); }
     renderItemFields(nivelId, it);
+    clearInvalid('#mItem');
     openModal('mItem');
   }
+
   function saveItem() {
     var nivelId = UI.getDD('itNivel');
-    if (!nivelId) { document.getElementById('itemErrorMsg').textContent = 'Selecciona el nivel del ítem.'; document.getElementById('itemError').style.display = ''; return; }
+    var err = document.getElementById('itemError'), msg = document.getElementById('itemErrorMsg');
+    if (!nivelId) { msg.textContent = 'Selecciona el nivel del ítem.'; err.style.display = ''; return; }
     var n = nivelById(nivelId), campos = camposDe(n);
-    var vals = {}, faltan = [];
+    var vals = {}, faltan = [], malos = [];
+    clearInvalid('#mItem');
+
     campos.forEach(function (c) {
+      if (c.tipo === 'unidad') {
+        var uv = UI.getDD('itf-' + c.key);
+        if (c.req && !uv) faltan.push(c.label);
+        vals[c.key] = uv; return;
+      }
       var el = document.getElementById('itf-' + c.key);
       var raw = el ? el.value.trim() : '';
-      if (c.req && !raw) faltan.push(c.label);
-      vals[c.key] = (c.tipo === 'numero' || c.tipo === 'moneda') ? (raw === '' ? null : parseFloat(raw)) : raw;
-      if (el) el.closest('.naowee-textfield__input-wrap').classList.toggle('t-invalid', !!(c.req && !raw));
+      if (c.req && !raw) { faltan.push(c.label); if (el) markInvalid(el); return; }
+      if (NUMERICO[c.tipo] && raw !== '' && num(raw) == null) { malos.push(c.label); if (el) markInvalid(el); return; }
+      vals[c.key] = NUMERICO[c.tipo] ? (raw === '' ? null : num(raw)) : raw;
     });
-    if (faltan.length) {
-      document.getElementById('itemErrorMsg').textContent = 'Campos obligatorios sin diligenciar: ' + faltan.join(', ') + '.';
-      document.getElementById('itemError').style.display = ''; return;
+
+    if (faltan.length || malos.length) {
+      msg.textContent = (faltan.length ? 'Campos obligatorios sin diligenciar: ' + faltan.join(', ') + '. ' : '') +
+                        (malos.length ? 'Estos campos solo aceptan números: ' + malos.join(', ') + '.' : '');
+      err.style.display = ''; return;
     }
+
     var cant = vals.cantidad == null ? 1 : vals.cantidad;
     var vu = vals.valorUnit == null ? 0 : vals.valorUnit;
+    var totalEl = document.getElementById('itf-total');
+    var totalManual = totalEl ? num(totalEl.value) : null;
     var extra = {};
     campos.forEach(function (c) { if (!STD[c.key]) extra[c.key] = vals[c.key]; });
+
     var data = {
       nivelId: nivelId, cod: vals.cod || '', nombre: vals.nombre || '', uni: vals.uni || '',
       tipo: 'Producto', cantidad: cant, valorUnit: vu, extra: extra,
       formula: (document.getElementById('itFormula') || {}).value ? document.getElementById('itFormula').value.trim() : null,
-      valorTotal: Math.round(vu * cant)
+      valorTotal: totalManual != null ? Math.round(totalManual) : Math.round(vu * cant)
     };
+
     if (itemEditId) {
       var it = cat.items.filter(function (x) { return x.id === itemEditId; })[0];
       Object.keys(data).forEach(function (k) { it[k] = data[k]; });
       D.logAudit(cat, 'Editar ítem', 'Ítem · ' + data.cod, 'Jesús Díaz');
     } else {
       data.id = 'it-' + slugKey(data.cod) + '-' + cat.items.length;
-      cat.items.push(data);
+      data.nuevo = true;
+      cat.items.unshift(data);   // los nuevos se listan de primeros
       D.logAudit(cat, 'Crear ítem', 'Ítem · ' + data.cod, 'Jesús Díaz');
     }
-    D.saveCatalogo(cat); closeModal('mItem');
+    D.saveCatalogo(cat); closeModal('mItem'); tocado();
     renderItems(); renderNiveles(); renderHead(); renderAuditoria();
   }
 
-  // ── CARGA MASIVA ──
+  // ── CARGA MASIVA (simulada) ──
+  var PLANTILLAS = {
+    items:   { label: 'Ítems del catálogo', cols: function () { return ['nivel', 'codigo', 'nombre'].concat(tableCampos().map(function (c) { return c.key; })); },
+               motivos: ['Unidad no reconocida', 'Valor unitario vacío', 'Nivel inexistente'], sujeto: 'ítems' },
+    niveles: { label: 'Estructura (niveles)', cols: function () { return ['codigo', 'nombre', 'orden', 'admite_items', 'tipo_valor', 'formula']; },
+               motivos: ['Orden duplicado', 'tipo_valor no válido (usa fijo/formula/ninguno)', 'Nombre repetido en el mismo padre'], sujeto: 'niveles' }
+  };
+  function cargaTipo() { return UI.getDD('cargaTipo') || 'items'; }
+  function renderCarga() {
+    var t = PLANTILLAS[cargaTipo()];
+    document.getElementById('cargaCols').innerHTML = 'Columnas de la plantilla: ' + t.cols().map(function (c) { return '<code>' + esc(c) + '</code>'; }).join(' · ');
+  }
   function vgCard(kind, label, value, icon) {
     return '<div class="vg-card ' + kind + '"><div class="vg-ic">' + icon + '</div><div><div class="vg-l">' + label + '</div><div class="vg-v">' + value + '</div></div></div>';
   }
   function renderCargaResult(det, ok, fail) {
+    var t = PLANTILLAS[cargaTipo()];
     var IC_FILE = '<svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>';
     var IC_OK = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
     var IC_ERR = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
     document.getElementById('cargaResult').innerHTML =
       vgCard('neutral', 'Detectados', det, IC_FILE) + vgCard('ok', 'Procesados', ok, IC_OK) + vgCard('rech', 'Fallidos', fail, IC_ERR);
-    var motivos = ['Unidad no reconocida', 'Valor unitario vacío', 'Nivel inexistente'];
     var rows = '';
-    for (var i = 0; i < fail; i++) rows += '<tr><td data-label="Registro">fila ' + (det - fail + i + 1) + '</td><td data-label="Motivo">' + motivos[i % motivos.length] + '</td></tr>';
+    for (var i = 0; i < fail; i++) rows += '<tr><td data-label="Registro">fila ' + (det - fail + i + 1) + '</td><td data-label="Motivo">' + t.motivos[i % t.motivos.length] + '</td></tr>';
     var w = document.getElementById('cargaErrWrap');
     w.innerHTML = fail ? '<table class="naowee-table"><thead><tr><th>Registro</th><th>Motivo del error</th></tr></thead><tbody>' + rows + '</tbody></table>' : '';
     w.style.display = fail ? '' : 'none';
   }
   function simulateCarga() {
-    var det = 20, fail = 2, ok = det - fail;
+    var t = PLANTILLAS[cargaTipo()];
+    var det = cargaTipo() === 'niveles' ? 8 : 20, fail = 2, ok = det - fail;
     document.getElementById('cargaPrev').innerHTML =
-      '<div class="naowee-message naowee-message--informative" style="margin:14px 0"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></span><div class="naowee-message__body">Vista previa: <b>' + det + ' ítems</b> detectados. Archivo válido para la versión <b>' + cat.versionActiva + '</b> de la plantilla.</div></div></div>';
+      '<div class="naowee-message naowee-message--informative" style="margin:14px 0"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></span><div class="naowee-message__body">Vista previa: <b>' + det + ' ' + t.sujeto + '</b> detectados. Archivo válido para la versión <b>' + cat.versionActiva + '</b> de la plantilla. <i>Simulación de demo: no inserta datos.</i></div></div></div>';
     renderCargaResult(det, ok, fail);
-    D.logAudit(cat, 'Carga masiva', 'Ítems · ' + ok + ' procesados', 'Jesús Díaz');
+    D.logAudit(cat, 'Carga masiva', t.sujeto.charAt(0).toUpperCase() + t.sujeto.slice(1) + ' · ' + ok + ' procesados', 'Jesús Díaz');
     renderAuditoria();
   }
   function initCarga() {
-    renderCargaResult(20, 18, 2);
+    renderCarga(); renderCargaResult(20, 18, 2);
     var drop = document.getElementById('cargaDrop');
     var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.csv'; inp.style.display = 'none';
     document.body.appendChild(inp);
@@ -374,15 +477,19 @@
     drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('drag'); });
     drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
     drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('drag'); simulateCarga(); });
-    // La plantilla se genera con los campos configurados en los niveles (PPTO-12)
+    document.getElementById('cargaTipo').addEventListener('dd:change', function () { renderCarga(); renderCargaResult(cargaTipo() === 'niveles' ? 8 : 20, cargaTipo() === 'niveles' ? 6 : 18, 2); });
     document.getElementById('btnPlantilla').onclick = function () {
-      var cols = ['nivel', 'cod', 'nombre'].concat(tableCampos().map(function (c) { return c.key; }));
-      downloadFile('plantilla-' + slug(cat.nombre) + '-' + cat.versionActiva + '.csv', cols.join(',') + '\n');
+      var t = PLANTILLAS[cargaTipo()];
+      downloadFile('plantilla-' + cargaTipo() + '-' + slug(cat.nombre) + '-' + cat.versionActiva + '.csv', t.cols().join(',') + '\n');
     };
   }
 
   // ── VERSIONES ──
   function renderVersiones() {
+    var pend = cat.cambiosSinVersionar || 0;
+    document.getElementById('verAviso').innerHTML = pend
+      ? '<div class="naowee-message naowee-message--caution" style="margin-bottom:14px"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 3l9 17H3z"/><path d="M12 9v4M12 17h.01"/></svg></span><div class="naowee-message__body"><b>' + pend + ' cambio' + (pend === 1 ? '' : 's') + ' sin versionar</b> desde ' + cat.versionActiva + '. Están activos en el catálogo, pero no quedan congelados hasta que publiques una nueva versión.</div></div></div>'
+      : '';
     var vs = cat.versiones.slice().reverse();
     document.getElementById('verBody').innerHTML = vs.map(function (v) {
       var activa = v.v === cat.versionActiva;
@@ -394,19 +501,38 @@
         '<td data-label="Estado">' + (activa
           ? '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Activa</span>'
           : '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small">Histórica</span>') + '</td>' +
+        '<td data-label="Contenido">' + (activa
+          ? '<span style="font-size:12px;color:var(--t-text-2)">en vivo</span>'
+          : (v.snapshot
+              ? '<button class="naowee-btn naowee-btn--mute naowee-btn--small" onclick="verSnapshot(\'' + v.v + '\')">Ver contenido</button>'
+              : '<span style="font-size:12px;color:var(--t-text-2)">sin snapshot</span>')) + '</td>' +
         '</tr>';
     }).join('');
   }
+  window.verSnapshot = function (ver) {
+    var v = cat.versiones.filter(function (x) { return x.v === ver; })[0];
+    if (!v || !v.snapshot) return;
+    var s = v.snapshot;
+    var tot = s.items.reduce(function (a, it) { return a + (it.valorTotal || 0); }, 0);
+    document.getElementById('snapTitle').textContent = 'Contenido congelado · ' + v.v;
+    document.getElementById('snapMeta').innerHTML = 'Solo lectura · <b>' + s.niveles.length + ' niveles</b> y <b>' + s.items.length + ' ítems</b> · total ' + D.fmtCOP(tot) + ' · congelado el ' + fdate(v.fecha) + '.';
+    document.getElementById('snapNiveles').innerHTML = s.niveles.map(function (n, i) {
+      var its = s.items.filter(function (it) { return it.nivelId === n.id; });
+      var t = its.reduce(function (a, it) { return a + (it.valorTotal || 0); }, 0);
+      return '<tr><td>' + (n.codigo || i + 1) + '</td><td>' + esc(n.nombre) + '</td><td>' + its.length + '</td><td class="tnum">' + D.fmtCOP(t) + '</td></tr>';
+    }).join('');
+    document.getElementById('snapItems').innerHTML = s.items.map(function (it) {
+      return '<tr><td>' + esc(it.cod) + '</td><td>' + esc(it.nombre) + '</td><td>' + esc(it.uni) + '</td><td class="tnum">' + D.fmtCOP(it.valorUnit) + '</td><td class="tnum">' + D.fmtCOP(it.valorTotal) + '</td></tr>';
+    }).join('');
+    openModal('mSnapshot');
+  };
   function createVersion() {
     var el = document.getElementById('verMotivo'), motivo = el.value.trim();
-    if (!motivo) { el.closest('.naowee-textfield__input-wrap').classList.add('t-invalid'); el.focus(); return; }
-    var cur = cat.versionActiva.replace('v', '').split('.').map(Number);
-    var next = 'v' + cur[0] + '.' + (cur[1] + 1);
-    cat.versiones.push({ v: next, motivo: motivo, autor: 'Jesús Díaz', fecha: new Date().toISOString().slice(0, 10) });
-    cat.versionActiva = next;
-    D.saveCatalogo(cat); D.logAudit(cat, 'Crear versión', 'Versión · ' + next, 'Jesús Díaz');
+    if (!motivo) { markInvalid(el); el.focus(); return; }
+    cat.items.forEach(function (it) { delete it.nuevo; });
+    D.nuevaVersion(cat, motivo, 'Jesús Díaz');
     closeModal('mVersion'); el.value = '';
-    renderVersiones(); renderHead(); renderAuditoria();
+    renderVersiones(); renderHead(); renderAuditoria(); renderItems();
   }
 
   // ── AUDITORÍA ──
@@ -453,6 +579,8 @@
     document.getElementById('btnVolver').href = 'catalogos.html?role=' + ((window.OBRAS_SHELL || {}).role || 'ADMIN');
     renderHead(); renderNiveles(); renderItems(); initCarga(); renderVersiones();
     fillAudAcciones(); renderAuditoria();
+    soloNumeros(document.getElementById('nvOrden'));
+    soloNumeros(document.getElementById('nvValorFijo'));
 
     document.getElementById('btnNivel').onclick = function () { openNivel(null); };
     document.getElementById('nvGuardar').onclick = saveNivel;
@@ -472,7 +600,7 @@
     document.getElementById('itSearch').addEventListener('input', renderItems);
     document.getElementById('itNivel').addEventListener('dd:change', function (e) { renderItemFields(e.detail.value, null); });
 
-    document.getElementById('btnVersion').onclick = function () { openModal('mVersion'); };
+    document.getElementById('btnVersion').onclick = function () { clearInvalid('#mVersion'); openModal('mVersion'); };
     document.getElementById('verGuardar').onclick = createVersion;
 
     document.getElementById('audElemento').addEventListener('dd:change', renderAuditoria);

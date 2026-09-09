@@ -74,12 +74,16 @@
 
   var uid = (function () { var n = 1; return function (p) { return (p || 'id') + '-' + (n++) + '-' + Math.random().toString(36).slice(2, 6); }; })();
 
+  // Unidades de medida canónicas (las 25 que trae la matriz APU real).
+  var UNIDADES = ['bls','bt','cj','cñ','dis.','día','glb','gln','h','jg','jr','kg','lb','lt','m','m2','m3','m3-km','mes','ml','pq','rol','ton','un','vj'];
+
   // PPTO-09 · campos que tendrá cada ítem del nivel. Se configuran por nivel al
   // habilitar "admite ítems". Los 'core' no se pueden quitar (el sistema calcula sobre ellos).
+  // tipo: texto | numero | moneda | unidad  → determina el control y la validación.
   var CAMPOS_DEFAULT = [
     { key: 'cod',       label: 'Código',      tipo: 'texto',  req: true,  core: true },
     { key: 'nombre',    label: 'Ítem',        tipo: 'texto',  req: true,  core: true },
-    { key: 'uni',       label: 'Unidad',      tipo: 'texto',  req: false, core: false },
+    { key: 'uni',       label: 'Unidad',      tipo: 'unidad', req: false, core: false },
     { key: 'cantidad',  label: 'Cantidad',    tipo: 'numero', req: false, core: false },
     { key: 'valorUnit', label: 'V. unitario', tipo: 'moneda', req: true,  core: true }
   ];
@@ -115,13 +119,22 @@
   function seedCatalogos() {
     function mk(nombre, region, estado, ver, dias) {
       var est = buildEstructura(region);
+      // La v1.0 se congela con un catálogo más pequeño (3 primeros niveles): así el
+      // snapshot histórico muestra una diferencia real frente a la versión activa.
+      var nv0 = est.niveles.slice(0, 3);
+      var ids0 = nv0.map(function (n) { return n.id; });
+      var snap0 = {
+        niveles: JSON.parse(JSON.stringify(nv0)),
+        items: JSON.parse(JSON.stringify(est.items.filter(function (it) { return ids0.indexOf(it.nivelId) >= 0; })))
+      };
       return {
         id: uid('cat'), nombre: nombre, region: region,
         vigenciaIni: '2026-01-01', vigenciaFin: '2026-12-31',
         estado: estado, versionActiva: ver, creado: nuevaFecha(dias || 40),
         niveles: est.niveles, items: est.items,
+        cambiosSinVersionar: 0,
         versiones: [
-          { v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha((dias || 40)) },
+          { v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha((dias || 40)), snapshot: snap0 },
           (ver !== 'v1.0' ? { v: ver, motivo: 'Actualización de precios ' + region + ' 2026', autor: 'Jesús Díaz', fecha: nuevaFecha(6) } : null)
         ].filter(Boolean)
       };
@@ -164,7 +177,26 @@
   // ── API pública ──
   window.OBRAS = {
     REGIONES: REGIONES,
+    UNIDADES: UNIDADES,
     camposDefault: camposDefault,
+    // Versionamiento C: los cambios se acumulan y el Admin decide cuándo publicarlos.
+    marcarCambio: function (cat) {
+      cat.cambiosSinVersionar = (cat.cambiosSinVersionar || 0) + 1;
+      this.saveCatalogo(cat);
+    },
+    // Al versionar, la versión saliente congela el contenido que tenía (snapshot).
+    nuevaVersion: function (cat, motivo, autor) {
+      var actual = cat.versiones.filter(function (v) { return v.v === cat.versionActiva; })[0];
+      if (actual) actual.snapshot = JSON.parse(JSON.stringify({ niveles: cat.niveles, items: cat.items }));
+      var p = cat.versionActiva.replace('v', '').split('.').map(Number);
+      var next = 'v' + p[0] + '.' + (p[1] + 1);
+      cat.versiones.push({ v: next, motivo: motivo, autor: autor || 'Jesús Díaz', fecha: nuevaFecha(0) });
+      cat.versionActiva = next;
+      cat.cambiosSinVersionar = 0;
+      this.saveCatalogo(cat);
+      this.logAudit(cat, 'Crear versión', 'Versión · ' + next, autor);
+      return next;
+    },
     DEMO_REGIONS: ['Bogota', 'Antioquia', 'Amazonas', 'Vichada'],
     reset: function () { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_AUDIT); ensure(); },
     listCatalogos: function () { return ensure(); },
@@ -181,6 +213,7 @@
         vigenciaIni: data.vigenciaIni, vigenciaFin: data.vigenciaFin,
         estado: data.estado || 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(0),
         niveles: data.conEstructura ? est.niveles : [], items: data.conEstructura ? est.items : [],
+        cambiosSinVersionar: 0,
         versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha(0) }]
       };
       this.saveCatalogo(cat);
