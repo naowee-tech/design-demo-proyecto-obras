@@ -13,13 +13,15 @@
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
 <link rel="stylesheet" href="../shared/skin-gris.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.1">
-<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.1">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.3">
+<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.3">
 <script>try{var _b=localStorage.getItem('obras-ppto-brand');document.documentElement.setAttribute('data-brand',(_b==='naowee'||_b==='territorio')?_b:'ds');}catch(e){document.documentElement.setAttribute('data-brand','ds');}</script>
-<link rel="stylesheet" href="../shared/theme.css?v=0.4.1">
+<link rel="stylesheet" href="../shared/theme.css?v=0.4.3">
 <style>
-  .naowee-modal-overlay .naowee-modal{ overflow:visible !important; }
-  .naowee-modal-overlay .naowee-modal__body{ overflow:visible; }
+  /* Sin overflow:visible aquí: el DS hace que el body scrollee entre el header y el
+     footer fijos, y forzarlo rompía ese scroll (el contenido crecía por debajo del footer). */
+  /* El alta de campo vive al fondo del body: su menú abre hacia arriba para no cortarse. */
+  .t-esq-add-form .naowee-dropdown__menu{ top:auto; bottom:calc(100% + 4px); }
   #mNivel .naowee-modal, #mItem .naowee-modal{ width:640px; max-width:92vw; }
   #mMotivo .naowee-modal, #mVersion .naowee-modal{ width:560px; max-width:92vw; }
   .t-sechead{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
@@ -215,16 +217,16 @@
     <div class="naowee-modal__body">
       <div class="t-cform-grid">
         <div class="naowee-textfield t-col-full"><label class="naowee-textfield__label naowee-textfield__label--required">Nombre del nivel</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvNombre" placeholder="Ej. CIMENTACIÓN"></div></div>
-        <div class="naowee-textfield"><label class="naowee-textfield__label">Posición (orden)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvOrden" type="number" min="1" value="1"></div></div>
+        <div class="naowee-textfield"><label class="naowee-textfield__label">Posición (orden)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvOrden" type="text" inputmode="numeric" value="1"></div></div>
         <div>
-          <label class="naowee-textfield__label" style="display:block;margin-bottom:6px">Valor del nivel</label>
+          <label class="naowee-textfield__label" style="display:block">Valor del nivel</label>
           <div class="naowee-dropdown" id="nvValorTipo" style="width:100%">
             <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Fórmula</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
             <div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option" data-value="ninguno">Sin valor</div><div class="naowee-dropdown__option" data-value="fijo">Valor fijo</div><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="formula">Fórmula</div></div>
           </div>
         </div>
         <div class="naowee-textfield t-col-full"><label class="naowee-textfield__label">Descripción (opcional)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvDesc" placeholder="Descripción del nivel"></div></div>
-        <div class="naowee-textfield t-col-full" id="nvFijoWrap" style="display:none"><label class="naowee-textfield__label">Valor fijo (COP)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvValorFijo" type="number" placeholder="0"></div></div>
+        <div class="naowee-textfield t-col-full" id="nvFijoWrap" style="display:none"><label class="naowee-textfield__label">Valor fijo (COP)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvValorFijo" type="text" inputmode="decimal" placeholder="0"></div></div>
         <div class="naowee-textfield t-col-full" id="nvFormulaWrap"><label class="naowee-textfield__label">Fórmula</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvFormula" value="SUMA(ítems del nivel)"></div></div>
         <div class="t-col-full">
           <div class="naowee-switch naowee-switch--on" id="nvAdmiteItems" role="switch" aria-checked="true" style="cursor:pointer"><span class="naowee-switch__track"><span class="naowee-switch__handle"></span></span><span class="naowee-switch__label">Este nivel admite ítems</span></div>
@@ -281,7 +283,7 @@
       <div class="naowee-message naowee-message--negative" id="itemError" role="alert" aria-live="assertive" style="display:none;margin-bottom:14px"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></span><div class="naowee-message__body" id="itemErrorMsg">Completa los campos obligatorios.</div></div></div>
       <div class="t-cform-grid" id="itGrid">
         <div class="t-col-full">
-          <label class="naowee-textfield__label naowee-textfield__label--required" style="display:block;margin-bottom:6px">Nivel</label>
+          <label class="naowee-textfield__label naowee-textfield__label--required" style="display:block">Nivel</label>
           <div class="naowee-dropdown" id="itNivel" style="width:100%"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value naowee-dropdown__placeholder">Seleccione una opción</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
         </div>
         <!-- Los campos se generan según los configurados en el nivel (PPTO-09) -->
@@ -319,10 +321,10 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.4.1"></script>
-<script src="../shared/ui.js?v=0.4.1"></script>
-<script src="../shared/shell.js?v=0.4.1"></script>
-<script src="detalle.js?v=0.4.1"></script>
-<script src="../shared/tour.js?v=0.4.1"></script>
+<script src="../shared/data-catalogo.js?v=0.4.3"></script>
+<script src="../shared/ui.js?v=0.4.3"></script>
+<script src="../shared/shell.js?v=0.4.3"></script>
+<script src="detalle.js?v=0.4.3"></script>
+<script src="../shared/tour.js?v=0.4.3"></script>
 </body>
 </html>

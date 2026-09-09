@@ -18,7 +18,32 @@
 .naowee-modal__dismiss svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
 .naowee-modal__dismiss:hover { color: var(--t-text); }
 /* Validación de obligatorios */
-.naowee-textfield__input-wrap.t-invalid { border-color: #ef4444 !important; box-shadow: 0 0 0 3px rgba(218, 22, 48, .12); }
+.naowee-textfield__input-wrap.t-invalid {
+  border-color: var(--naowee-color-feedback-text-negative-loud, #C4031D) !important;
+  box-shadow: 0 0 0 3px rgba(196, 3, 29, .12);
+}
+
+/* ── Barra de acciones: todos los controles a la misma altura ─────────────
+   El espejo pone el searchbox y el botón loud a 40px; los .naowee-dropdown--small
+   vienen a 32px del DS y quedaban más bajos. Se igualan a 40px. */
+.t-board-actions .naowee-dropdown__trigger,
+.t-sechead .naowee-dropdown__trigger,
+.t-board-actions .naowee-datepicker-field__input,
+.t-sechead .naowee-datepicker-field__input {
+  height: 40px;
+  border-radius: var(--naowee-border-radius-actions-inputs-default, 12px);
+}
+
+/* ── Captions de campo (.naowee-helper) — mapa semántico ───────────────────
+   El DS deja las 5 variantes en el mismo gris oscuro, y su "caution" usa el
+   mismo naranja del acento (se confunde con el botón primario). Se re-mapea:
+   informativo = azul · error = rojo · warning = gris. */
+.naowee-helper { color: var(--t-text-2); }
+.naowee-helper svg { stroke: currentColor; }
+.naowee-helper--informative { color: var(--naowee-color-feedback-text-informative-loud, #006aff); }
+.naowee-helper--negative { color: var(--naowee-color-feedback-text-negative-loud, #C4031D); }
+.naowee-helper--caution { color: var(--t-text-2); }
+.naowee-helper--positive { color: var(--naowee-color-feedback-text-positive-loud); }
 /* Textarea: usar el modificador canónico del DS y darle algo más de aire al placeholder */
 .naowee-textfield--textarea .naowee-textfield__input-wrap { padding: 10px 12px; min-height: 96px; }
 .naowee-textfield--textarea .naowee-textfield__input { line-height: 1.55; min-height: 72px; }
@@ -39,6 +64,8 @@
 .t-esq-panel { background: #fff; border: 1px solid var(--t-line); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
 .t-esq-panel-head { display: flex; align-items: flex-start; gap: 11px; }
 .t-esq-panel-ic { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--naowee-color-territorio-100, #e6f4f8); color: var(--naowee-color-territorio-700, #0B7E96); }
+/* ~50% del tile, igual proporción que .t-drop-ic (24px en 48px) del espejo */
+.t-esq-panel-ic svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; }
 .t-esq-panel-head h3 { font-size: 14px; font-weight: 800; margin: 0 0 2px; color: var(--t-text); }
 .t-esq-panel-head p { font-size: 12px; color: var(--t-text-2); margin: 0; line-height: 1.5; }
 .t-esq-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 13px 0; }
