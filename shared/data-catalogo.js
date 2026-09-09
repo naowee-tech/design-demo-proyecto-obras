@@ -20,7 +20,7 @@
   // Semilla de demo (7 capítulos · 6 actividades c/u · valor por región).
   // Nomenclatura APU estándar; VALORES SINTÉTICOS (ver aviso de cabecera).
   var SEED = [
-    {cap:"1",nombre:"PRELIMINARES",items:[
+    {cap:"1",nombre:"Preliminares",items:[
       {cod:"1.1",nombre:"Demolición cielo raso falso (incluye retiro)",uni:"m2",val:{Bogota:18420,Antioquia:18310,Amazonas:18760,Vichada:18690}},
       {cod:"1.2",nombre:"Demolición de caja de inspección 0,60 x 0,60 m (incluye retiro)",uni:"un",val:{Bogota:71350,Antioquia:74200,Amazonas:75600,Vichada:75010}},
       {cod:"1.3",nombre:"Demolición de caja de inspección 0,80 x 0,80 m (incluye retiro)",uni:"un",val:{Bogota:96480,Antioquia:100150,Amazonas:102030,Vichada:101240}},
@@ -28,7 +28,7 @@
       {cod:"1.5",nombre:"Demolición de caja de inspección 1,20 x 1,20 m (incluye retiro)",uni:"un",val:{Bogota:139240,Antioquia:145080,Amazonas:147620,Vichada:146410}},
       {cod:"1.6",nombre:"Demolición de mesón en concreto (incluye retiro)",uni:"m",val:{Bogota:81560,Antioquia:83790,Amazonas:84720,Vichada:84260}}
     ]},
-    {cap:"2",nombre:"EXCAVACIONES Y RELLENOS",items:[
+    {cap:"2",nombre:"Excavaciones y rellenos",items:[
       {cod:"2.1",nombre:"Excavación manual en conglomerado h=0.0-2.0 m (retiro <5 km)",uni:"m3",val:{Bogota:63920,Antioquia:63810,Amazonas:63980,Vichada:63950}},
       {cod:"2.2",nombre:"Excavación manual zanja en tierra h=1.0 m",uni:"m3",val:{Bogota:44710,Antioquia:44710,Amazonas:44710,Vichada:44710}},
       {cod:"2.3",nombre:"Relleno con material del sitio compactado mecánicamente",uni:"m3",val:{Bogota:41830,Antioquia:41320,Amazonas:41920,Vichada:41640}},
@@ -36,7 +36,7 @@
       {cod:"2.5",nombre:"Rellenos agregado en material de base compactada mecánicamente",uni:"m3",val:{Bogota:268940,Antioquia:279710,Amazonas:288550,Vichada:291980}},
       {cod:"2.6",nombre:"Rellenos en material seleccionado de la excavación en sitio, manual",uni:"m3",val:{Bogota:18270,Antioquia:18150,Amazonas:18290,Vichada:18230}}
     ]},
-    {cap:"3",nombre:"CIMENTACIÓN",items:[
+    {cap:"3",nombre:"Cimentación",items:[
       {cod:"3.1",nombre:"Base agregado pétreo (material de afirmado)",uni:"m3",val:{Bogota:171280,Antioquia:165980,Amazonas:169790,Vichada:166300}},
       {cod:"3.2",nombre:"Base arena cemento 1:20 (hecho en obra)",uni:"m3",val:{Bogota:295640,Antioquia:295420,Amazonas:305180,Vichada:311260}},
       {cod:"3.3",nombre:"Base en concreto pobre (hecho en obra)",uni:"m3",val:{Bogota:556190,Antioquia:543900,Amazonas:559230,Vichada:555880}},
@@ -44,7 +44,7 @@
       {cod:"3.5",nombre:"Dados en concreto 3500 PSI",uni:"m3",val:{Bogota:993640,Antioquia:972320,Amazonas:997970,Vichada:992840}},
       {cod:"3.6",nombre:"Placa de concreto 2500 PSI e=10 cm (incluye malla M-131)",uni:"m2",val:{Bogota:160120,Antioquia:161400,Amazonas:164180,Vichada:163280}}
     ]},
-    {cap:"4",nombre:"ESTRUCTURAS EN CONCRETO",items:[
+    {cap:"4",nombre:"Estructuras en concreto",items:[
       {cod:"4.1",nombre:"Acero figurado 37000 PSI",uni:"kg",val:{Bogota:10320,Antioquia:10318,Amazonas:10648,Vichada:10871}},
       {cod:"4.2",nombre:"Acero figurado 60000 PSI",uni:"kg",val:{Bogota:8324,Antioquia:8321,Amazonas:8588,Vichada:8769}},
       {cod:"4.3",nombre:"Base en concreto de limpieza 1500 PSI",uni:"m3",val:{Bogota:500760,Antioquia:499240,Amazonas:515930,Vichada:526410}},
@@ -52,7 +52,7 @@
       {cod:"4.5",nombre:"Columnas cualquier área 3500 PSI",uni:"m3",val:{Bogota:1452940,Antioquia:1450740,Amazonas:1485510,Vichada:1450250}},
       {cod:"4.6",nombre:"Columneta concreto 3000 PSI cualquier dimensión (incluye refuerzo)",uni:"m",val:{Bogota:108020,Antioquia:112190,Amazonas:114350,Vichada:115720}}
     ]},
-    {cap:"5",nombre:"MAMPOSTERÍA",items:[
+    {cap:"5",nombre:"Mampostería",items:[
       {cod:"5.1",nombre:"Alfajía en ladrillo prensado macizo",uni:"m",val:{Bogota:70740,Antioquia:70745,Amazonas:72020,Vichada:72870}},
       {cod:"5.2",nombre:"Anclaje 1/2\" l=50 cm",uni:"un",val:{Bogota:27440,Antioquia:27320,Amazonas:27770,Vichada:27920}},
       {cod:"5.3",nombre:"Anclaje 3/8\" l=30 cm",uni:"un",val:{Bogota:20610,Antioquia:20510,Amazonas:20860,Vichada:20960}},
@@ -60,7 +60,7 @@
       {cod:"5.5",nombre:"Dintel en sistema estructural steel frame",uni:"m",val:{Bogota:40510,Antioquia:40530,Amazonas:41230,Vichada:41670}},
       {cod:"5.6",nombre:"Dinteles concreto cualquier medida de 2500 PSI",uni:"m",val:{Bogota:99770,Antioquia:99730,Amazonas:101590,Vichada:102740}}
     ]},
-    {cap:"8",nombre:"INSTALACIONES HIDROSANITARIAS",items:[
+    {cap:"8",nombre:"Instalaciones hidrosanitarias",items:[
       {cod:"8.1",nombre:"Acometida en PVC 1/2\" 5 m",uni:"un",val:{Bogota:470400,Antioquia:470300,Amazonas:480340,Vichada:487150}},
       {cod:"8.2",nombre:"Caja contador de agua",uni:"un",val:{Bogota:138310,Antioquia:138280,Amazonas:142060,Vichada:144630}},
       {cod:"8.3",nombre:"Caja de inspección 100 x 100 (incluye excavación)",uni:"un",val:{Bogota:762680,Antioquia:757760,Amazonas:777130,Vichada:789210}},
@@ -68,7 +68,7 @@
       {cod:"8.5",nombre:"Caja de inspección 60 x 60 (incluye excavación)",uni:"un",val:{Bogota:454150,Antioquia:431730,Amazonas:442060,Vichada:448770}},
       {cod:"8.6",nombre:"Caja de inspección 80 x 80 (incluye excavación)",uni:"un",val:{Bogota:751790,Antioquia:723750,Amazonas:742450,Vichada:754690}}
     ]},
-    {cap:"16",nombre:"PINTURAS",items:[
+    {cap:"16",nombre:"Pinturas",items:[
       {cod:"16.1",nombre:"Estuco",uni:"m2",val:{Bogota:17590,Antioquia:17595,Amazonas:17747,Vichada:17840}},
       {cod:"16.2",nombre:"Estuco (lineal)",uni:"m",val:{Bogota:8877,Antioquia:8883,Amazonas:8946,Vichada:8980}},
       {cod:"16.3",nombre:"Estuco plástico acrílico sobre muros (incluye filos y dilataciones)",uni:"m2",val:{Bogota:31550,Antioquia:31553,Amazonas:32270,Vichada:32745}},
@@ -160,7 +160,7 @@
     }
     cats.forEach(function (c, i) {
       add(c, 'Crear catálogo', 'Catálogo', 'Jesús Díaz', 40 - i * 5);
-      add(c, 'Crear nivel', 'Nivel · PRELIMINARES', 'Jesús Díaz', 38 - i * 5);
+      add(c, 'Crear nivel', 'Nivel · Preliminares', 'Jesús Díaz', 38 - i * 5);
       add(c, 'Crear ítem', 'Ítem · 1.1', 'Carla Méndez', 30 - i * 4);
       if (c.versionActiva !== 'v1.0') add(c, 'Crear versión', 'Versión · ' + c.versionActiva, 'Jesús Díaz', 6);
     });
