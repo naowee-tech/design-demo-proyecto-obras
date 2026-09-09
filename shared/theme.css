@@ -1,0 +1,150 @@
+/* ============================================================================
+ * Proyecto de Obras — capa page-local del ESPEJO.
+ * En suite-web-territorio estas reglas viven inline en cada pantalla; aquí se
+ * centralizan porque las comparten las 3 páginas. Copiadas LITERALES del espejo.
+ * NO añadir componentes propios: si falta algo, existe en territorio-shell.css
+ * o en el DS. Carga DESPUÉS de skin-ds.css.
+ * ========================================================================== */
+
+/* ── Grilla de formulario del modal (documentos-contractuales.html) ───────── */
+.t-cform-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.t-cform-grid > * { margin-bottom: 0; }
+.t-cform-grid > .t-col-full { grid-column: 1 / -1; }
+@media (max-width: 640px) { .t-cform-grid { grid-template-columns: 1fr; gap: 14px; } }
+
+/* ── Modal: corners redondeados (override pattern, después del DS) ───────── */
+.naowee-modal { border-radius: 20px !important; overflow: hidden !important; }
+.naowee-modal__dismiss { color: var(--t-text-2); }
+.naowee-modal__dismiss svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; }
+.naowee-modal__dismiss:hover { color: var(--t-text); }
+/* Validación de obligatorios */
+.naowee-textfield__input-wrap.t-invalid {
+  border-color: var(--naowee-color-feedback-text-negative-loud, #C4031D) !important;
+  box-shadow: 0 0 0 3px rgba(196, 3, 29, .12);
+}
+
+/* ── Barra de acciones: todos los controles a la misma altura ─────────────
+   El espejo pone el searchbox y el botón loud a 40px; los .naowee-dropdown--small
+   vienen a 32px del DS y quedaban más bajos. Se igualan a 40px. */
+.t-board-actions .naowee-dropdown__trigger,
+.t-sechead .naowee-dropdown__trigger,
+.t-board-actions .naowee-datepicker-field__input,
+.t-sechead .naowee-datepicker-field__input {
+  height: 40px;
+  border-radius: var(--naowee-border-radius-actions-inputs-default, 12px);
+}
+
+/* ── Captions de campo (.naowee-helper) — mapa semántico ───────────────────
+   El DS deja las 5 variantes en el mismo gris oscuro, y su "caution" usa el
+   mismo naranja del acento (se confunde con el botón primario). Se re-mapea:
+   informativo = azul · error = rojo · warning = gris. */
+.naowee-helper { color: var(--t-text-2); }
+.naowee-helper svg { stroke: currentColor; }
+.naowee-helper--informative { color: var(--naowee-color-feedback-text-informative-loud, #006aff); }
+.naowee-helper--negative { color: var(--naowee-color-feedback-text-negative-loud, #C4031D); }
+.naowee-helper--caution { color: var(--t-text-2); }
+.naowee-helper--positive { color: var(--naowee-color-feedback-text-positive-loud); }
+/* Textarea: usar el modificador canónico del DS y darle algo más de aire al placeholder */
+.naowee-textfield--textarea .naowee-textfield__input-wrap { padding: 10px 12px; min-height: 96px; }
+.naowee-textfield--textarea .naowee-textfield__input { line-height: 1.55; min-height: 72px; }
+
+/* ── Tabs (beneficiarios.html / validacion.html) ──────────────────────────── */
+.t-tabs-wrap { margin-bottom: 22px; }
+/* Header de tabs SIN fondo (el DS le pone una franja de color que no va). */
+.naowee-tabs { background: transparent !important; }
+.t-panel { display: none; }
+.t-panel.active { display: block; animation: fadeInUp .35s cubic-bezier(.4, 0, .2, 1); }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .t-panel.active { animation: none; } }
+
+/* ── Título de sección dentro del board ───────────────────────────────────── */
+.t-sec-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--t-text-2); margin: 26px 0 12px; }
+
+/* ── Panel de sección dentro del board (t-esq-panel) ──────────────────────── */
+.t-esq-panel { background: #fff; border: 1px solid var(--t-line); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
+.t-esq-panel-head { display: flex; align-items: flex-start; gap: 11px; }
+.t-esq-panel-ic { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--naowee-color-territorio-100, #e6f4f8); color: var(--naowee-color-territorio-700, #0B7E96); }
+/* ~50% del tile, igual proporción que .t-drop-ic (24px en 48px) del espejo */
+.t-esq-panel-ic svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.t-esq-panel-head h3 { font-size: 14px; font-weight: 800; margin: 0 0 2px; color: var(--t-text); }
+.t-esq-panel-head p { font-size: 12px; color: var(--t-text-2); margin: 0; line-height: 1.5; }
+.t-esq-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 13px 0; }
+.t-esq-chip { display: inline-flex; align-items: center; padding: 5px 12px; border-radius: 999px; background: #eef1f4; color: var(--t-text-2, #5b7480); font-size: 12px; font-weight: 600; border: 1px solid var(--t-line, #e3ebee); }
+.t-esq-empty { font-size: 12.5px; color: var(--t-text-2); }
+.t-esq-panel-add { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+/* chips + alta inline (documentos-contractuales.html, literal) */
+.t-esq-add { border-top: 1px solid var(--t-line, #e3ebee); margin-top: 4px; padding-top: 2px; }
+.t-esq-add-btn { display: flex; align-items: center; gap: 7px; width: 100%; background: none; border: 0; cursor: pointer; padding: 9px 12px; font-family: inherit; font-size: 13px; font-weight: 700; color: var(--naowee-color-territorio-700, #0B7E96); border-radius: 8px; }
+.t-esq-add-btn:hover { background: #f7f8fa; }
+.t-esq-add-form { display: none; gap: 6px; padding: 4px 10px 8px; }
+.t-esq-add-form.open { display: flex; align-items: center; flex-wrap: wrap; }
+.t-esq-add-in { flex: 1; min-width: 0; height: 34px; border: 1px solid var(--t-line, #d0d4e6); border-radius: 8px; padding: 0 10px; font-family: inherit; font-size: 13px; }
+.t-esq-add-in:focus { outline: none; border-color: var(--naowee-color-territorio-700); box-shadow: var(--naowee-shadow-focus-accent, 0 0 0 3px rgba(215, 64, 9, .15)); }
+.t-esq-add-ok { height: 34px; padding: 0 13px; border: 0; border-radius: 8px; background: var(--naowee-color-territorio-600, #0e93ae); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+/* chip de campo: marca de obligatorio + quitar */
+.t-esq-chip .req { color: var(--naowee-color-territorio-700); font-weight: 800; margin-left: 2px; }
+.t-esq-chip .x { margin-left: 7px; border: 0; background: none; padding: 0; cursor: pointer; color: var(--t-text-2); font-size: 14px; line-height: 1; }
+.t-esq-chip .x:hover { color: var(--naowee-color-feedback-negative-loud, #dc2626); }
+
+/* ── Datepicker canónico (popover compacto) ───────────────────────────────── */
+.naowee-datepicker-field[data-dp] { position: relative; }
+.naowee-datepicker-field__input { cursor: pointer; }
+.t-dp-pop { position: absolute; top: 100%; left: 0; z-index: 80; margin-top: 6px; background: #fff; border: 1px solid var(--t-line); border-radius: 14px; box-shadow: 0 16px 40px -12px rgba(16, 40, 60, .3); display: none; }
+.t-dp-pop.open { display: block; }
+.t-dp-pop .naowee-datepicker { width: 286px; padding: 14px; gap: 8px; }
+.t-dp-pop .naowee-datepicker__day, .t-dp-pop .naowee-datepicker__weekday { width: 34px; height: 34px; font-size: 13px; line-height: 1; }
+.t-dp-pop .naowee-datepicker__day { border-radius: 9px; }
+.t-dp-pop .naowee-datepicker__nav { width: 32px; height: 32px; border-radius: 9px; }
+.t-dp-pop .naowee-datepicker__nav svg { width: 18px; height: 18px; }
+.t-dp-pop .naowee-datepicker__month { font-size: 15px; }
+
+/* ── Tabla minimalista del espejo, extendida ──────────────────────────────
+   territorio-shell.css scopea estas reglas a #docTable; el resto de tablas
+   caerían al default del DS, cuyo hover/striping usa --naowee-color-fill-secondary
+   = gray-300 (lavanda oscuro). Se replica el criterio del espejo: thead blanco,
+   hover gris MUY claro, sin lavanda. */
+.t-board .naowee-table thead th {
+  font-size: 12px; font-weight: 600; color: #566070; padding: 13px 16px;
+  background: #fff; border-bottom: 1px solid var(--t-line); white-space: nowrap;
+}
+.t-board .naowee-table tbody tr:hover { background: #f7f8fa; }
+.t-board .naowee-table tbody tr:hover td { background: transparent; }
+.t-board .naowee-table--striped tbody tr:nth-child(even) { background: #fcfcfd; }
+
+/* Acordeón: hover gris claro (no el lavanda gray-300) + foco en acento */
+.naowee-accordion__header:hover { background: #f7f8fa !important; }
+.naowee-accordion__header:focus-visible {
+  outline: none; border-radius: 10px;
+  box-shadow: var(--naowee-shadow-focus-accent, 0 0 0 3px rgba(215, 64, 9, .15));
+}
+
+/* ── Drop-zone de carga masiva (beneficiarios.html, literal) ─────────────── */
+.t-drop { border: 2px dashed var(--t-line); border-radius: 16px; padding: 34px 24px; text-align: center; background: rgba(255, 255, 255, .45); transition: border-color .15s, background .15s; cursor: pointer; }
+.t-drop:hover, .t-drop.drag { border-color: var(--naowee-color-territorio-400, #67c5d8); background: var(--naowee-color-territorio-100, #eef8fb); }
+.t-drop-ic { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 14px; display: grid; place-items: center; background: var(--naowee-color-territorio-100, #e6f4f8); color: var(--naowee-color-territorio-700, #0B7E96); }
+.t-drop-ic svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.7; }
+.t-drop b { font-size: 14.5px; color: var(--t-text); }
+.t-drop span { display: block; font-size: 12.5px; color: var(--t-text-2); margin-top: 4px; }
+
+/* ── KPIs semánticos de resultado (.vg-card, beneficiarios.html) ─────────── */
+.t-prev-stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+.t-prev-stats .vg-card { flex: 1 1 150px; }
+.vg-card { display: flex; align-items: center; gap: 12px; border: 1px solid var(--t-line); border-radius: 14px; padding: 13px 16px 13px 13px; background: #fff; }
+.vg-ic { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; background: #7c8695; }
+.vg-ic svg { width: 20px; height: 20px; stroke: #fff; fill: none; stroke-width: 2; }
+.vg-l { font-size: 12.5px; font-weight: 600; color: var(--t-text-2); }
+.vg-v { font-size: 22px; font-weight: 800; line-height: 1.15; color: var(--t-text); }
+.vg-card.ok { background: #f6fbf8; border-color: #e4f0e8; } .vg-card.ok .vg-ic { background: #16a34a; } .vg-card.ok .vg-v { color: #15803d; }
+.vg-card.pend { background: #fdfbf4; border-color: #f0e9d8; } .vg-card.pend .vg-ic { background: #f59e0b; } .vg-card.pend .vg-v { color: #b45309; }
+.vg-card.rech { background: #fdf7f6; border-color: #f1e1df; } .vg-card.rech .vg-ic { background: #ef4444; } .vg-card.rech .vg-v { color: #dc2626; }
+.vg-card.cupo { background: #f1f8fa; border-color: #dcebf0; } .vg-card.cupo .vg-ic { background: var(--naowee-color-territorio-700, #0B7E96); } .vg-card.cupo .vg-v { color: var(--naowee-color-territorio-800, #0a6275); }
+.vg-card.neutral .vg-ic { background: #7c8695; }
+.t-prev-wrap { max-height: 340px; overflow: auto; max-width: 100%; border: 1px solid var(--t-line); border-radius: 14px; background: #fff; overscroll-behavior: contain; }
+
+/* ── Dropdown de catálogo con buscador acento-insensible ──────────────────
+   Patrón canónico Naowee para selects de catálogo largos (33 regiones).
+   Acotado al dropdown que lo pide vía [data-search]; no toca el resto. */
+.naowee-dropdown[data-search] .dd-search { padding: 6px; border-bottom: 1px solid var(--t-line); position: sticky; top: 0; background: #fff; }
+.naowee-dropdown[data-search] .dd-search input { width: 100%; box-sizing: border-box; border: 1px solid var(--t-line); border-radius: 8px; padding: 7px 10px; font: inherit; font-size: 13px; outline: none; }
+.naowee-dropdown[data-search] .dd-search input:focus { border-color: var(--naowee-color-territorio-700); box-shadow: var(--naowee-shadow-focus-accent, 0 0 0 3px rgba(215, 64, 9, .15)); }
+.naowee-dropdown__menu { max-height: 280px; overflow-y: auto; }

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="territorio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyecto de Obras · Naowee Suite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/design-system.css">
+<link rel="stylesheet" href="shared/theme-territorio.css">
+<link rel="stylesheet" href="shared/glass-theme.css">
+<link rel="stylesheet" href="shared/skin-ds.css?v=0.3.1">
+<script>try{var _b=localStorage.getItem('obras-ppto-brand');document.documentElement.setAttribute('data-brand',(_b==='naowee'||_b==='territorio')?_b:'ds');}catch(e){document.documentElement.setAttribute('data-brand','ds');}</script>
+<style>
+  :root{ --t-canvas:#eaeef3; --t-board:#ffffff; --t-line:#e4e8ee; --t-text:#1b2330; --t-text-2:#6b7480; }
+  *{ box-sizing:border-box; }
+  [data-theme="territorio"], [data-theme="territorio"] *{ font-family:'Manrope',-apple-system,sans-serif; }
+  html,body{ margin:0; min-height:100vh; background:var(--t-canvas); color:var(--t-text); -webkit-font-smoothing:antialiased; }
+  body{ display:flex; flex-direction:column; align-items:center; padding:48px 20px 64px; }
+
+  .hub-wrap{ width:100%; max-width:980px; }
+
+  /* ── Header ── */
+  .hub-header{ text-align:center; margin-bottom:40px; }
+  .hub-mark{ width:52px;height:52px;border-radius:16px;
+    background:linear-gradient(135deg,var(--naowee-color-territorio-400),var(--naowee-color-territorio-700));
+    display:grid;place-items:center;color:#fff;font-weight:800;font-size:22px; margin:0 auto 16px; }
+  .hub-header h1{ font-size:28px;font-weight:800;letter-spacing:-.4px;margin:0 0 6px; }
+  .hub-header p{ font-size:14px;color:var(--t-text-2);font-weight:500;margin:0; }
+  .hub-stats{ display:flex; justify-content:center; gap:8px; margin-top:18px; flex-wrap:wrap; }
+  .hub-stat{ font-size:11.5px;font-weight:700;padding:5px 12px;border-radius:999px;
+    background:rgba(255,255,255,.6);border:1px solid var(--t-line);color:var(--t-text-2);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px); }
+  .hub-stat b{ color:var(--naowee-color-territorio-700); }
+
+  /* ── Secciones ── */
+  .hub-section{ margin-bottom:36px; }
+  .hub-section-h{ display:flex;align-items:baseline;gap:10px;margin:0 4px 16px; }
+  .hub-section-h h2{ font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--t-text-2);margin:0; }
+  .hub-section-h span{ font-size:12px;font-weight:600;color:#9aa3af; }
+
+  /* ── Módulos (overview) ── */
+  .hub-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px; }
+  .hub-card{ background:var(--t-board);border:1px solid var(--t-line);border-radius:20px;padding:22px;
+    cursor:pointer;text-decoration:none;color:inherit; display:flex;flex-direction:column;gap:12px;
+    transition:box-shadow .18s,border-color .18s,transform .18s; }
+  .hub-card:hover:not(.disabled){ transform:translateY(-2px); }
+  .hub-card.disabled{ opacity:.5;cursor:default;pointer-events:none; }
+  .hub-card-ic{ width:42px;height:42px;border-radius:12px;
+    background:var(--naowee-color-territorio-100);color:var(--naowee-color-territorio-700);display:grid;place-items:center; }
+  .hub-card-ic svg{ width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7; }
+  .hub-card h3{ font-size:15.5px;font-weight:800;margin:0 0 3px;letter-spacing:-.2px; }
+  .hub-card p{ font-size:12.5px;color:var(--t-text-2);margin:0;line-height:1.5; }
+
+  /* ── Pantallas / demos navegables ── */
+  .scr-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+  .scr-card{ background:var(--t-board);border:1px solid var(--t-line);border-radius:16px;padding:16px 18px;
+    text-decoration:none;color:inherit; display:flex;align-items:center;gap:14px;
+    transition:box-shadow .16s,border-color .16s,transform .16s; }
+  .scr-card.live{ cursor:pointer; }
+  .scr-card.live:hover{ transform:translateY(-2px); border-color:var(--naowee-color-territorio-300); }
+  .scr-card.soon{ opacity:.62; cursor:default; }
+  .scr-code{ flex-shrink:0; width:64px; font-size:11px;font-weight:800;letter-spacing:.02em;
+    color:var(--naowee-color-territorio-700); }
+  .scr-body{ min-width:0; flex:1; }
+  .scr-body h4{ font-size:13.5px;font-weight:700;margin:0 0 2px;letter-spacing:-.1px; }
+  .scr-body p{ font-size:11.5px;color:var(--t-text-2);margin:0;line-height:1.4; }
+  .scr-badge{ flex-shrink:0;font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    padding:3px 8px;border-radius:999px; }
+  .b-live{ background:var(--naowee-color-territorio-100);color:var(--naowee-color-territorio-700); }
+  .b-soon{ background:#f3f4f6;color:#9aa3af; }
+
+  /* ── Footer ── */
+  .hub-footer{ margin-top:28px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+    font-size:12px;color:var(--t-text-2); }
+</style>
+</head>
+<body>
+
+<div class="hub-wrap">
+
+  <div class="hub-header">
+    <div class="hub-mark">O</div>
+    <h1>Proyecto de Obras</h1>
+    <p>Naowee Suite · EnTerritorio</p>
+    <div class="hub-stats">
+      <span class="hub-stat"><b>Presupuesto</b> · módulo activo</span>
+      <span class="hub-stat"><b>3</b> pantallas navegables</span>
+      <span class="hub-stat"><b>21</b> HU cubiertas</span>
+      <span class="hub-stat">v0.1.0</span>
+    </div>
+  </div>
+
+  <section class="hub-section">
+    <div class="hub-section-h"><h2>Entrada del producto</h2><span>por dónde entra el usuario real</span></div>
+    <div class="hub-grid">
+      <a class="hub-card" href="presupuesto/catalogos.html?role=ADMIN">
+        <div class="hub-card-ic"><svg viewBox="0 0 24 24"><path d="M4 4h11a2 2 0 0 1 2 2v13H6a2 2 0 0 0-2 2V4z"/><path d="M17 19H6a2 2 0 0 0-2 2"/></svg></div>
+        <div><h3>Catálogo de Precios</h3><p>Administración autónoma de catálogos: estructura, ítems, versiones y auditoría. Rol Admin Naowee.</p></div>
+        <span class="scr-badge b-live" style="align-self:flex-start">Entrar</span>
+      </a>
+      <a class="hub-card" href="presupuesto/catalogos.html?role=ADMIN&amp;tour=PPTO-01">
+        <div class="hub-card-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5L11 11l-1.5 3.5L13 13z"/></svg></div>
+        <div><h3>Recorrido guiado</h3><p>Las 21 historias de usuario del Proceso A, una tras otra, con tarea, propósito y dónde hacer clic.</p></div>
+        <span class="scr-badge b-live" style="align-self:flex-start">Iniciar</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="hub-section">
+    <div class="hub-section-h"><h2>Módulos</h2><span>el ecosistema Proyecto de Obras</span></div>
+    <div class="hub-grid">
+      <a class="hub-card" href="presupuesto/catalogos.html?role=ADMIN">
+        <div class="hub-card-ic"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div><h3>Presupuesto</h3><p>Catálogo de precios de obra: estructura parametrizable, ítems, carga masiva, versiones y trazabilidad.</p></div>
+        <span class="scr-badge b-live" style="align-self:flex-start">En curso</span>
+      </a>
+      <div class="hub-card disabled">
+        <div class="hub-card-ic"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M8 15h2M14 11h2M14 15h2"/></svg></div>
+        <div><h3>Parámetros de Costos</h3><p>Tipos de parámetro (AIU), reglas y topes por rol, zona y año de resolución; cálculo y validación.</p></div>
+        <span class="scr-badge b-soon" style="align-self:flex-start">Fase 2</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="hub-section">
+    <div class="hub-section-h"><h2>Presupuesto · pantallas</h2><span>flujo navegable del módulo (v0.1.0)</span></div>
+    <div class="scr-grid">
+      <a class="scr-card live" href="presupuesto/catalogos.html?role=ADMIN">
+        <span class="scr-code">PPTO<br>01–03</span>
+        <div class="scr-body"><h4>Catálogos de precios</h4><p>Listado, búsqueda y filtros; crear y editar catálogo con su condición y vigencia.</p></div>
+        <span class="scr-badge b-live">Live</span>
+      </a>
+      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN">
+        <span class="scr-code">PPTO<br>04–16</span>
+        <div class="scr-body"><h4>Detalle del catálogo</h4><p>Estructura de niveles, ítems, carga masiva y versionamiento.</p></div>
+        <span class="scr-badge b-live">Live</span>
+      </a>
+      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN&amp;tour=PPTO-19">
+        <span class="scr-code">PPTO<br>19–21</span>
+        <div class="scr-body"><h4>Auditoría del catálogo</h4><p>Historial de cambios, filtros por acción/elemento/fecha y exportación.</p></div>
+        <span class="scr-badge b-live">Live</span>
+      </a>
+      <a class="scr-card live" href="presupuesto/consulta.html?role=USUARIO">
+        <span class="scr-code">PPTO<br>17–18</span>
+        <div class="scr-body"><h4>Consulta de catálogo</h4><p>Vista de solo lectura, jerárquica y expandible, con búsqueda de ítems. Rol Usuario autorizado.</p></div>
+        <span class="scr-badge b-live">Live</span>
+      </a>
+      <div class="scr-card soon">
+        <span class="scr-code">PPTO<br>22–32</span>
+        <div class="scr-body"><h4>Parámetros de costos</h4><p>Tipos de parámetro, reglas y topes, cálculo automático y su auditoría.</p></div>
+        <span class="scr-badge b-soon">Fase 2</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="hub-footer">
+    <span>Datos sembrados desde la matriz APU real · 33 regiones</span>
+    <span>·</span>
+    <span>Proyecto de Obras v0.1.0</span>
+  </div>
+
+</div>
+
+</body>
+</html>

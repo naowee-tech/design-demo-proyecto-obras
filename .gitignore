@@ -1,0 +1,3 @@
+# Artefactos de verificación de archify (no son entregables)
+docs/*.visual-check.*
+.DS_Store

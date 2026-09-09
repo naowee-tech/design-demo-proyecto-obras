@@ -1,0 +1,141 @@
+/* ═══════════════════════════════════════════════════════════════
+   Territorio · Skin GRIS (propuesta)  v0.1.0
+   Estética SugarCRM: lienzo gris frío + paneles blancos flotantes,
+   header en texto oscuro (no cian). CTAs conservan su color:
+   "Crear contrato" = cian (loud) · "Cargar beneficiarios" = morado.
+   ───────────────────────────────────────────────────────────────
+   Carga DESPUÉS de glass-theme.css. Todo scopeado a
+   html[data-skin="gris"] → no afecta la versión cian por defecto.
+   Activación:  ?theme=gris  (script en el <head> setea el atributo)
+   ═══════════════════════════════════════════════════════════════ */
+
+html[data-skin="gris"] {
+  --g-canvas:  #eef1f5;
+  --g-panel:   #ffffff;
+  --g-line:    #e6eaf0;
+  --g-line-2:  #dfe4ec;
+  --g-ink:     #1b2330;
+  --g-ink-2:   #6b7480;
+  --g-soft:    #f5f7f9;
+}
+
+/* ── LIENZO gris frío y limpio (sin franja cian) ───────────────── */
+html[data-skin="gris"] {
+  background:
+    radial-gradient(circle 720px at 88% -6%, rgba(120,150,175,.16) 0%, rgba(120,150,175,0) 58%),
+    radial-gradient(circle 680px at 6% 104%, rgba(120,150,175,.12) 0%, rgba(120,150,175,0) 56%),
+    linear-gradient(180deg, #f1f4f7 0%, #e9ecf1 60%, #e6e9ef 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* ── SIDEBAR recesado sobre el gris ────────────────────────────── */
+html[data-skin="gris"] .t-side {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border-right: 0 !important; box-shadow: none !important;
+}
+/* Brand vuelve a OSCURO; el mark conserva el gradient cian (acento de marca) */
+html[data-skin="gris"] .t-brand b    { color: var(--g-ink) !important; }
+html[data-skin="gris"] .t-brand span { color: var(--g-ink-2) !important; }
+html[data-skin="gris"] .t-brand .mark {
+  background: linear-gradient(135deg, var(--naowee-color-territorio-400,#48C6DC), var(--naowee-color-territorio-700,#0B7E96)) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px -3px rgba(var(--brand-rgb,11,126,150),.42) !important;
+}
+/* Nav: item activo = panel blanco con sombra suave */
+html[data-skin="gris"] .t-nav a.active {
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: 0 1px 3px rgba(16,40,60,.08) !important;
+}
+html[data-skin="gris"] .t-nav a:hover { background: rgba(255,255,255,.6) !important; }
+
+/* ── TOPBAR: header en OSCURO (lienzo claro) ───────────────────── */
+html[data-skin="gris"] .t-topbar {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border-bottom: 0 !important;
+}
+html[data-skin="gris"] .t-bc            { color: var(--g-ink-2) !important; }
+html[data-skin="gris"] .t-bc a,
+html[data-skin="gris"] .t-bc b          { color: var(--g-ink) !important; }
+html[data-skin="gris"] .t-bc .sep       { color: #aab2bd !important; }
+html[data-skin="gris"] .t-topbar-left h1 { color: var(--g-ink) !important; }
+
+/* ── BOARD: panel blanco flotante (sombra difusa amplia) ───────── */
+html[data-skin="gris"] .t-board {
+  border: 1px solid var(--g-line) !important;
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: 0 1px 2px rgba(16,40,60,.04), 0 24px 56px -26px rgba(16,40,60,.18) !important;
+}
+
+/* ── Botones-ícono / chips: blanco sólido sobre el gris ────────── */
+html[data-skin="gris"] .t-iconbtn,
+html[data-skin="gris"] #btnCols {
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 1px solid var(--g-line) !important;
+  box-shadow: 0 1px 2px rgba(16,40,60,.05) !important;
+}
+html[data-skin="gris"] .t-iconbtn:hover,
+html[data-skin="gris"] #btnCols:hover { background: var(--g-soft) !important; border-color: var(--g-line-2) !important; }
+
+html[data-skin="gris"] .t-userchip {
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 1px solid var(--g-line) !important;
+  box-shadow: 0 1px 2px rgba(16,40,60,.05) !important;
+}
+html[data-skin="gris"] .t-userchip:hover { box-shadow: 0 6px 18px -8px rgba(16,40,60,.22) !important; }
+
+/* ── KPI: tarjeta blanca neutra (sin gradient cian) ────────────── */
+html[data-skin="gris"] .t-kpi {
+  border: 1px solid var(--g-line) !important;
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: 0 1px 2px rgba(16,40,60,.04), 0 10px 26px -16px rgba(16,40,60,.18) !important;
+}
+
+/* ── Searchbox: pill blanco neutro ─────────────────────────────── */
+html[data-skin="gris"] .naowee-searchbox .naowee-searchbox__input-wrap {
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 1px solid var(--g-line) !important;
+  box-shadow: 0 1px 2px rgba(16,40,60,.04) !important;
+}
+
+/* ── Tabla: cabecera y hover en grises neutros ─────────────────── */
+html[data-skin="gris"] .naowee-table-wrap {
+  border: 1px solid var(--g-line) !important;
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+html[data-skin="gris"] #docTable thead th {
+  background: var(--g-soft) !important;
+  border-bottom: 1px solid var(--g-line) !important;
+}
+html[data-skin="gris"] #docTable tbody tr:hover td { background: var(--g-soft) !important; }
+
+/* ── Botones secundarios glass → blanco neutro (los CTA de color se respetan) ── */
+html[data-skin="gris"] .naowee-btn--quiet {
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 1px solid var(--g-line) !important;
+  box-shadow: 0 1px 2px rgba(16,40,60,.05) !important;
+}
+html[data-skin="gris"] .naowee-btn--quiet:hover { background: var(--g-soft) !important; }
+
+/* "Crear contrato" (loud)  → permanece CIAN
+   "Cargar beneficiarios" (.t-btn-secondary) → permanece MORADO
+   (no se sobreescriben aquí a propósito) */
+
+/* ── Pills de rol / footer / demo: paneles blancos neutros ─────── */
+html[data-skin="gris"] .t-rolepill,
+html[data-skin="gris"] .t-verpill,
+html[data-skin="gris"] .t-rolepanel {
+  border: 1px solid var(--g-line) !important;
+  background: var(--g-panel) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  box-shadow: 0 10px 30px -14px rgba(16,40,60,.22) !important;
+}

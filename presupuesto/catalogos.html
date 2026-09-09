@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="es" data-theme="territorio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyecto de Obras · Presupuesto · Catálogos de Precios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="../shared/proyecto-ns.js"></script>
+<link rel="stylesheet" href="../shared/design-system.css">
+<link rel="stylesheet" href="../shared/theme-territorio.css">
+<link rel="stylesheet" href="../shared/glass-theme.css">
+<link rel="stylesheet" href="../shared/skin-gris.css">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.7">
+<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.7">
+<script>try{var _b=localStorage.getItem('obras-ppto-brand');document.documentElement.setAttribute('data-brand',(_b==='naowee'||_b==='territorio')?_b:'ds');}catch(e){document.documentElement.setAttribute('data-brand','ds');}</script>
+<link rel="stylesheet" href="../shared/theme.css?v=0.4.7">
+<style>
+  /* Override pattern local (después del DS) — solo medidas de este modal */
+  #mCrear .naowee-modal{ overflow:visible !important; width:720px; max-width:92vw; }
+  #mCrear .naowee-modal__header{ align-items:center; border-radius:20px 20px 0 0; }
+  #mCrear .naowee-modal__footer{ border-radius:0 0 20px 20px; overflow:hidden; }
+  #mCrear .naowee-modal__body{ overflow:visible; }
+  #crearError{ margin-bottom:14px; }
+</style>
+</head>
+<body data-role="ADMIN">
+
+<div class="t-shell">
+  <aside class="t-side" id="tSide"></aside>
+  <div class="t-side-overlay" id="sideOverlay"></div>
+
+  <div class="t-main">
+    <header class="t-topbar">
+      <button class="t-hamburger" id="hamburger" aria-label="Abrir menú">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="t-topbar-left">
+        <div class="t-bc"><a href="../index.html" id="bcHome" style="color:inherit;text-decoration:none">Proyecto de Obras</a><span class="sep">/</span><span id="bcProy">Presupuesto</span><span class="sep">/</span><b>Catálogos</b></div>
+        <h1>Catálogos de precios</h1>
+      </div>
+      <div class="t-topbar-right">
+        <button class="t-iconbtn" aria-label="Notificaciones"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+        <button class="t-userchip" aria-label="Perfil" onclick="togglePanel()"><span class="ava" id="ucAva">JD</span><span id="ucWho">Jesús Díaz<small>Admin Naowee</small></span><svg class="cv" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+    </header>
+
+    <main class="t-board">
+      <div class="t-board-head">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="kpiWrap"></div>
+        <div class="t-board-actions">
+          <div class="naowee-searchbox naowee-searchbox--small">
+            <div class="naowee-searchbox__input-wrap">
+              <span class="naowee-searchbox__icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+              <input class="naowee-searchbox__input" id="tblSearch" placeholder="Buscar catálogo…" aria-label="Buscar catálogo">
+            </div>
+          </div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="fEstado" style="width:150px;flex-shrink:0">
+            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value">Todo estado</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
+            <div class="naowee-dropdown__menu" role="listbox">
+              <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo estado</div>
+              <div class="naowee-dropdown__option" data-value="Activo">Activo</div>
+              <div class="naowee-dropdown__option" data-value="Borrador">Borrador</div>
+              <div class="naowee-dropdown__option" data-value="Inactivo">Inactivo</div>
+            </div>
+          </div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="fRegion" data-search style="width:168px;flex-shrink:0">
+            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value">Toda condición</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
+            <div class="naowee-dropdown__menu" role="listbox"></div>
+          </div>
+          <div style="width:1px;height:24px;background:var(--t-line);flex-shrink:0"></div>
+          <button class="naowee-btn naowee-btn--loud" id="btnCrear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear catálogo</button>
+        </div>
+      </div>
+
+      <div class="naowee-table-wrap">
+        <table class="naowee-table naowee-table--sticky-header" id="docTable">
+          <thead><tr>
+            <th class="sortable" data-sort-idx="0">#<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th class="sortable" data-sort-idx="1">Nombre<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th class="sortable" data-sort-idx="2">Condición<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th class="sortable" data-sort-idx="3">Vigencia<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th class="sortable" data-sort-idx="4">Versión<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th class="sortable" data-sort-idx="5">Estado<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th class="sortable" data-sort-idx="6">Valor total<span class="sort-ic"><svg class="arr-up" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 5L5 1L9 5"/></svg><svg class="arr-down" viewBox="0 0 10 6" width="9" height="5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1L5 5L9 1"/></svg></span></th>
+            <th>Acciones</th>
+          </tr></thead>
+          <tbody id="catBody"></tbody>
+        </table>
+      </div>
+
+      <div class="t-empty" id="tblEmpty">
+        <div class="t-icontile"><svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M9 13h6M9 17h6"/></svg></div>
+        <b id="tblEmptyTitle">Aún no hay catálogos de precios</b>
+        <span id="tblEmptyMsg">Crea el primero con <b>+ Crear catálogo</b> para empezar a definir su estructura e ítems.</span>
+      </div>
+
+      <div class="t-pagination-foot" id="pagFoot">
+        <span class="t-count-lbl"><strong id="totalCount">0</strong> catálogos</span>
+        <div class="naowee-pagination naowee-pagination--small">
+          <div class="naowee-pagination__pages">
+            <span class="naowee-pagination__label">Página</span>
+            <input class="naowee-pagination__input" value="1" aria-label="Página">
+            <span class="naowee-pagination__total">de <strong>1</strong></span>
+          </div>
+          <div class="naowee-pagination__controls">
+            <button class="naowee-pagination__btn" disabled aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <button class="naowee-pagination__btn" disabled aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ════ MENÚ KEBAB de acciones por fila (compartido, position:fixed) ════ -->
+<div class="naowee-menu naowee-menu--small t-rowmenu" id="rowMenu" role="menu" aria-label="Acciones del catálogo">
+  <div class="naowee-menu__list">
+    <button class="naowee-menu__item" role="menuitem" onclick="rowAct('abrir')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h11a2 2 0 0 1 2 2v13H6a2 2 0 0 0-2 2V4z"/></svg>Abrir catálogo</button>
+    <button class="naowee-menu__item" role="menuitem" id="rmEdit" onclick="rowAct('editar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Editar catálogo</button>
+  </div>
+</div>
+
+<!-- ════ MODAL crear / editar catálogo ════ -->
+<div class="naowee-modal-overlay" id="mCrear">
+  <div class="naowee-modal naowee-modal--fixed-header naowee-modal--fixed-footer">
+    <div class="naowee-modal__header">
+      <div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="mCrearTitle">Nuevo catálogo</h2></div>
+      <button class="naowee-modal__dismiss" aria-label="Cerrar" onclick="closeModal('mCrear')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="naowee-modal__body">
+      <div class="naowee-message naowee-message--negative" id="crearError" role="alert" aria-live="assertive" style="display:none">
+        <div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg></span><div class="naowee-message__body" id="crearErrorMsg">Completa los campos obligatorios marcados.</div></div>
+      </div>
+      <div class="t-cform-grid">
+        <div class="naowee-textfield t-col-full">
+          <label class="naowee-textfield__label naowee-textfield__label--required">Nombre del catálogo</label>
+          <div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="catNombre" placeholder="Ej. Vivienda Rural — Boyacá 2026"></div>
+        </div>
+
+        <div>
+          <label class="naowee-textfield__label naowee-textfield__label--required" style="display:block">Condición de aplicación · Región</label>
+          <div class="naowee-dropdown" id="catRegion" data-search style="width:100%">
+            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value naowee-dropdown__placeholder">Seleccione una opción</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
+            <div class="naowee-dropdown__menu" role="listbox"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="naowee-textfield__label" style="display:block">Estado</label>
+          <div class="naowee-dropdown" id="catEstado" style="width:100%">
+            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox" aria-expanded="false"><span class="naowee-dropdown__value">Borrador</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
+            <div class="naowee-dropdown__menu" role="listbox">
+              <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="Borrador">Borrador</div>
+              <div class="naowee-dropdown__option" data-value="Activo">Activo</div>
+              <div class="naowee-dropdown__option" data-value="Inactivo">Inactivo</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="naowee-textfield__label" style="display:block">Vigencia · inicio</label>
+          <div class="naowee-datepicker-field" data-dp id="dpIni">
+            <div class="naowee-datepicker-field__input" tabindex="0" role="button" aria-haspopup="dialog">
+              <span class="naowee-datepicker-field__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
+              <span class="naowee-datepicker-field__value naowee-dropdown__placeholder" data-dp-value>Seleccionar fecha</span>
+              <span class="naowee-datepicker-field__controls"><span class="naowee-datepicker-field__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            </div>
+            <div class="t-dp-pop" data-dp-pop></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="naowee-textfield__label" style="display:block">Vigencia · fin</label>
+          <div class="naowee-datepicker-field" data-dp id="dpFin">
+            <div class="naowee-datepicker-field__input" tabindex="0" role="button" aria-haspopup="dialog">
+              <span class="naowee-datepicker-field__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
+              <span class="naowee-datepicker-field__value naowee-dropdown__placeholder" data-dp-value>Seleccionar fecha</span>
+              <span class="naowee-datepicker-field__controls"><span class="naowee-datepicker-field__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            </div>
+            <div class="t-dp-pop" data-dp-pop></div>
+          </div>
+        </div>
+
+        <div class="t-col-full" id="estructuraRow">
+          <div class="naowee-switch naowee-switch--on" id="catSeed" role="switch" aria-checked="true" style="cursor:pointer">
+            <span class="naowee-switch__track"><span class="naowee-switch__handle"></span></span>
+            <span class="naowee-switch__label">Sembrar estructura base (capítulos y actividades de la región)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="naowee-modal__footer naowee-modal__footer--end">
+      <button class="naowee-btn naowee-btn--mute" style="margin-right:8px" onclick="closeModal('mCrear')">Cancelar</button>
+      <button class="naowee-btn naowee-btn--loud" id="catGuardar">Guardar catálogo</button>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/data-catalogo.js?v=0.4.7"></script>
+<script src="../shared/ui.js?v=0.4.7"></script>
+<script src="../shared/shell.js?v=0.4.7"></script>
+<script>
+(function () {
+  var UI = window.OBRAS_UI, D = window.OBRAS;
+  var editId = null, sortIdx = null, sortDir = 1;
+  function qsAll(extra) { var p = new URLSearchParams(location.search); if (extra) Object.keys(extra).forEach(function (k) { p.set(k, extra[k]); }); return '?' + p.toString(); }
+  function esc(s) { return (s || '').toString().replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+
+  var badgeMap = { Activo: 'positive', Borrador: 'caution', Inactivo: 'neutral' };
+  function estadoBadge(e) { return '<span class="naowee-badge naowee-badge--' + (badgeMap[e] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + e + '</span>'; }
+
+  // ── KPI chips (.t-kpi) en el board-head ──
+  function renderKpis() {
+    var cats = D.listCatalogos();
+    var activos = cats.filter(function (c) { return c.estado === 'Activo'; }).length;
+    var items = cats.reduce(function (s, c) { return s + c.items.length; }, 0);
+    var IC_BOOK = '<svg viewBox="0 0 24 24"><path d="M4 4h11a2 2 0 0 1 2 2v13H6a2 2 0 0 0-2 2V4z"/><path d="M17 19H6a2 2 0 0 0-2 2"/></svg>';
+    var IC_LIST = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
+    document.getElementById('kpiWrap').innerHTML =
+      '<div class="t-kpi"><div class="kpi-ic">' + IC_BOOK + '</div><div><div class="kpi-l">Catálogos activos</div><div class="kpi-v">' + activos + '</div></div></div>' +
+      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems totales</div><div class="kpi-v">' + items.toLocaleString('es-CO') + '</div></div></div>';
+  }
+
+  function filtered() {
+    var q = (document.getElementById('tblSearch').value || '').toLowerCase();
+    var fe = UI.getDD('fEstado'), fr = UI.getDD('fRegion');
+    var rows = D.listCatalogos().filter(function (c) {
+      if (q && c.nombre.toLowerCase().indexOf(q) < 0 && c.region.toLowerCase().indexOf(q) < 0) return false;
+      if (fe && c.estado !== fe) return false;
+      if (fr && c.region !== fr) return false;
+      return true;
+    });
+    if (sortIdx !== null) {
+      var key = [null, 'nombre', 'region', 'vigenciaIni', 'versionActiva', 'estado', '_total'][sortIdx];
+      if (key) rows.sort(function (a, b) {
+        var va = key === '_total' ? D.totalCatalogo(a) : a[key];
+        var vb = key === '_total' ? D.totalCatalogo(b) : b[key];
+        if (typeof va === 'number') return (va - vb) * sortDir;
+        return String(va).localeCompare(String(vb), 'es') * sortDir;
+      });
+    }
+    return rows;
+  }
+
+  function render() {
+    var rows = filtered();
+    document.getElementById('catBody').innerHTML = rows.map(function (c, i) {
+      return '<tr>' +
+        '<td data-label="#">' + (i + 1) + '</td>' +
+        '<td data-label="Nombre"><span class="t-cname" title="' + esc(c.nombre) + '">' + esc(c.nombre) + '</span></td>' +
+        '<td data-label="Condición">' + esc(c.region) + '</td>' +
+        '<td data-label="Vigencia">' + fdate(c.vigenciaIni) + ' → ' + fdate(c.vigenciaFin) + '</td>' +
+        '<td data-label="Versión"><span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + c.versionActiva + '</span></td>' +
+        '<td data-label="Estado">' + estadoBadge(c.estado) + '</td>' +
+        '<td data-label="Valor total" class="tnum">' + D.fmtCOP(D.totalCatalogo(c)) + '</td>' +
+        '<td data-label="Acciones"><button class="t-kebab" aria-label="Acciones del catálogo" aria-haspopup="menu" onclick="openRowMenu(event,\'' + c.id + '\')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></button></td>' +
+        '</tr>';
+    }).join('');
+
+    var empty = rows.length === 0;
+    var hasQuery = !!(document.getElementById('tblSearch').value || UI.getDD('fEstado') || UI.getDD('fRegion'));
+    document.getElementById('tblEmpty').classList.toggle('show', empty);
+    document.querySelector('.naowee-table-wrap').style.display = empty ? 'none' : '';
+    document.getElementById('pagFoot').style.display = empty ? 'none' : '';
+    if (empty) {
+      document.getElementById('tblEmptyTitle').textContent = hasQuery ? 'Sin resultados' : 'Aún no hay catálogos de precios';
+      document.getElementById('tblEmptyMsg').innerHTML = hasQuery
+        ? 'Ningún catálogo coincide con la búsqueda o los filtros aplicados.'
+        : 'Crea el primero con <b>+ Crear catálogo</b> para empezar a definir su estructura e ítems.';
+    }
+    document.getElementById('totalCount').textContent = rows.length;
+  }
+
+  // ── Menú kebab compartido ──
+  var rowId = null;
+  window.openRowMenu = function (e, id) {
+    e.stopPropagation();
+    rowId = id;
+    var menu = document.getElementById('rowMenu');
+    document.querySelectorAll('.t-kebab.active').forEach(function (k) { k.classList.remove('active'); });
+    e.currentTarget.classList.add('active');
+    menu.classList.add('open');
+    var r = e.currentTarget.getBoundingClientRect();
+    var mw = menu.offsetWidth || 206, mh = menu.offsetHeight || 96;
+    var top = r.bottom + 6, left = r.right - mw;
+    if (top + mh > window.innerHeight - 8) top = r.top - mh - 6;
+    if (left < 8) left = 8;
+    menu.style.top = top + 'px'; menu.style.left = left + 'px';
+  };
+  function closeRowMenu() {
+    document.getElementById('rowMenu').classList.remove('open');
+    document.querySelectorAll('.t-kebab.active').forEach(function (k) { k.classList.remove('active'); });
+  }
+  window.rowAct = function (a) {
+    var id = rowId; closeRowMenu();
+    if (a === 'abrir') location.href = 'catalogo-detalle.html' + qsAll({ cat: id });
+    else openEdit(id);
+  };
+  document.addEventListener('click', closeRowMenu);
+  window.addEventListener('scroll', closeRowMenu, true);
+
+  // Datepicker canónico: vive en shared/ui.js (OBRAS_UI.initDatepickers / dpSet / dpGet)
+  function dpSet(id, iso) { UI.dpSet(id, iso); }
+  function dpGet(id) { return UI.dpGet(id); }
+
+  // ── Switch ──
+  function getSeed() { return document.getElementById('catSeed').classList.contains('naowee-switch--on'); }
+  function setSeed(on) { var s = document.getElementById('catSeed'); s.classList.toggle('naowee-switch--on', on); s.setAttribute('aria-checked', on ? 'true' : 'false'); }
+
+  // ── Modal ──
+  function openCreate() {
+    editId = null;
+    document.getElementById('mCrearTitle').textContent = 'Nuevo catálogo';
+    document.getElementById('catNombre').value = '';
+    UI.setDD('catRegion', '', 'Seleccione una opción');
+    document.getElementById('catRegion').querySelector('.naowee-dropdown__value').classList.add('naowee-dropdown__placeholder');
+    UI.setDD('catEstado', 'Borrador', 'Borrador');
+    dpSet('dpIni', '2026-01-01'); dpSet('dpFin', '2026-12-31');
+    setSeed(true);
+    document.getElementById('estructuraRow').style.display = '';
+    document.getElementById('crearError').style.display = 'none';
+    openModal('mCrear');
+  }
+  function openEdit(id) {
+    var c = D.getCatalogo(id); if (!c) return;
+    editId = id;
+    document.getElementById('mCrearTitle').textContent = 'Editar catálogo';
+    document.getElementById('catNombre').value = c.nombre;
+    UI.setDD('catRegion', c.region, c.region);
+    UI.setDD('catEstado', c.estado, c.estado);
+    dpSet('dpIni', c.vigenciaIni); dpSet('dpFin', c.vigenciaFin);
+    document.getElementById('estructuraRow').style.display = 'none';
+    document.getElementById('crearError').style.display = 'none';
+    openModal('mCrear');
+  }
+  function save() {
+    var nombreEl = document.getElementById('catNombre');
+    var nombre = nombreEl.value.trim(), region = UI.getDD('catRegion');
+    var estado = UI.getDD('catEstado') || 'Borrador';
+    var err = document.getElementById('crearError');
+    nombreEl.closest('.naowee-textfield__input-wrap').classList.remove('t-invalid');
+    if (!nombre || !region) {
+      document.getElementById('crearErrorMsg').textContent = !nombre ? 'El nombre del catálogo es obligatorio.' : 'Selecciona la condición de aplicación (región).';
+      err.style.display = '';
+      if (!nombre) nombreEl.closest('.naowee-textfield__input-wrap').classList.add('t-invalid');
+      return;
+    }
+    var dup = D.listCatalogos().filter(function (c) { return c.id !== editId && c.nombre.toLowerCase() === nombre.toLowerCase() && c.region === region; });
+    if (dup.length) { document.getElementById('crearErrorMsg').textContent = 'Ya existe un catálogo con ese nombre y condición.'; err.style.display = ''; return; }
+    var ini = dpGet('dpIni') || '2026-01-01', fin = dpGet('dpFin') || '2026-12-31';
+    if (editId) {
+      var c = D.getCatalogo(editId);
+      c.nombre = nombre; c.region = region; c.estado = estado; c.vigenciaIni = ini; c.vigenciaFin = fin;
+      D.saveCatalogo(c); D.logAudit(c, 'Editar catálogo', 'Catálogo', 'Jesús Díaz');
+    } else {
+      D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getSeed() });
+    }
+    closeModal('mCrear'); render(); renderKpis();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // "Todos" = catálogo base nacional. La región específica manda sobre él
+    // (regla de precedencia pendiente de confirmar con negocio).
+    var CONDICIONES = [{ value: 'Todos', label: 'Todos · base nacional' }]
+      .concat(D.REGIONES.map(function (r) { return { value: r, label: r }; }));
+    UI.fillDD('catRegion', CONDICIONES, 'Seleccione una opción');
+    UI.fillDD('fRegion', [{ value: '', label: 'Toda condición' }].concat(CONDICIONES), null);
+    renderKpis(); render();
+
+    document.getElementById('btnCrear').onclick = openCreate;
+    document.getElementById('catGuardar').onclick = save;
+    document.getElementById('catSeed').onclick = function () { setSeed(!getSeed()); };
+    document.getElementById('tblSearch').addEventListener('input', render);
+    document.getElementById('fEstado').addEventListener('dd:change', render);
+    document.getElementById('fRegion').addEventListener('dd:change', render);
+
+    document.querySelectorAll('#docTable thead th.sortable').forEach(function (th) {
+      th.addEventListener('click', function () {
+        var i = +th.dataset.sortIdx;
+        if (sortIdx === i) sortDir = -sortDir; else { sortIdx = i; sortDir = 1; }
+        document.querySelectorAll('#docTable thead th').forEach(function (x) { x.classList.remove('asc', 'desc'); });
+        th.classList.add(sortDir === 1 ? 'asc' : 'desc');
+        render();
+      });
+    });
+  });
+})();
+</script>
+<script src="../shared/tour.js?v=0.4.7"></script>
+</body>
+</html>

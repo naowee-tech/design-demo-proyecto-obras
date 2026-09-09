@@ -1,0 +1,367 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE · TERRITORIO — SKIN 3 · "Naowee DS" (Design System canónico)
+   ───────────────────────────────────────────────────────────────
+   Tercer skin del switch de marca (junto a Territorio-cian y Naowee-glass).
+   Reproduce FIEL el look del hub del Design System (playground v1.9.0,
+   repo naowee-tech/naowee-design-system): Inter · superficies planas
+   blancas · acento #D74009 · neutros gris DS. Es el mismo skin que usan
+   IVC / Digitación / Eventos.
+
+   NO es glass: apaga el vidrio (blur / translúcido / gradient-border) y
+   restituye los defaults canónicos del DS sobre el shell de Territorio.
+
+   Orden de carga:
+     design-system.css → theme-territorio.css → glass-theme.css →
+     skin-gris.css → territorio-shell.css → SKIN-DS.CSS → inline
+   Activación: <html data-theme="territorio" data-brand="ds">
+   Scope: TODO bajo [data-brand="ds"] → cero impacto en los otros 2 skins.
+
+   ⚠️ PARA EXTENDER EL SKIN DS A OTRA PANTALLA hay que replicar DOS cosas en su
+   <head> (si falta una, hay FOUC o glass sin gate hasta que corra sidebar.js):
+     1) <link rel="stylesheet" href="../shared/skin-ds.css?v=…">  (+ <link Inter>)
+     2) el pre-paint inline debe cubrir 'ds':
+        localStorage 'territorio-hab-brand' === 'naowee' || 'ds' → data-brand=b
+   El pill de marca (sidebar.js) se auto-gatea por la presencia del <link skin-ds>.
+
+   ── AUDITORÍA (tokens/foundations 1:1 vs hub naowee-design-system v1.9.0) ──
+     · Rampa naranja  → orange-100..900 EXACTOS del DS
+     · Tipografía     → Inter (--naowee-font-family canónica)
+     · Neutros        → gray-100 bg · gray-200 borde · gray-700/900 texto
+     · Radios         → actions-inputs 12px · containers 20px
+     · Sombras        → shadow-card · shadow-modal-ds · shadow-loud-*
+     · Botón loud     → fill-loud-idle; hover NO oscurece + shadow-loud-md
+     · Focus          → shadow-focus-accent (3px rgba(215,64,9,.15))
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   1 · TOKENS — rampa de marca + tipografía + neutros DS
+   ───────────────────────────────────────────────────────────── */
+[data-theme="territorio"][data-brand="ds"] {
+  /* Rampa naranja CANÓNICA del DS (orange-100..900) — audit 1:1 con hub.
+     Al re-apuntar la rampa territorio-*, todos los tokens semánticos de
+     theme-territorio (brand-*, interactive-*, text-accent, selected-*) y
+     todo el CSS del shell que usa var(--naowee-color-territorio-*) heredan
+     el naranja del DS automáticamente. */
+  --naowee-color-territorio-100: #FFEDC7;
+  --naowee-color-territorio-200: #FFDAA3;
+  --naowee-color-territorio-300: #FFBF75;
+  --naowee-color-territorio-400: #FF9D47;
+  --naowee-color-territorio-500: #FF7B24;
+  --naowee-color-territorio-600: #F05705;
+  --naowee-color-territorio-700: #D74009;   /* accent · text-accent · loud CTA */
+  --naowee-color-territorio-800: #B83100;
+  --naowee-color-territorio-900: #942700;
+  --brand-rgb: 215,64,9;                     /* #D74009 → glow del loud */
+
+  /* Tipografía Inter (canónica DS; en los otros skins es Manrope) */
+  --naowee-font-family: 'Inter', sans-serif;
+  font-family: 'Inter', sans-serif;
+
+  /* Neutros DS planos — reemplazan el lienzo cian/cálido glass.
+     Fondo BLANCO TOTAL (como SUID): background-primary, no el gray-100 secundario.
+     La separación board↔fondo viene del hairline + shadow-card, no de un canvas gris. */
+  --t-canvas: #FFFFFF;   /* fill-primary · lienzo blanco (como SUID) */
+  --t-board:  #FFFFFF;   /* fill-primary */
+  --t-line:   #E7E9F3;   /* gray-200 · border-default */
+  --t-text:   #282834;   /* gray-900 · text-primary */
+  --t-text-2: #646587;   /* gray-700 · text-secondary */
+}
+
+/* Inter universal — espeja el patrón del shell (territorio-shell.css:8 usa
+   `[data-theme="territorio"] *{ font-family:Manrope }`, un universal que fija
+   la fuente en cada nodo; hay que voltearlo con otro universal scopeado). */
+html[data-brand="ds"],
+html[data-brand="ds"] * { font-family: 'Inter', sans-serif !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   2 · LIENZO PLANO (glass OFF)
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] {
+  background: #FFFFFF !important;          /* blanco total (como SUID) · sin blobs / velo cian */
+  background-attachment: scroll !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   3 · Apagar blur/translúcido en TODA superficie glass
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .t-board,
+html[data-brand="ds"] .t-kpi,
+html[data-brand="ds"] .t-iconbtn,
+html[data-brand="ds"] .t-iconbtn:hover,
+html[data-brand="ds"] .t-hamburger,
+html[data-brand="ds"] .t-userchip,
+html[data-brand="ds"] .t-userchip:hover,
+html[data-brand="ds"] .t-brandsw,
+html[data-brand="ds"] .naowee-searchbox .naowee-searchbox__input-wrap,
+html[data-brand="ds"] .naowee-btn--quiet,
+html[data-brand="ds"] .naowee-btn--mute,
+html[data-brand="ds"] .naowee-modal,
+html[data-brand="ds"] .naowee-modal-overlay,
+html[data-brand="ds"] .naowee-dropdown__menu,
+html[data-brand="ds"] .t-colmenu,
+html[data-brand="ds"] .float-dd-menu,
+html[data-brand="ds"] .t-dp-pop {
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   4 · BOARD — plano, blanco, sombra card DS
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .t-board {
+  border: 1px solid var(--t-line, #E7E9F3) !important;
+  background: #fff !important;
+  box-shadow: var(--naowee-shadow-card, 0 0 2px rgba(145,158,171,.2), 0 12px 24px -4px rgba(145,158,171,.12)) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5 · Topbar controls: blanco sólido + borde + sombra pequeña
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .t-iconbtn,
+html[data-brand="ds"] .t-hamburger,
+html[data-brand="ds"] .t-userchip {
+  background: #fff !important;
+  border: 1px solid var(--t-line, #E7E9F3) !important;
+  box-shadow: var(--naowee-shadow-small, 0 1px 4px rgba(0,0,0,.08)) !important;
+}
+html[data-brand="ds"] .t-iconbtn:hover,
+html[data-brand="ds"] .t-userchip:hover {
+  background: #F4F5F9 !important;
+  box-shadow: var(--naowee-shadow-small, 0 1px 4px rgba(0,0,0,.08)) !important;
+}
+/* Switch de marca: track gris claro (el slider blanco resalta encima) */
+html[data-brand="ds"] .t-brandsw {
+  background: #EFF1F6 !important;
+  border: 1px solid var(--t-line, #E7E9F3) !important;
+  box-shadow: var(--naowee-shadow-small, 0 1px 4px rgba(0,0,0,.08)) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6 · KPI banner — chip brand-quiet plano
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .t-kpi {
+  background: var(--naowee-color-territorio-100, #FFEDC7) !important;
+  border: 1px solid var(--naowee-color-territorio-200, #FFDAA3) !important;
+  box-shadow: none !important;
+}
+html[data-brand="ds"] .kpi-ic {
+  background: var(--naowee-color-territorio-700, #D74009) !important;
+  box-shadow: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   7 · Inputs / searchbox — blanco, borde gris, radio 12 (no pill)
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .naowee-searchbox .naowee-searchbox__input-wrap {
+  background: #fff !important;
+  border: 1px solid var(--naowee-color-interactive-border-idle, #D0D4E6) !important;
+  border-radius: var(--naowee-border-radius-actions-inputs-default, 12px) !important;
+  box-shadow: none !important;
+}
+html[data-brand="ds"] .naowee-searchbox .naowee-searchbox__input-wrap:focus-within {
+  border-color: var(--naowee-color-territorio-700, #D74009) !important;
+  box-shadow: var(--naowee-shadow-focus-accent, 0 0 0 3px rgba(215,64,9,.15)) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   8 · BOTONES — radio DS 12; loud sólido con hover que NO oscurece
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .naowee-btn { border-radius: var(--naowee-border-radius-actions-inputs-default, 12px) !important; }
+
+/* Loud (primario) — patrón canónico DS: idle naranja, hover mantiene el
+   color + agrega elevación naranja (shadow-loud-md). Sin gradiente/vidrio. */
+html[data-brand="ds"] .naowee-btn--loud {
+  background: var(--naowee-color-interactive-fill-loud-idle, #D74009) !important;
+  border: 1px solid transparent !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+html[data-brand="ds"] .naowee-btn--loud:hover,
+html[data-brand="ds"] .naowee-btn--loud:focus-visible {
+  background: var(--naowee-color-interactive-fill-loud-idle, #D74009) !important;
+  box-shadow: var(--naowee-shadow-loud-md, 0 6px 16px rgba(215,64,9,.22)) !important;
+  opacity: 1; outline: none;
+}
+html[data-brand="ds"] .naowee-btn--loud:active {
+  background: var(--naowee-color-interactive-fill-loud-idle, #D74009) !important;
+  box-shadow: var(--naowee-shadow-loud-xs, 0 2px 6px rgba(215,64,9,.14)) !important;
+  transform: scale(.98);
+}
+html[data-brand="ds"] .naowee-btn--loud:disabled,
+html[data-brand="ds"] .naowee-btn--loud[disabled] {
+  background: var(--naowee-color-gray-300, #D0D4E6) !important;
+  color: var(--naowee-color-text-disabled, #9C9EBF) !important;
+  box-shadow: none !important; cursor: not-allowed; opacity: 1;
+}
+/* Foco de teclado con ANILLO real (no solo el glow del hover) — SC 2.4.11 */
+html[data-brand="ds"] .naowee-btn--loud:focus-visible {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--naowee-color-territorio-700, #D74009), 0 6px 16px rgba(215,64,9,.22) !important;
+}
+
+/* Quiet (secundario) — fill brand-quiet plano */
+html[data-brand="ds"] .naowee-btn--quiet {
+  background: var(--naowee-color-interactive-fill-quiet-idle, #FFEDC7) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+html[data-brand="ds"] .naowee-btn--quiet:hover {
+  background: var(--naowee-color-interactive-fill-quiet-hover, #FFDAA3) !important;
+  box-shadow: none !important;
+}
+/* Mute (terciario) — transparente con hover suave */
+html[data-brand="ds"] .naowee-btn--mute {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+html[data-brand="ds"] .naowee-btn--mute:hover {
+  background: var(--naowee-color-interactive-fill-mute-hover, #FFEDC7) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   9 · MENÚS FLOTANTES (dropdown / columnas / float-dd / datepicker)
+       → blanco, borde gris, radio 12, sombra modal DS
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .naowee-dropdown__menu,
+html[data-brand="ds"] .t-colmenu,
+html[data-brand="ds"] .float-dd-menu,
+html[data-brand="ds"] .t-dp-pop {
+  background: #fff !important;
+  border: 1px solid var(--naowee-color-border-dark, #D0D4E6) !important;
+  border-radius: var(--naowee-border-radius-actions-inputs-default, 12px) !important;
+  box-shadow: var(--naowee-shadow-modal-ds, 0 8px 12px 0 rgba(40,40,52,.1)) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   10 · MODAL — blanco, radio 20, sombra modal DS; overlay dim neutro
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .naowee-modal {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: var(--naowee-border-radius-containers-default, 20px) !important;
+  box-shadow: var(--naowee-shadow-modal-ds, 0 8px 12px 0 rgba(40,40,52,.1)), 0 24px 48px -12px rgba(40,40,52,.18) !important;
+}
+html[data-brand="ds"] .naowee-modal__header,
+html[data-brand="ds"] .naowee-modal__footer {
+  background: transparent !important;
+  border-color: var(--t-line, #E7E9F3) !important;
+}
+html[data-brand="ds"] .naowee-modal-overlay {
+  background: rgba(40,40,52,.5) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   11 · SIDEBAR NAV — estado activo = BARRA LATERAL (patrón IVC/Escenarios)
+   El item activo NO lleva container/elevación: fondo transparente +
+   texto/ícono en acento + barra vertical redondeada de 4px a la izquierda.
+   (Canónico IVC: .active-bar 4px · redondeada · accent; .is-active bg transparent.)
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .t-nav a { position: relative; }
+/* Hover suave gris (el item activo NO cambia en hover — como IVC) */
+html[data-brand="ds"] .t-nav a:hover {
+  background: var(--naowee-color-background-secondary, #F4F5F9) !important;
+  color: var(--t-text, #282834) !important;
+}
+/* Activo: sin fondo blanco ni sombra → solo acento + barra */
+html[data-brand="ds"] .t-nav a.active,
+html[data-brand="ds"] .t-nav a.active:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--naowee-color-territorio-700, #D74009) !important;
+  font-weight: 700 !important;
+}
+/* La barrita vertical: 4px, redondeada, acento naranja */
+html[data-brand="ds"] .t-nav a.active::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 22px;
+  border-radius: 999px;
+  background: var(--naowee-color-territorio-700, #D74009);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   12 · Recorrido HAB (tour launcher `.tt-launch`) — pill AZUL NAOWEE
+   El default (glass blanco + texto territorio-700) bajo DS queda lavado
+   (texto naranja sobre pill claro). Se pone en el AZUL TURQUÍ de marca
+   #002B5B (blue-900) con label + ícono BLANCO, sólido (coherente con el
+   skin plano). Es «el color del tema Naowee» aplicado al skin DS.
+   ───────────────────────────────────────────────────────────── */
+html[data-brand="ds"] .tt-launch {
+  background: var(--naowee-color-blue-900, #002B5B) !important;
+  color: #FFFFFF !important;
+  border: 1px solid transparent !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  box-shadow: 0 10px 28px -10px rgba(0,43,91,.45) !important;
+}
+html[data-brand="ds"] .tt-launch:hover {
+  background: #001C3E !important;
+  box-shadow: 0 14px 34px -8px rgba(0,43,91,.55) !important;
+}
+html[data-brand="ds"] .tt-launch svg { stroke: #FFFFFF !important; color: #FFFFFF !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   13 · KPI / stat cards → patrón SUID (label + chip de ícono + número + subtítulo)
+   Portado de incentivos `incentivo-14-mis-asignaciones.html` (.kpi-card).
+   El chip (.kpi-ico) y el subtítulo (.kpi-foot) los INYECTA sidebar.js en TODOS
+   los skins pero quedan OCULTOS por defecto → Territorio/Naowee intactos. Bajo DS
+   se revelan y el card (.t-statchip/.vg-kpi) se reestiliza al card SUID.
+   ───────────────────────────────────────────────────────────── */
+/* Ocultos salvo DS (default en cualquier skin que cargue skin-ds.css) */
+.kpi-ico, .kpi-foot { display: none; }
+
+html[data-brand="ds"] .t-statchip,
+html[data-brand="ds"] .vg-kpi {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: #fff !important;
+  border: 1px solid var(--t-line, #E7E9F3) !important;
+  border-radius: 14px !important;
+  padding: 16px 16px 14px !important;
+  box-shadow: none !important;
+  transition: transform .15s, box-shadow .15s;
+}
+html[data-brand="ds"] .t-statchip:hover,
+html[data-brand="ds"] .vg-kpi:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(145,158,171,.12) !important;
+}
+/* label (uppercase, gris) arriba, dejando espacio al chip */
+html[data-brand="ds"] .t-statchip .l,
+html[data-brand="ds"] .vg-kpi .vg-kpi-l {
+  order: 1;
+  font-size: 11px !important; font-weight: 700 !important; letter-spacing: .4px !important;
+  text-transform: uppercase !important; color: var(--t-text-2, #646587) !important;
+  line-height: 1.3 !important; margin: 0 44px 10px 0 !important;
+}
+/* número grande */
+html[data-brand="ds"] .t-statchip .v,
+html[data-brand="ds"] .vg-kpi .vg-kpi-v {
+  order: 2;
+  font-size: 30px !important; font-weight: 700 !important; line-height: 1 !important;
+  letter-spacing: -.02em !important; color: var(--t-text, #282834) !important;
+}
+/* número conserva su color semántico (ok/err/dup) también bajo DS */
+html[data-brand="ds"] .t-statchip.ok .v  { color: #15803d !important; }
+html[data-brand="ds"] .t-statchip.err .v { color: #dc2626 !important; }
+html[data-brand="ds"] .t-statchip.dup .v { color: #d74009 !important; }
+/* subtítulo + variación */
+html[data-brand="ds"] .t-statchip .kpi-foot,
+html[data-brand="ds"] .vg-kpi .kpi-foot {
+  order: 3; display: block;
+  font-size: 12px; color: var(--t-text-2, #646587); margin-top: 6px;
+}
+html[data-brand="ds"] .vg-kpi .vg-kpi-var { order: 4; margin-top: 6px; }
+/* chip de ícono arriba-derecha */
+html[data-brand="ds"] .kpi-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  position: absolute; top: 14px; right: 14px;
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+}
+html[data-brand="ds"] .kpi-ico svg { width: 20px; height: 20px; }
+html[data-brand="ds"] .kpi-ico--brand    { background: #EEF5FF; color: #1F78D1; }
+html[data-brand="ds"] .kpi-ico--positive { background: #E6F4E7; color: #15803D; }
+html[data-brand="ds"] .kpi-ico--caution  { background: #FFF3E6; color: #D74009; }
+html[data-brand="ds"] .kpi-ico--info     { background: #F3E8FF; color: #7C3AED; }
+html[data-brand="ds"] .kpi-ico--negative { background: #FFE4EE; color: #BE185D; }

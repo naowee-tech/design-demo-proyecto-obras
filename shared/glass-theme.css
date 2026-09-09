@@ -1,0 +1,542 @@
+/* ═══════════════════════════════════════════════════════════════
+   Territorio · Glass Theme  v0.1.0
+   Glassmorphism overlay — carga DESPUÉS de theme-territorio.css
+   ─────────────────────────────────────────────────────────────
+   Técnica: gradient canvas → frosted glass (backdrop-filter) →
+   gradient border (padding-box + border-box) → pill CTAs
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tokens de vidrio ── */
+:root {
+  --gl-bg:          rgba(255,255,255,.64);
+  --gl-bg-md:       rgba(255,255,255,.78);
+  --gl-bg-strong:   rgba(255,255,255,.88);
+  --gl-blur:        blur(20px) saturate(170%);
+  --gl-blur-sm:     blur(12px) saturate(150%);
+  --gl-blur-lg:     blur(28px) saturate(190%);
+  --gl-border:      rgba(255,255,255,.58);
+  --gl-shadow:      0 8px 30px rgba(16,40,60,.08), 0 1px 2px rgba(16,40,60,.04);
+  --gl-shadow-md:   0 14px 44px -10px rgba(16,40,60,.13), 0 2px 8px rgba(16,40,60,.05);
+  --gl-shadow-lg:   0 26px 64px -18px rgba(16,40,60,.18), 0 4px 16px rgba(16,40,60,.06);
+  --gl-inner:       inset 0 1px 0 rgba(255,255,255,.85);
+  --gl-cian:        rgba(var(--brand-rgb,11,126,150),.22);
+  --gl-cian-md:     rgba(var(--brand-rgb,11,126,150),.34);
+  /* Gradient border helpers */
+  --gl-grad-b:      linear-gradient(145deg, rgba(255,255,255,.96) 0%, rgba(var(--brand-rgb,11,126,150),.24) 100%);
+  --gl-grad-b-soft: linear-gradient(145deg, rgba(255,255,255,.90) 0%, rgba(var(--brand-rgb,11,126,150),.14) 100%);
+}
+
+/* ══════════════════════════════════════════════════════
+   CANVAS — franja superior cian (vertical) + blob circular
+   La franja del top vuelve legible-en-blanco el header;
+   el blob abajo-izquierda da la "transparencia" bajo el board.
+   ══════════════════════════════════════════════════════ */
+html {
+  background:
+    /* blob circular cian — abajo-izquierda (sutil) */
+    radial-gradient(circle 760px at 24% 88%, rgba(var(--brand-rgb,11,126,150),.20) 0%, rgba(var(--brand-rgb,11,126,150),0) 56%),
+    /* velo cian superior al ~20% de intensidad → header con tinte tenue, fade a gris */
+    linear-gradient(180deg,
+      rgba(var(--brand-rgb,11,126,150),.20) 0,
+      rgba(var(--brand-rgb,11,126,150),.13) 90px,
+      rgba(var(--brand-rgb,11,126,150),.05) 180px,
+      rgba(var(--brand-rgb,11,126,150),0)   280px),
+    /* lienzo gris base */
+    linear-gradient(180deg, #eef1f5 0%, #e9ecf1 60%, #e6e9ef 100%) !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  min-height: 100vh;
+}
+body                   { background: transparent !important; }
+.t-shell               { background: transparent !important; }
+
+/* ══════════════════════════════════════════════════════
+   SIDEBAR — recesado SIN fill (se funde con el canvas)
+   ══════════════════════════════════════════════════════ */
+.t-side {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+/* Brand sobre el velo cian tenue → texto OSCURO; mark conserva el gradient cian (acento) */
+.t-brand b    { color: var(--t-text, #1b2330) !important; }
+.t-brand span { color: var(--t-text-2, #6b7480) !important; }
+.t-brand .mark {
+  background: linear-gradient(135deg, var(--naowee-color-territorio-400,#48C6DC), var(--naowee-color-territorio-700,#0B7E96)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px -3px rgba(var(--brand-rgb,11,126,150),.42) !important;
+}
+/* Nav activo: sólido blanco (sin glass) — sobre el gris del nav */
+.t-nav a.active {
+  background: var(--t-board, #fff) !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  box-shadow: 0 1px 3px rgba(16,40,60,.07) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOPBAR — sin fill (se funde con la franja cian del top)
+   ══════════════════════════════════════════════════════ */
+.t-topbar {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  border-bottom: 0 !important;
+}
+/* Breadcrumb + título sobre el velo cian tenue → texto OSCURO (legible) */
+.t-bc            { color: var(--t-text-2, #6b7480) !important; }
+.t-bc a, .t-bc b { color: var(--t-text, #1b2330) !important; }
+.t-bc .sep       { color: #aab2bd !important; }
+.t-topbar-left h1 { color: var(--t-text, #1b2330) !important; text-transform: none !important; letter-spacing: -.2px !important; }
+
+/* Botón circular: notificaciones, hamburger */
+.t-iconbtn {
+  border-radius: 50% !important;
+  background: rgba(255,255,255,.72) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+          backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255,255,255,.70) !important;
+  box-shadow: 0 4px 14px -4px rgba(16,40,60,.14), var(--gl-inner) !important;
+}
+.t-iconbtn:hover {
+  background: rgba(255,255,255,.90) !important;
+  box-shadow: 0 6px 20px -6px rgba(16,40,60,.18), var(--gl-inner) !important;
+}
+/* Dot de notificación → rojo (no cian) */
+.t-iconbtn .dot { background: #e5484d !important; }
+
+/* Hamburger (mobile): squared glass */
+.t-hamburger {
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.70) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+          backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255,255,255,.68) !important;
+  box-shadow: 0 4px 12px -4px rgba(16,40,60,.12) !important;
+}
+
+/* User chip: pill glass */
+.t-userchip {
+  background: rgba(255,255,255,.70) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(160%) !important;
+          backdrop-filter: blur(14px) saturate(160%) !important;
+  border: 1px solid rgba(255,255,255,.68) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 4px 18px -6px rgba(16,40,60,.16), var(--gl-inner) !important;
+}
+.t-userchip:hover {
+  background: rgba(255,255,255,.86) !important;
+  box-shadow: 0 8px 26px -8px rgba(16,40,60,.2), var(--gl-inner) !important;
+}
+/* Avatar dentro del pill: círculo perfecto (encaja con el pill) */
+.t-userchip .ava { border-radius: 50% !important; }
+
+/* ══════════════════════════════════════════════════════
+   BOARD — panel principal con gradient border
+   ══════════════════════════════════════════════════════ */
+.t-board {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.72), rgba(255,255,255,.60)) padding-box,
+    var(--gl-grad-b) border-box !important;
+  -webkit-backdrop-filter: var(--gl-blur) !important;
+          backdrop-filter: var(--gl-blur) !important;
+  box-shadow: var(--gl-shadow-md), var(--gl-inner) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   KPI BANNER — glass con glow cian
+   ══════════════════════════════════════════════════════ */
+.t-kpi {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.90), rgba(255,255,255,.84)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.97) 0%, rgba(var(--brand-rgb,11,126,150),.30) 100%) border-box !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+          backdrop-filter: blur(14px) !important;
+  box-shadow: 0 6px 22px -6px rgba(var(--brand-rgb,11,126,150),.24), var(--gl-inner) !important;
+}
+.kpi-ic {
+  background: linear-gradient(135deg,
+    var(--naowee-color-territorio-100, rgba(var(--brand-rgb,11,126,150),.1)) 0%,
+    var(--naowee-color-territorio-200, rgba(var(--brand-rgb,11,126,150),.2)) 100%) !important;
+  box-shadow: 0 4px 14px -4px rgba(var(--brand-rgb,11,126,150),.30) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   SEARCHBOX — pill glass (canónico DS)
+   ══════════════════════════════════════════════════════ */
+.naowee-searchbox .naowee-searchbox__input-wrap {
+  border-radius: 999px !important;
+  background: rgba(255,255,255,.78) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+          backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255,255,255,.65) !important;
+  box-shadow: 0 2px 10px -3px rgba(16,40,60,.10), var(--gl-inner) !important;
+  transition: border-color .15s, box-shadow .15s !important;
+}
+/* Focus accent (universal — también en páginas que no cargan territorio-shell.css, p.ej. Contratos) */
+.naowee-searchbox .naowee-searchbox__input-wrap:focus-within {
+  border-color: var(--naowee-color-territorio-600,#0e93ae) !important;
+  box-shadow: 0 0 0 3px var(--naowee-color-territorio-100,#e6f4f8), 0 2px 10px -3px rgba(16,40,60,.12) !important;
+}
+/* Botón ✕ para limpiar la búsqueda (aparece al escribir; lo inyecta shared/sidebar.js) */
+.naowee-searchbox__clear {
+  display: none; flex-shrink: 0; width: 24px; height: 24px; margin: 0 6px 0 2px; padding: 0;
+  border: 0; background: none; cursor: pointer; border-radius: 50%; align-items: center; justify-content: center;
+  color: var(--t-text-2,#6b7480); transition: background .12s, color .12s;
+}
+.naowee-searchbox__clear:hover { background: rgba(20,28,46,.08); color: var(--t-text,#1b2330); }
+.naowee-searchbox__clear svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+.naowee-searchbox__input-wrap.has-text .naowee-searchbox__clear { display: inline-flex; }
+
+/* ══════════════════════════════════════════════════════
+   BOTONES — pill shape + glass en quiet/mute
+   ══════════════════════════════════════════════════════ */
+.naowee-btn { border-radius: 999px !important; }
+
+.naowee-btn--quiet {
+  background: rgba(255,255,255,.72) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+          backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  box-shadow: 0 2px 8px -3px rgba(16,40,60,.10), var(--gl-inner) !important;
+}
+.naowee-btn--quiet:hover {
+  background: rgba(255,255,255,.90) !important;
+  box-shadow: 0 4px 14px -5px rgba(16,40,60,.16), var(--gl-inner) !important;
+}
+.naowee-btn--mute {
+  background: rgba(255,255,255,.56) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+          backdrop-filter: blur(6px) !important;
+  border: 1px solid rgba(255,255,255,.52) !important;
+}
+.naowee-btn--mute:hover { background: rgba(255,255,255,.76) !important; }
+
+/* Cols picker: circular (igual familia que el icon-button de notificaciones) */
+#btnCols {
+  border-radius: 50% !important;
+  background: rgba(255,255,255,.72) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+          backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255,255,255,.70) !important;
+  box-shadow: 0 4px 14px -4px rgba(16,40,60,.14), var(--gl-inner) !important;
+}
+#btnCols.active { border-color: rgba(var(--brand-rgb,11,126,150),.5) !important; }
+
+/* ══════════════════════════════════════════════════════
+   TABLE WRAP + filas
+   ══════════════════════════════════════════════════════ */
+.naowee-table-wrap {
+  border: 1px solid rgba(255,255,255,.55) !important;
+  background: rgba(255,255,255,.44) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+          backdrop-filter: blur(10px) !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+#docTable thead th {
+  background: rgba(246,250,252,.78) !important;
+  border-bottom: 1px solid rgba(255,255,255,.5) !important;
+}
+#docTable tbody tr:hover td {
+  background: rgba(255,255,255,.72) !important;
+}
+/* Mobile cards: gradient border glass */
+@media (max-width:768px){
+  #docTable tbody tr {
+    border: 1.5px solid transparent !important;
+    background:
+      linear-gradient(rgba(255,255,255,.82), rgba(255,255,255,.76)) padding-box,
+      var(--gl-grad-b-soft) border-box !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+            backdrop-filter: blur(12px) !important;
+    box-shadow: 0 4px 16px -6px rgba(16,40,60,.10), var(--gl-inner) !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   MODALES — frosted glass profundo
+   ══════════════════════════════════════════════════════ */
+.naowee-modal {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.80), rgba(255,255,255,.72)) padding-box,
+    linear-gradient(145deg, rgba(255,255,255,.96) 0%, rgba(var(--brand-rgb,11,126,150),.24) 100%) border-box !important;
+  -webkit-backdrop-filter: blur(44px) saturate(200%) !important;
+          backdrop-filter: blur(44px) saturate(200%) !important;
+  box-shadow: var(--gl-shadow-lg), var(--gl-inner) !important;
+}
+.naowee-modal__header {
+  border-bottom: 1px solid rgba(255,255,255,.52) !important;
+  background: rgba(255,255,255,.22) !important;
+}
+.naowee-modal__body {
+  padding-bottom: 22px !important;        /* separa el contenido del divider del footer (evita que quede pegado) */
+}
+.naowee-modal__footer {
+  border-top: 1px solid rgba(255,255,255,.52) !important;
+  background: rgba(255,255,255,.22) !important;
+  padding-top: 22px !important;           /* espaciado simétrico: contenido ↔ divider ↔ botones */
+}
+/* Overlay: dim neutro más transparente + blur leve (liviano de renderizar) */
+.naowee-modal-overlay {
+  background: rgba(16,40,60,.32) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+          backdrop-filter: blur(3px) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   DROPDOWNS + menus
+   ══════════════════════════════════════════════════════ */
+/* Mismos valores que el datepicker (.t-dp-pop): transparencia .82 + blur 34,
+   distancia al input 6px, radius 14 */
+.naowee-dropdown__menu {
+  margin-top: 6px !important;
+  background: rgba(255,255,255,.94) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(190%) !important;
+          backdrop-filter: blur(34px) saturate(190%) !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 44px -12px rgba(16,40,60,.22), var(--gl-inner) !important;
+}
+.t-colmenu {
+  margin-top: 6px !important;
+  background: rgba(255,255,255,.94) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(190%) !important;
+          backdrop-filter: blur(34px) saturate(190%) !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 44px -12px rgba(16,40,60,.22), var(--gl-inner) !important;
+}
+.float-dd-menu {
+  margin-top: 6px !important;
+  background: rgba(255,255,255,.94) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(190%) !important;
+          backdrop-filter: blur(34px) saturate(190%) !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 44px -12px rgba(16,40,60,.22), var(--gl-inner) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   Z-INDEX de dropdowns abiertos (GLOBAL) — el backdrop-filter de las
+   tarjetas glass crea stacking contexts que atrapan el menú detrás de
+   las hermanas. Al abrir un dropdown, se eleva su tarjeta contenedora.
+   ══════════════════════════════════════════════════════ */
+.naowee-dropdown--open{ position:relative; z-index:50; }
+.vg-panel:has(.naowee-dropdown--open),
+.vg-card:has(.naowee-dropdown--open),
+.t-kpi:has(.naowee-dropdown--open),
+.t-board:has(.naowee-dropdown--open),
+.naowee-card:has(.naowee-dropdown--open){ position:relative; z-index:50; }
+
+/* ══════════════════════════════════════════════════════
+   DATEPICKER — el popover (.t-dp-pop) lleva el glass + radius;
+   el calendario interno va TRANSPARENTE (sin rectángulo blanco)
+   ══════════════════════════════════════════════════════ */
+.t-dp-pop {
+  background: rgba(255,255,255,.94) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(190%) !important;
+          backdrop-filter: blur(34px) saturate(190%) !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 18px 48px -14px rgba(16,40,60,.24), var(--gl-inner) !important;
+}
+.t-dp-pop .naowee-datepicker,
+.naowee-datepicker__calendar,
+.naowee-datepicker__content {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   BOTÓN PRIMARIO LOUD (cian) — glass destacado · universal (también home,
+   que no carga territorio-shell.css). En los módulos el shell repite la misma
+   regla y gana por orden de carga (sin cambio visual).
+   ══════════════════════════════════════════════════════ */
+.naowee-btn--loud{
+  border:1px solid transparent !important;
+  background:
+    radial-gradient(125% 135% at 28% 10%, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 50%),
+    linear-gradient(180deg, var(--naowee-color-territorio-500,#1FAEC8) 0%, var(--naowee-color-territorio-700,#0B7E96) 100%) padding-box,
+    linear-gradient(155deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.02) 52%, rgba(255,255,255,.12) 100%) border-box !important;
+  box-shadow:0 6px 18px -6px rgba(var(--brand-rgb,11,126,150),.5), inset 0 1px 0 rgba(255,255,255,.18) !important;
+  color:#fff !important; }
+.naowee-btn--loud:hover, .naowee-btn--loud:focus-visible{
+  box-shadow:0 14px 34px -6px rgba(var(--brand-rgb,11,126,150),.58), inset 0 1px 0 rgba(255,255,255,.42) !important;
+  opacity:1; outline:none; }
+.naowee-btn--loud:active{
+  box-shadow:0 4px 12px -5px rgba(var(--brand-rgb,11,126,150),.42), inset 0 1px 0 rgba(255,255,255,.25) !important;
+  transform:translateY(1px); }
+.naowee-btn--loud:disabled, .naowee-btn--loud[disabled]{ background:#e3e7ee !important; color:var(--t-text-2,#6b7480) !important; box-shadow:none !important; cursor:not-allowed !important; opacity:1; }
+
+/* ══════════════════════════════════════════════════════
+   SNACKBAR / TOAST — translúcido + blur (legibilidad por blur)
+   ══════════════════════════════════════════════════════ */
+.naowee-snackbar,
+.naowee-toast {
+  background: rgba(255,255,255,.80) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(190%) !important;
+          backdrop-filter: blur(30px) saturate(190%) !important;
+  border: 1px solid rgba(255,255,255,.58) !important;
+  box-shadow: 0 14px 40px -12px rgba(16,40,60,.26), var(--gl-inner) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   PILLS DE ROL + VERSIÓN — glass refinado
+   ══════════════════════════════════════════════════════ */
+.t-rolepill {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.80), rgba(255,255,255,.74)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.96) 0%, rgba(var(--brand-rgb,11,126,150),.26) 100%) border-box !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+          backdrop-filter: blur(24px) saturate(180%) !important;
+  box-shadow: 0 16px 48px -16px rgba(16,40,60,.30), var(--gl-inner) !important;
+}
+.t-verpill {
+  background: rgba(255,255,255,.70) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+          backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255,255,255,.62) !important;
+  box-shadow: 0 8px 24px -8px rgba(16,40,60,.16), var(--gl-inner) !important;
+}
+.t-rolepanel {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.86)) padding-box,
+    linear-gradient(145deg, rgba(255,255,255,.98) 0%, rgba(var(--brand-rgb,11,126,150),.20) 100%) border-box !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+          backdrop-filter: blur(28px) saturate(180%) !important;
+  box-shadow: 0 22px 54px -18px rgba(16,40,60,.30), var(--gl-inner) !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   HOME.HTML — header + project cards
+   ══════════════════════════════════════════════════════ */
+.home-top {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+          backdrop-filter: none !important;
+  border-bottom: 0 !important;
+}
+/* Brand de home → texto OSCURO; mark conserva el gradient cian (acento) */
+.home-brand b    { color: var(--t-text, #1b2330) !important; }
+.home-brand span { color: var(--t-text-2, #6b7480) !important; }
+.home-brand .mark {
+  background: linear-gradient(135deg, var(--naowee-color-territorio-400,#48C6DC), var(--naowee-color-territorio-700,#0B7E96)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px -3px rgba(var(--brand-rgb,11,126,150),.42) !important;
+}
+.proj-card {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.80), rgba(255,255,255,.74)) padding-box,
+    var(--gl-grad-b) border-box !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+          backdrop-filter: blur(18px) saturate(160%) !important;
+  box-shadow: var(--gl-shadow), var(--gl-inner) !important;
+}
+.proj-card:hover {
+  background:
+    linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.86)) padding-box,
+    linear-gradient(145deg, rgba(255,255,255,.98) 0%, rgba(var(--brand-rgb,11,126,150),.38) 100%) border-box !important;
+  box-shadow: 0 22px 54px -18px rgba(var(--brand-rgb,11,126,150),.28), var(--gl-inner) !important;
+}
+.proj-ic {
+  background: linear-gradient(135deg,
+    rgba(var(--brand-rgb,11,126,150),.12) 0%,
+    rgba(var(--brand-rgb,11,126,150),.22) 100%) !important;
+  box-shadow: 0 4px 12px -3px rgba(var(--brand-rgb,11,126,150),.26) !important;
+  border-radius: 16px !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   INDEX.HTML — hub cards + mark
+   ══════════════════════════════════════════════════════ */
+.hub-card {
+  border: 1.5px solid transparent !important;
+  background:
+    linear-gradient(rgba(255,255,255,.76), rgba(255,255,255,.70)) padding-box,
+    var(--gl-grad-b) border-box !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+          backdrop-filter: blur(18px) saturate(160%) !important;
+  box-shadow: var(--gl-shadow), var(--gl-inner) !important;
+}
+.hub-card:hover:not(.disabled) {
+  background:
+    linear-gradient(rgba(255,255,255,.90), rgba(255,255,255,.84)) padding-box,
+    linear-gradient(135deg, rgba(255,255,255,.98) 0%, rgba(var(--brand-rgb,11,126,150),.38) 100%) border-box !important;
+  box-shadow: 0 22px 54px -18px rgba(var(--brand-rgb,11,126,150),.28), var(--gl-inner) !important;
+}
+.hub-mark {
+  box-shadow: 0 8px 26px -6px rgba(var(--brand-rgb,11,126,150),.54), 0 0 0 5px rgba(var(--brand-rgb,11,126,150),.12) !important;
+}
+.hub-card-ic {
+  background: linear-gradient(135deg,
+    rgba(var(--brand-rgb,11,126,150),.10) 0%,
+    rgba(var(--brand-rgb,11,126,150),.20) 100%) !important;
+  box-shadow: 0 4px 12px -3px rgba(var(--brand-rgb,11,126,150),.24) !important;
+  border-radius: 14px !important;
+}
+/* Footer pill del hub: glass */
+.hub-footer {
+  background: rgba(255,255,255,.60) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+          backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255,255,255,.60) !important;
+  border-radius: 999px !important;
+  padding: 8px 18px !important;
+  box-shadow: 0 4px 14px -6px rgba(16,40,60,.12) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MARCA NAOWEE — refinamientos  ·  <html data-brand="naowee">
+   Solo aplican en modo Naowee (Territorio queda intacto).
+   Naowee = naranja (acción) + turquesa (secundario) + blanco.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Fondo MINIMALISTA: blanco cálido (sin el velo gris-cian) + apenas un glow naranja */
+html[data-brand="naowee"] {
+  background:
+    radial-gradient(circle 680px at 24% 94%, rgba(255,117,0,.05) 0%, rgba(255,117,0,0) 52%),
+    linear-gradient(180deg, #FAF9F7 0%, #F5F3F0 60%, #F1EFEB 100%) !important;
+}
+
+/* Pill "Recorrido HAB" (.tt-launch) → AZUL TURQUÍ Naowee (#002B5B) TRANSLÚCIDO (glassmorfismo),
+   label + ícono BLANCO. Navy semi-transparente + blur que frosta el fondo detrás. */
+[data-brand="naowee"] .tt-launch {
+  background: linear-gradient(135deg, rgba(0,43,91,.86) 0%, rgba(0,28,62,.80) 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+          backdrop-filter: blur(16px) saturate(160%) !important;
+  box-shadow: 0 12px 32px -10px rgba(0,43,91,.5), inset 0 1px 0 rgba(255,255,255,.14) !important;
+}
+[data-brand="naowee"] .tt-launch:hover {
+  background: linear-gradient(135deg, rgba(0,43,91,.93) 0%, rgba(0,28,62,.88) 100%) !important;
+  box-shadow: 0 16px 40px -8px rgba(0,43,91,.6), inset 0 1px 0 rgba(255,255,255,.16) !important;
+}
+
+/* Grises claros más SUTILES/cálidos: fondos fríos (#f6f8fb/#f4f6f9) → blanco cálido tenue */
+[data-brand="naowee"] .t-statchip,
+[data-brand="naowee"] .vg-kpi { background: #FAF8F5; }
+
+/* Mensajes info/caution/error/positivo MÁS SUTILES: fondo casi blanco con un dejo de color
+   (antes el info #cef4ff resaltaba mucho) + un borde tenue para que no queden planos. */
+[data-brand="naowee"] .naowee-message--informative { background: #EEF4FA !important; box-shadow: inset 0 0 0 1px #E0EAF4 !important; }
+[data-brand="naowee"] .naowee-message--caution     { background: #FBF4EB !important; box-shadow: inset 0 0 0 1px #F1E6D6 !important; }
+[data-brand="naowee"] .naowee-message--negative    { background: #FBF1F0 !important; box-shadow: inset 0 0 0 1px #F1E0DE !important; }
+[data-brand="naowee"] .naowee-message--positive    { background: #F0F6F1 !important; box-shadow: inset 0 0 0 1px #DFEBE1 !important; }
+/* Ícono del mensaje: más pequeño y menos saturado (baja el protagonismo del chip de color) */
+[data-brand="naowee"] .naowee-message__icon { opacity: .9; transform: scale(.92); }
+
+/* Sombra del avatar del perfil: GRIS NEUTRA (como la del pill del switch), no el glow naranja */
+[data-brand="naowee"] .t-userchip .ava { box-shadow: 0 2px 8px -2px rgba(16,40,60,.28) !important; }

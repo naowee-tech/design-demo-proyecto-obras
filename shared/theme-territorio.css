@@ -1,0 +1,157 @@
+/* ═══════════════════════════════════════════════════════════════
+   NAOWEE · TERRITORIO / VIVIENDA — Theme overlay
+   ───────────────────────────────────────────────────────────────
+   Sub-vertical de la marca Naowee (mismo logo, otras rutas).
+   Carga DESPUÉS de design-system.css. NO modifica componentes.
+   Activación:  <html data-theme="territorio">  (o en cualquier wrapper)
+
+   Cómo funciona (arquitectura de 3 capas del DS):
+     1. Palette primitivo   --naowee-color-territorio-700: #0E7340
+     2. Alias semántico      --naowee-color-brand-fill-loud → re-apunta a la marca (cian)
+     3. Componentes          ya consumen var(--...-brand-fill-loud) → heredan solo
+
+   Regla dura: NO re-apuntamos feedback-caution / warning.
+   En Naowee "warning" reusa el naranja a propósito; si lo volviéramos
+   verde, chocaría con "success". Caution mantiene su ámbar dedicado.
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="territorio"] {
+
+  /* ── 1. PALETTE PRIMITIVO ────────────────────────────────────
+     Rampa CIAN Territorio (decidida 2026-06-23, ref. Arvan Cloud).
+     Lo que en SUID era naranja, aquí es cian. Ajustable. */
+  --naowee-color-territorio-100: #E2F7FB;
+  --naowee-color-territorio-200: #BCEDF4;
+  --naowee-color-territorio-300: #8BDDEB;
+  --naowee-color-territorio-400: #48C6DC;
+  --naowee-color-territorio-500: #1FAEC8;
+  --naowee-color-territorio-600: #1093AE;
+  --naowee-color-territorio-700: #0B7E96;  /* primary loud (≙ orange-700) · texto blanco AA */
+  --naowee-color-territorio-800: #0A6275;
+  --naowee-color-territorio-900: #084B5A;
+  /* RGB base de la marca para los tintes/glow glass cableados como rgba(var(--brand-rgb),α).
+     El switch de marca (data-brand="naowee") lo voltea a naranja. */
+  --brand-rgb: 11,126,150;
+
+  /* ── TIPOGRAFÍA — Manrope (Territorio) vs Inter (SUID) ──────────
+     Cargar la Google Font en el <head>:
+     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+     El DS define la familia vía token/clase; aquí la sobre-escribimos. */
+  --naowee-font-family: 'Manrope', sans-serif;
+  font-family: 'Manrope', sans-serif;
+
+  /* ── 2. RE-APUNTE DE TOKENS SEMÁNTICOS DE MARCA ──────────────
+     Estos 30+ tokens eran el único punto donde el DS tocaba el
+     orange para uso de MARCA. Los redirigimos a la marca (cian). */
+
+  /* Brand */
+  --naowee-color-brand-fill-loud:      var(--naowee-color-territorio-700);
+  --naowee-color-brand-fill-quiet:     var(--naowee-color-territorio-100);
+  --naowee-color-brand-text-loud:      var(--naowee-color-territorio-700);
+  --naowee-color-brand-text-quiet:     var(--naowee-color-territorio-900);
+  --naowee-color-brand-icon-loud:      var(--naowee-color-territorio-700);
+  --naowee-color-brand-gradient-start: var(--naowee-color-territorio-500);
+  --naowee-color-brand-gradient-end:   var(--naowee-color-territorio-700);
+
+  /* Interactive (botón loud, hover, active) */
+  --naowee-color-interactive-fill-loud-idle:   var(--naowee-color-territorio-700);
+  --naowee-color-interactive-fill-loud-hover:  var(--naowee-color-territorio-800);
+  --naowee-color-interactive-fill-loud-active: var(--naowee-color-territorio-900);
+  --naowee-color-interactive-fill-quiet-idle:  var(--naowee-color-territorio-100);
+  --naowee-color-interactive-fill-quiet-hover: var(--naowee-color-territorio-200);
+  --naowee-color-interactive-fill-quiet-active:var(--naowee-color-territorio-300);
+  --naowee-color-interactive-fill-mute-hover:  var(--naowee-color-territorio-100);
+  --naowee-color-interactive-fill-mute-active: var(--naowee-color-territorio-200);
+  --naowee-color-interactive-border-active:    var(--naowee-color-territorio-700);
+
+  /* Text / links / accent */
+  --naowee-color-text-accent:     var(--naowee-color-territorio-700);
+  --naowee-color-text-link-idle:  var(--naowee-color-territorio-700);
+  --naowee-color-text-link-hover: var(--naowee-color-territorio-800);
+  --naowee-color-text-link-active:var(--naowee-color-territorio-900);
+
+  /* Icon / fill / border accent */
+  --naowee-color-icon-accent:               var(--naowee-color-territorio-700);
+  --naowee-color-icon-accent-quiet-on-fill: var(--naowee-color-territorio-700);
+  --naowee-color-fill-accent-loud:          var(--naowee-color-territorio-700);
+  --naowee-color-fill-accent-quiet:         var(--naowee-color-territorio-100);
+  --naowee-color-border-accent:             var(--naowee-color-territorio-700);
+
+  /* Focus ring / highlight accent (token semántico — sí se captura) */
+  --naowee-shadow-highlight-accent: 0 0 0 2px var(--naowee-color-territorio-200);
+
+  /* Selected (pills, opciones de dropdown, tabs) */
+  --naowee-color-selected-text-idle:   var(--naowee-color-territorio-700);
+  --naowee-color-selected-text-hover:  var(--naowee-color-territorio-800);
+  --naowee-color-selected-text-active: var(--naowee-color-territorio-900);
+  --naowee-color-selected-fill-idle:   var(--naowee-color-territorio-700);
+  --naowee-color-selected-fill-hover:  var(--naowee-color-territorio-800);
+  --naowee-color-selected-fill-active: var(--naowee-color-territorio-900);
+  --naowee-color-selected-border-idle: var(--naowee-color-territorio-700);
+
+  /* ── 3. ALIASES LEGACY ───────────────────────────────────────
+     Para que los MÓDULOS existentes (que usan var(--accent) /
+     var(--naranja)) también se tematicen al portarlos a Territorio.
+     Solo aplica donde el módulo usó el token; los hex crudos
+     (~556 en la app) aún requieren el barrido hex→token por módulo. */
+  --accent:  var(--naowee-color-territorio-700);
+  --naranja: var(--naowee-color-territorio-500);
+  /* --azul se mantiene: el azul Naowee #002B5B es marca compartida */
+
+  /* ── NO SE TOCA (intencional) ────────────────────────────────
+     --naowee-color-feedback-fill-caution-loud  (sigue naranja/ámbar)
+     --naowee-color-feedback-warning*           (warning ≠ marca)
+     --naowee-color-feedback-*-negative/positive/informative
+     ── todo el sistema de feedback semántico permanece igual ── */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MARCA NAOWEE (switch)  ·  <html data-brand="naowee">
+   ───────────────────────────────────────────────────────────────
+   Mismo glassmorfismo (blur, elevación, transparencias) — SOLO cambian
+   los colores de ACCIÓN de cian → naranja Naowee (como IVC/Escenarios/
+   Project). Basta voltear la rampa de marca + el --brand-rgb de los
+   glows; los ~42 tokens semánticos, los fallbacks var(--…,#hex) y los
+   tintes glass rgba(var(--brand-rgb),α) heredan solos. El azul #002B5B,
+   el blanco y los semánticos de datos (verde/ámbar/rojo) NO cambian.
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme="territorio"][data-brand="naowee"] {
+  --naowee-color-territorio-100: #FFF1E6;
+  --naowee-color-territorio-200: #FFDFC2;
+  --naowee-color-territorio-300: #FFC591;
+  --naowee-color-territorio-400: #FFA65C;
+  --naowee-color-territorio-500: #FF8A33;
+  --naowee-color-territorio-600: #FF7500;  /* naranja de marca */
+  --naowee-color-territorio-700: #D74009;  /* acento · primary loud CTA · texto blanco AA */
+  --naowee-color-territorio-800: #B23608;
+  --naowee-color-territorio-900: #8A2906;
+  --brand-rgb: 255,117,0;                  /* glows/tintes glass → naranja */
+  /* Neutros más SUTILES y cálidos (Naowee = blanco minimalista, sin el gris-cian) */
+  --t-line:   #ECE8E3;                     /* borde cálido y ligero (antes #e4e8ee azulado) */
+  --t-canvas: #F4F2EF;                     /* lienzo cálido (antes #eaeef3) */
+  /* Texto en gris AZULADO (no gris-negro neutro) */
+  --t-text:   #273253;                     /* slate azulado (antes #1b2330 casi negro) */
+  --t-text-2: #6A7599;                     /* gris azulado secundario (antes #6b7480 neutro) */
+  /* "Azul turquí" Naowee — el azul de marca #002B5B (secundario, junto al naranja + blanco). */
+  --brand-azul: #002B5B;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FUGAS DE PRIMITIVO — ✅ RESUELTAS upstream en design-system.css
+   ───────────────────────────────────────────────────────────────
+   Estos componentes metían la mano al PRIMITIVO orange en vez del
+   token semántico. Se promovió el fix al DS (ahora pasan por token):
+
+     · .naowee-badge--brand             orange-700    → brand-fill-loud
+     · .naowee-badge--brand--quiet      orange-100/900→ brand-fill-quiet / brand-text-quiet
+     · .naowee-badge-icon--brand--quiet orange-900    → brand-text-quiet
+     · checkbox/radio checked ring      orange-200    → shadow-highlight-accent
+     · .naowee-list-row--pick--selected:hover orange-200 → interactive-fill-quiet-hover
+
+   Token nuevo de fundación agregado al DS:
+     · --naowee-color-brand-text-quiet: var(--naowee-color-orange-900)
+
+   NO son fugas (correcto que sigan naranjas — no se tocaron):
+     · .naowee-table__pos--bronze       (medalla de bronce = naranja real)
+     · --naowee-shadow-highlight-caution, todo feedback caution/warning
+   ═══════════════════════════════════════════════════════════════ */
