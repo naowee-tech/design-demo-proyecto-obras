@@ -6,7 +6,7 @@
  * ========================================================================== */
 (function () {
   'use strict';
-  var VERSION = 'v0.1.0';
+  var VERSION = 'v0.4.7';
   var BRAND_KEY = 'obras-ppto-brand';
 
   var ROLES = {
