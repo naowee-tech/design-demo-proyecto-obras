@@ -13,10 +13,10 @@
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
 <link rel="stylesheet" href="../shared/skin-gris.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.7">
-<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.7">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.8">
+<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.8">
 <script>try{var _b=localStorage.getItem('obras-ppto-brand');document.documentElement.setAttribute('data-brand',(_b==='naowee'||_b==='territorio')?_b:'ds');}catch(e){document.documentElement.setAttribute('data-brand','ds');}</script>
-<link rel="stylesheet" href="../shared/theme.css?v=0.4.7">
+<link rel="stylesheet" href="../shared/theme.css?v=0.4.8">
 <style>
   /* Override pattern local (después del DS) — solo medidas de este modal */
   #mCrear .naowee-modal{ overflow:visible !important; width:720px; max-width:92vw; }
@@ -185,9 +185,17 @@
         </div>
 
         <div class="t-col-full" id="estructuraRow">
-          <div class="naowee-switch naowee-switch--on" id="catSeed" role="switch" aria-checked="true" style="cursor:pointer">
-            <span class="naowee-switch__track"><span class="naowee-switch__handle"></span></span>
-            <span class="naowee-switch__label">Sembrar estructura base (capítulos y actividades de la región)</span>
+          <div class="naowee-radio-group" id="catModo" role="radiogroup" aria-label="Punto de partida del catálogo">
+            <span class="naowee-radio-group__label">Punto de partida</span>
+            <div class="naowee-radio" data-modo="cero" role="radio" aria-checked="false" tabindex="0">
+              <span class="naowee-radio__circle"></span>
+              <span class="naowee-radio__label">Desde cero — sin niveles ni ítems</span>
+            </div>
+            <div class="naowee-radio" data-modo="base" role="radio" aria-checked="false" tabindex="0">
+              <span class="naowee-radio__circle"></span>
+              <span class="naowee-radio__label">Con estructura base de la condición seleccionada</span>
+            </div>
+            <span class="naowee-helper" id="catModoHelp">Elige una opción para continuar.</span>
           </div>
         </div>
       </div>
@@ -199,9 +207,9 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.4.7"></script>
-<script src="../shared/ui.js?v=0.4.7"></script>
-<script src="../shared/shell.js?v=0.4.7"></script>
+<script src="../shared/data-catalogo.js?v=0.4.8"></script>
+<script src="../shared/ui.js?v=0.4.8"></script>
+<script src="../shared/shell.js?v=0.4.8"></script>
 <script>
 (function () {
   var UI = window.OBRAS_UI, D = window.OBRAS;
@@ -307,9 +315,23 @@
   function dpSet(id, iso) { UI.dpSet(id, iso); }
   function dpGet(id) { return UI.dpGet(id); }
 
-  // ── Switch ──
-  function getSeed() { return document.getElementById('catSeed').classList.contains('naowee-switch--on'); }
-  function setSeed(on) { var s = document.getElementById('catSeed'); s.classList.toggle('naowee-switch--on', on); s.setAttribute('aria-checked', on ? 'true' : 'false'); }
+  // ── Punto de partida (radio group canónico) ──
+  // Sin default: el admin elige explícitamente si arranca en blanco o con la base.
+  function getModo() {
+    var sel = document.querySelector('#catModo .naowee-radio--selected');
+    return sel ? sel.dataset.modo : '';
+  }
+  function setModo(modo) {
+    document.querySelectorAll('#catModo .naowee-radio').forEach(function (r) {
+      var on = r.dataset.modo === modo;
+      r.classList.toggle('naowee-radio--selected', on);
+      r.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    var h = document.getElementById('catModoHelp');
+    if (modo === 'cero') { h.textContent = 'El catálogo nace vacío: creas los niveles de agrupación y sus ítems desde el detalle.'; h.className = 'naowee-helper naowee-helper--informative'; }
+    else if (modo === 'base') { h.textContent = 'Se copian los capítulos y actividades de la condición seleccionada; puedes editarlos después.'; h.className = 'naowee-helper naowee-helper--informative'; }
+    else { h.textContent = 'Elige una opción para continuar.'; h.className = 'naowee-helper'; }
+  }
 
   // ── Modal ──
   function openCreate() {
@@ -320,7 +342,7 @@
     document.getElementById('catRegion').querySelector('.naowee-dropdown__value').classList.add('naowee-dropdown__placeholder');
     UI.setDD('catEstado', 'Borrador', 'Borrador');
     dpSet('dpIni', '2026-01-01'); dpSet('dpFin', '2026-12-31');
-    setSeed(true);
+    setModo('');
     document.getElementById('estructuraRow').style.display = '';
     document.getElementById('crearError').style.display = 'none';
     openModal('mCrear');
@@ -343,8 +365,11 @@
     var estado = UI.getDD('catEstado') || 'Borrador';
     var err = document.getElementById('crearError');
     nombreEl.closest('.naowee-textfield__input-wrap').classList.remove('t-invalid');
-    if (!nombre || !region) {
-      document.getElementById('crearErrorMsg').textContent = !nombre ? 'El nombre del catálogo es obligatorio.' : 'Selecciona la condición de aplicación (región).';
+    if (!nombre || !region || (!editId && !getModo())) {
+      var msg = 'Elige el punto de partida del catálogo.';
+      if (!nombre) msg = 'El nombre del catálogo es obligatorio.';
+      else if (!region) msg = 'Selecciona la condición de aplicación (región).';
+      document.getElementById('crearErrorMsg').textContent = msg;
       err.style.display = '';
       if (!nombre) nombreEl.closest('.naowee-textfield__input-wrap').classList.add('t-invalid');
       return;
@@ -357,7 +382,7 @@
       c.nombre = nombre; c.region = region; c.estado = estado; c.vigenciaIni = ini; c.vigenciaFin = fin;
       D.saveCatalogo(c); D.logAudit(c, 'Editar catálogo', 'Catálogo', 'Jesús Díaz');
     } else {
-      D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getSeed() });
+      D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
     }
     closeModal('mCrear'); render(); renderKpis();
   }
@@ -373,7 +398,12 @@
 
     document.getElementById('btnCrear').onclick = openCreate;
     document.getElementById('catGuardar').onclick = save;
-    document.getElementById('catSeed').onclick = function () { setSeed(!getSeed()); };
+    document.querySelectorAll('#catModo .naowee-radio').forEach(function (r) {
+      r.addEventListener('click', function () { setModo(r.dataset.modo); });
+      r.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setModo(r.dataset.modo); }
+      });
+    });
     document.getElementById('tblSearch').addEventListener('input', render);
     document.getElementById('fEstado').addEventListener('dd:change', render);
     document.getElementById('fRegion').addEventListener('dd:change', render);
@@ -390,6 +420,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.4.7"></script>
+<script src="../shared/tour.js?v=0.4.8"></script>
 </body>
 </html>

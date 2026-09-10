@@ -40,15 +40,15 @@
         { sel: '#docTable', body: 'Cada fila muestra <b>nombre, condición, vigencia, versión activa y estado</b>. Las columnas son <b>ordenables</b> y desde el menú ⋮ se entra al detalle.' }
       ] },
     // 2 · Estructura (niveles de agrupación)
-    'PPTO-04': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-04': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'vacio',
       title: 'Crear nivel de agrupación', purpose: 'Definir cómo se organiza jerárquicamente el catálogo (capítulos, actividades…).',
       steps: [
-        { sel: '[data-tab="estructura"]', body: 'En el detalle del catálogo, entra a la pestaña <b>Estructura</b>.', click: true },
+        { sel: '[data-tab="estructura"]', body: 'Este catálogo está <b>en blanco</b>: se creó sin estructura base, así que arrancas desde cero. Entra a la pestaña <b>Estructura</b>.', click: true },
         { sel: '#btnNivel', body: 'Clic en <b>Crear nivel</b> para agregar un nivel de agrupación.', click: true },
         { sel: '#nvNombre', body: 'Nombre del nivel, posición jerárquica y descripción. No guarda si el nombre está vacío o repetido.' },
         { sel: '#mNivel .naowee-modal__footer .naowee-btn--loud', body: 'Guarda: el nivel se suma a la estructura del catálogo.' }
       ] },
-    'PPTO-05': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-05': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Editar nivel de agrupación', purpose: 'Ajustar nombre, descripción o posición jerárquica de un nivel.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
@@ -56,7 +56,7 @@
         { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b> para ajustar su nombre o posición.', click: true },
         { sel: '#mNivel .naowee-modal__footer .naowee-btn--loud', body: 'El sistema muestra un resumen y registra el cambio en el historial.' }
       ] },
-    'PPTO-06': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-06': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Desactivar nivel de agrupación', purpose: 'Retirar un nivel de la estructura sin eliminarlo, preservando la trazabilidad.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
@@ -64,14 +64,14 @@
         { sel: '#rmNivelOff', body: 'Elige <b>Desactivar nivel</b>. Si tiene ítems o valores, el sistema advierte antes.', click: true },
         { sel: '#mMotivo', body: 'La desactivación exige un <b>motivo obligatorio</b>. El nivel deja de aparecer como opción pero queda en la traza.' }
       ] },
-    'PPTO-07': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-07': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Consultar niveles configurados', purpose: 'Revisar la organización jerárquica de la estructura y su estado.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
         { sel: '#nivelList', body: 'La <b>jerarquía</b> se muestra de forma visual, con estado y fecha. Se puede filtrar por activo/inactivo.' }
       ] },
     // 3 · Valor y Ítems
-    'PPTO-08': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-08': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Configurar valor o fórmula en un nivel', purpose: 'Definir si un nivel lleva valor fijo o una fórmula de cálculo (ej. suma de ítems).',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
@@ -80,7 +80,7 @@
         { sel: '#nvValorTipo', body: 'Elige si el nivel lleva <b>valor fijo</b> o <b>fórmula</b>. Si es fórmula, se define la expresión y el sistema la valida.' },
         { sel: '#nvFormula, #nvValorFijo', body: 'Aquí se ingresa el <b>valor</b> o se define la <b>fórmula</b> (ej. SUMA de los ítems del nivel).' }
       ] },
-    'PPTO-09': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-09': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Definir que un nivel admite ítems', purpose: 'Habilitar qué niveles pueden tener ítems (productos/servicios) asociados.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
@@ -90,7 +90,7 @@
         { sel: '#nvCampos', body: 'Al habilitarlo se configuran los <b>campos (columnas)</b> que tendrá cada ítem de este nivel: código, ítem, unidad, cantidad, valor unitario…' },
         { sel: '#nvAddBtn', body: 'Con <b>Agregar campo</b> se añaden columnas propias del nivel (texto, número o moneda). La tabla de ítems y la plantilla de carga se ajustan solas.' }
       ] },
-    'PPTO-10': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-10': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Crear ítem en un nivel', purpose: 'Agregar un ítem (con o sin fórmula) al catálogo; el sistema calcula su valor.',
       steps: [
         { sel: '[data-tab="items"]', body: 'Entra a la pestaña <b>Ítems</b>.', click: true },
@@ -98,7 +98,7 @@
         { sel: '#itNombre', body: 'Diligencia código, nombre, unidad y valor. Puedes asignarle o no una <b>fórmula</b>.' },
         { sel: '#mItem .naowee-modal__footer .naowee-btn--loud', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan campos obligatorios.' }
       ] },
-    'PPTO-11': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-11': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Editar ítem', purpose: 'Actualizar precios, unidades u otros campos; el sistema recalcula lo impactado.',
       steps: [
         { sel: '[data-tab="items"]', body: 'Pestaña <b>Ítems</b>.', click: true },
@@ -107,27 +107,27 @@
         { sel: '#mItem .naowee-modal__footer .naowee-btn--loud', body: 'Al modificar, el sistema <b>recalcula</b> y registra el cambio en el historial del ítem.' }
       ] },
     // 4 · Carga Masiva
-    'PPTO-12': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-12': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Descargar plantilla de carga masiva', purpose: 'Obtener la plantilla vigente con las columnas del catálogo, versionada.',
       steps: [
         { sel: '[data-tab="carga"]', body: 'Entra a la pestaña <b>Carga masiva</b>.', click: true },
         { sel: '#btnPlantilla', body: 'Descarga la <b>plantilla vigente</b> (.xlsx). Trae las columnas de los ítems del catálogo y está <b>versionada</b>.' }
       ] },
-    'PPTO-13': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-13': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Cargar archivo masivo de ítems', purpose: 'Ingresar múltiples ítems desde un archivo, con validación y vista previa.',
       steps: [
         { sel: '[data-tab="carga"]', body: 'Pestaña <b>Carga masiva</b>.', click: true },
         { sel: '#cargaDrop', body: 'Arrastra o selecciona el archivo. El sistema valida que corresponda a la <b>versión vigente</b> de la plantilla.' },
         { sel: '#cargaPrev', body: 'Muestra una <b>vista previa</b> de los ítems detectados antes de confirmar la carga.' }
       ] },
-    'PPTO-14': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-14': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Visualizar resultado de la carga', purpose: 'Ver qué ítems se procesaron y cuáles fallaron con su motivo.',
       steps: [
         { sel: '[data-tab="carga"]', body: 'Pestaña <b>Carga masiva</b>.', click: true },
         { sel: '#cargaResult', body: 'Resumen: <b>detectados, procesados y fallidos</b>. Cada fallido muestra el <b>motivo</b>; el reporte se puede descargar.' }
       ] },
     // 5 · Versionamiento
-    'PPTO-15': { ph: '5 · Versionamiento', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-15': { ph: '5 · Versionamiento', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Crear nueva versión del catálogo', purpose: 'Aplicar cambios de precios/estructura sin afectar presupuestos ya creados.',
       steps: [
         { sel: '[data-tab="versiones"]', body: 'Entra a la pestaña <b>Versiones</b>.', click: true },
@@ -135,7 +135,7 @@
         { sel: '#verMotivo', body: 'Escribe el <b>motivo del cambio</b>. La nueva versión nace de la actual; la anterior queda como <b>Histórica</b>.' },
         { sel: '#mVersion .naowee-modal__footer .naowee-btn--loud', body: 'Al confirmar, se genera la nueva versión activa.' }
       ] },
-    'PPTO-16': { ph: '5 · Versionamiento', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-16': { ph: '5 · Versionamiento', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Consultar historial de versiones', purpose: 'Revisar cómo evolucionó el contenido y los precios del catálogo.',
       steps: [
         { sel: '[data-tab="versiones"]', body: 'Pestaña <b>Versiones</b>.', click: true },
@@ -154,20 +154,20 @@
         { sel: '#itemFiltro', body: '<b>Filtra</b> por tipo. El resultado muestra nivel, código, nombre, unidad, cantidad, valor unitario y total.' }
       ] },
     // 7 · Auditoría
-    'PPTO-19': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-19': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Consultar historial de cambios del catálogo', purpose: 'Trazabilidad ante auditorías y procesos legales: toda acción sobre catálogo, niveles e ítems.',
       steps: [
         { sel: '[data-tab="auditoria"]', body: 'Entra a la pestaña <b>Auditoría</b>.', click: true },
         { sel: '#audTable', body: 'Cada entrada muestra <b>acción, elemento afectado, responsable y fecha/hora</b>. Es de solo lectura y no se puede modificar.' }
       ] },
-    'PPTO-20': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-20': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Filtrar historial por acción, elemento y fecha', purpose: 'Ubicar rápidamente un cambio específico.',
       steps: [
         { sel: '[data-tab="auditoria"]', body: 'Pestaña <b>Auditoría</b>.', click: true },
         { sel: '#audAccion', body: 'Filtros combinables por <b>acción</b>, elemento afectado y responsable…' },
         { sel: '#audFecha', body: '…y por <b>rango de fechas</b>. El historial se actualiza al instante e indica cuántos resultados hay.' }
       ] },
-    'PPTO-21': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN',
+    'PPTO-21': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Exportar historial de auditoría', purpose: 'Usar la traza en reportes externos, auditorías o procesos legales.',
       steps: [
         { sel: '[data-tab="auditoria"]', body: 'Pestaña <b>Auditoría</b>.', click: true },
@@ -288,11 +288,24 @@
     closeOverlays(null);
     curHab = hab; curStep = 0; _stepActed = false; renderStep();
   }
+  // Algunas HU solo se entienden sobre un catálogo en blanco (crear el primer nivel).
+  // catMode: 'vacio' apunta el recorrido al catálogo sin estructura; 'lleno' a uno con datos.
+  function catParaModo(modo) {
+    var D = window.OBRAS; if (!D || !modo) return null;
+    var list = D.listCatalogos() || [];
+    var match = list.filter(function (c) {
+      return modo === 'vacio' ? !(c.niveles || []).length : (c.niveles || []).length > 0;
+    })[0];
+    return match ? match.id : null;
+  }
   function start(hab) {
     var t = TOURS[hab]; if (!t) return;
-    if (PAGE !== t.page || t.role !== ROLE) {
+    var destino = catParaModo(t.catMode);
+    var actual = qs('cat');
+    if (PAGE !== t.page || t.role !== ROLE || (destino && destino !== actual)) {
       var p = new URLSearchParams(location.search);
       p.set('role', t.role); p.set('tour', hab);
+      if (destino) p.set('cat', destino);
       location.href = t.page + '?' + p.toString();
       return;
     }
@@ -421,8 +434,10 @@
   // ── Boot ──
   function boot() {
     injectCSS(); renderLauncher();
+    // Pasa por start() (no runTour) para que un enlace profundo con ?tour= se
+    // autocorrija: navega a la pantalla, el rol y el catálogo que la HU necesita.
     var auto = qs('tour');
-    if (auto && TOURS[auto]) setTimeout(function () { runTour(auto); }, 500);
+    if (auto && TOURS[auto]) setTimeout(function () { start(auto); }, 500);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

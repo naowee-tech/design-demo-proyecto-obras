@@ -145,7 +145,20 @@
         ].filter(Boolean)
       };
     }
+    // Catálogo recién creado y todavía sin estructura: es el lienzo en blanco para
+    // recorrer la creación de niveles e ítems (PPTO-04, 09, 10) sin borrar nada.
+    function mkVacio(nombre, region, dias) {
+      return {
+        id: uid('cat'), nombre: nombre, region: region,
+        vigenciaIni: '2026-01-01', vigenciaFin: '2026-12-31',
+        estado: 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(dias || 1),
+        niveles: [], items: [],
+        cambiosSinVersionar: 0,
+        versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha(dias || 1) }]
+      };
+    }
     return [
+      mkVacio('Vivienda Nueva — Cundinamarca 2026', 'Cundinamarca', 1),
       mk('Vivienda Rural — Bogotá 2026', 'Bogota', 'Activo', 'v1.3', 42),
       mk('Vivienda Rural — Antioquia 2026', 'Antioquia', 'Activo', 'v1.1', 33),
       mk('Vivienda Rural — Amazonas 2026', 'Amazonas', 'Borrador', 'v1.0', 9),
@@ -159,6 +172,8 @@
       log.push({ id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp, fecha: nuevaFecha(dias), hora: '09:' + (10 + log.length % 40) });
     }
     cats.forEach(function (c, i) {
+      // Un catálogo sin estructura solo registra su creación: no hay niveles ni ítems que auditar.
+      if (!c.niveles.length) { add(c, 'Crear catálogo', 'Catálogo', 'Jesús Díaz', 1); return; }
       add(c, 'Crear catálogo', 'Catálogo', 'Jesús Díaz', 40 - i * 5);
       add(c, 'Crear nivel', 'Nivel · Preliminares', 'Jesús Díaz', 38 - i * 5);
       add(c, 'Crear ítem', 'Ítem · 1.1', 'Carla Méndez', 30 - i * 4);
