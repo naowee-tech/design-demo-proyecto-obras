@@ -1,13 +1,12 @@
 /* ============================================================================
- * Proyecto de Obras — SHELL (sidebar + rolepill + brand-switch)
+ * Proyecto de Obras — SHELL (sidebar + rolepill)
  * Port adaptado de suite-web-territorio/shared/sidebar.js. Reusa las clases de
- * territorio-shell.css / glass-theme.css / skin-ds.css (no inventa estilos).
- * Default skin: Naowee DS (data-brand="ds").
+ * territorio-shell.css / glass-theme.css (no inventa estilos).
+ * Skin único: Territorio (cian + glass), igual que suite-web-territorio.
  * ========================================================================== */
 (function () {
   'use strict';
-  var VERSION = 'v0.4.8';
-  var BRAND_KEY = 'obras-ppto-brand';
+  var VERSION = 'v0.4.9';
 
   var ROLES = {
     ADMIN:   { who: 'Jesús Díaz', rol: 'Admin Naowee',       av: 'JD', col: 'var(--naowee-color-territorio-700)' },
@@ -149,49 +148,8 @@
     if (ov) ov.addEventListener('click', close);
   }
 
-  // ── Brand switch: Territorio (cian) · Naowee (naranja) · Naowee DS (plano) ──
-  function dsAvailable() { return !!document.querySelector('link[href*="skin-ds"]'); }
-  function getBrand() { try { var v = localStorage.getItem(BRAND_KEY); return (v === 'naowee' || v === 'territorio') ? v : 'ds'; } catch (e) { return 'ds'; } }
-  function applyBrand(b) { if (b === 'ds' && !dsAvailable()) b = 'territorio'; document.documentElement.setAttribute('data-brand', (b === 'naowee' || b === 'ds') ? b : 'territorio'); }
-  function injectSwStyle() {
-    if (document.getElementById('obrasSwStyle')) return;
-    var st = document.createElement('style'); st.id = 'obrasSwStyle';
-    st.textContent =
-      '.t-brandsw{position:relative;display:inline-grid;grid-template-columns:repeat(var(--sw-n,3),1fr);align-items:stretch;height:44px;box-sizing:border-box;padding:3px;border-radius:999px;background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.68);box-shadow:0 4px 18px -6px rgba(16,40,60,.16)}' +
-      '.t-brandsw::before{content:"";position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/var(--sw-n,3));border-radius:999px;background:var(--t-board,#fff);box-shadow:0 1px 3px rgba(16,40,60,.14);transition:transform .32s cubic-bezier(.32,.72,0,1);z-index:0}' +
-      '.t-brandsw:has(.t-brandsw-opt[data-brand-val="naowee"][aria-pressed="true"])::before{transform:translateX(100%)}' +
-      '.t-brandsw:has(.t-brandsw-opt[data-brand-val="ds"][aria-pressed="true"])::before{transform:translateX(200%)}' +
-      '.t-brandsw-opt{position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;background:none;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--t-text-2,#6b7480);padding:0 14px;border-radius:999px;transition:color .25s ease;line-height:1}' +
-      '.t-brandsw-opt[aria-pressed="true"]{color:var(--t-text,#1b2330)}' +
-      '.t-brandsw-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.7)}' +
-      '@media(max-width:900px){.t-brandsw-lbl{display:none}.t-brandsw-opt{padding:0 10px}}';
-    document.head.appendChild(st);
-  }
-  function brandPill() {
-    var right = document.querySelector('.t-topbar-right');
-    if (!right || document.getElementById('brandSw')) return;
-    injectSwStyle();
-    var cur = getBrand(); if (cur === 'ds' && !dsAvailable()) cur = 'territorio';
-    var opts = [{ v: 'territorio', label: 'Territorio', dot: '#0B7E96' }, { v: 'naowee', label: 'Naowee', dot: '#FF7500' }];
-    if (dsAvailable()) opts.push({ v: 'ds', label: 'Naowee DS', dot: '#D74009' });
-    var sw = document.createElement('div'); sw.className = 't-brandsw'; sw.id = 'brandSw';
-    sw.style.setProperty('--sw-n', opts.length); sw.setAttribute('role', 'group'); sw.setAttribute('aria-label', 'Tema de marca');
-    sw.innerHTML = opts.map(function (o) {
-      return '<button type="button" class="t-brandsw-opt" data-brand-val="' + o.v + '" aria-pressed="' + (o.v === cur ? 'true' : 'false') + '"><span class="t-brandsw-dot" style="background:' + o.dot + '"></span><span class="t-brandsw-lbl">' + o.label + '</span></button>';
-    }).join('');
-    right.insertBefore(sw, right.firstChild);
-    sw.querySelectorAll('.t-brandsw-opt').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var v = b.getAttribute('data-brand-val'); applyBrand(v);
-        try { localStorage.setItem(BRAND_KEY, v); } catch (e) {}
-        sw.querySelectorAll('.t-brandsw-opt').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-      });
-    });
-  }
-
   function boot() {
-    applyBrand(getBrand());
-    renderSidebar(); renderChrome(); syncIdentity(); brandPill(); wireDrawer();
+    renderSidebar(); renderChrome(); syncIdentity(); wireDrawer();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

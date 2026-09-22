@@ -3,7 +3,7 @@
  * En suite-web-territorio estas reglas viven inline en cada pantalla; aquí se
  * centralizan porque las comparten las 3 páginas. Copiadas LITERALES del espejo.
  * NO añadir componentes propios: si falta algo, existe en territorio-shell.css
- * o en el DS. Carga DESPUÉS de skin-ds.css.
+ * o en el DS. Carga DESPUÉS de territorio-shell.css.
  * ========================================================================== */
 
 /* ── Grilla de formulario del modal (documentos-contractuales.html) ───────── */
