@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.2">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.2">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.3">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.3">
 <style>
   /* Sin overflow:visible aquí: el DS hace que el body scrollee entre el header y el
      footer fijos, y forzarlo rompía ese scroll (el contenido crecía por debajo del footer). */
@@ -121,32 +121,76 @@
         </div>
       </section>
 
-      <!-- ══ CARGA MASIVA ══ -->
+      <!-- ══ CARGA MASIVA ══ (PPTO-12 plantilla · 13 carga · 14 resultado) -->
       <section class="t-panel" id="panel-carga" role="tabpanel" aria-labelledby="tab-carga">
-        <p style="font-size:13px;color:var(--t-text-2);line-height:1.6;margin:0 0 16px">Carga varios ítems desde un archivo <b>Excel (.xlsx)</b> o <b>CSV</b>. Usa la plantilla oficial: <b>no modifiques los encabezados</b>. El sistema valida que el archivo corresponda a la <b>versión vigente</b> de la plantilla.</p>
-        <div class="t-sechead" style="margin-bottom:14px">
-          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <label class="naowee-textfield__label" style="margin:0">¿Qué vas a cargar?</label>
-            <div class="naowee-dropdown naowee-dropdown--small" id="cargaTipo" style="width:210px;flex-shrink:0">
-              <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Ítems del catálogo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
-              <div class="naowee-dropdown__menu" role="listbox">
-                <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="items">Ítems del catálogo</div>
-                <div class="naowee-dropdown__option" data-value="niveles">Estructura (niveles de agrupación)</div>
+        <p style="font-size:13px;color:var(--t-text-2);line-height:1.6;margin:0 0 14px">Carga varios registros desde la <b>plantilla oficial</b>, sin intervención técnica. La plantilla está <b>versionada</b>: si cambia la estructura del catálogo se genera una versión nueva, y el sistema solo acepta archivos de la versión vigente.</p>
+
+        <div class="naowee-stepper" id="cargaStepper" style="margin-bottom:16px">
+          <div class="naowee-stepper__step naowee-stepper__step--active" data-paso="1"><span class="naowee-stepper__number">1</span><span class="naowee-stepper__label">Plantilla y archivo</span></div>
+          <div class="naowee-stepper__connector"></div>
+          <div class="naowee-stepper__step" data-paso="2"><span class="naowee-stepper__number">2</span><span class="naowee-stepper__label">Revisar</span></div>
+          <div class="naowee-stepper__connector"></div>
+          <div class="naowee-stepper__step" data-paso="3"><span class="naowee-stepper__number">3</span><span class="naowee-stepper__label">Resultado</span></div>
+        </div>
+
+        <!-- Paso 1 -->
+        <div id="cargaPaso1">
+          <div class="t-sechead" style="margin-bottom:10px">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="naowee-textfield__label" style="margin:0">¿Qué vas a cargar?</label>
+              <div class="naowee-dropdown naowee-dropdown--small" id="cargaTipo" style="width:210px;flex-shrink:0">
+                <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Ítems del catálogo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
+                <div class="naowee-dropdown__menu" role="listbox">
+                  <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="items">Ítems del catálogo</div>
+                  <div class="naowee-dropdown__option" data-value="niveles">Estructura (niveles de agrupación)</div>
+                </div>
               </div>
+              <span id="cargaNivelWrap" style="display:inline-flex;gap:10px;align-items:center">
+                <label class="naowee-textfield__label" style="margin:0">Nivel destino</label>
+                <div class="naowee-dropdown naowee-dropdown--small" id="cargaNivel" data-search style="width:220px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value naowee-dropdown__placeholder">Seleccione</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
+              </span>
             </div>
+            <button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg>Descargar plantilla</button>
           </div>
-          <button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnPlantilla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg>Descargar plantilla</button>
+          <div id="cargaCols" class="t-carga-info"></div>
+          <div class="t-drop" id="cargaDrop" tabindex="0" role="button" aria-label="Seleccionar archivo">
+            <div class="t-drop-ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 21h14"/></svg></div>
+            <b>Arrastra el archivo aquí o haz clic para seleccionar</b>
+            <span>Formatos aceptados: .csv · .xlsx</span>
+          </div>
+          <div class="t-carga-ejemplos">¿No tienes un archivo a mano? Descarga uno de ejemplo:
+            <button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnEjemplo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg>Ejemplo con la plantilla vigente</button>
+            <button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnEjemploViejo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg>Ejemplo con una versión anterior</button>
+          </div>
         </div>
-        <div id="cargaCols" style="font-size:12px;color:var(--t-text-2);margin:0 0 12px"></div>
-        <div class="t-drop" id="cargaDrop" tabindex="0" role="button" aria-label="Seleccionar archivo">
-          <div class="t-drop-ic"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5"/><path d="M5 21h14"/></svg></div>
-          <b>Arrastra el archivo aquí o haz clic para seleccionar</b>
-          <span>Formatos aceptados: .xlsx · .csv</span>
+
+        <!-- Paso 2 -->
+        <div id="cargaPaso2" hidden>
+          <div id="cargaPrev"></div>
+          <div class="naowee-table-wrap" id="cargaPreviewWrap" style="max-height:420px;overflow:auto">
+            <table class="naowee-table naowee-table--compact naowee-table--sticky-header" id="cargaPreview"><thead id="cargaPreviewHead"></thead><tbody id="cargaPreviewBody"></tbody></table>
+          </div>
+          <div class="t-carga-actions">
+            <button class="naowee-btn naowee-btn--mute" id="cargaCambiar">Cambiar archivo</button>
+            <button class="naowee-btn naowee-btn--loud" id="cargaConfirmar">Confirmar carga</button>
+          </div>
         </div>
-        <div id="cargaPrev"></div>
-        <div class="t-sec-title">Resultado de la última carga</div>
-        <div class="t-prev-stats" id="cargaResult"></div>
-        <div class="t-prev-wrap" id="cargaErrWrap"></div>
+
+        <!-- Paso 3 -->
+        <div id="cargaPaso3" hidden>
+          <div class="t-prev-stats" id="cargaResult"></div>
+          <div class="t-prev-wrap" id="cargaErrWrap"></div>
+          <div class="t-carga-actions">
+            <button class="naowee-btn naowee-btn--mute" id="btnReporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg>Descargar reporte</button>
+            <button class="naowee-btn naowee-btn--loud" id="cargaNueva">Nueva carga</button>
+          </div>
+        </div>
+
+        <div class="t-sec-title" style="margin-top:22px">Historial de cargas</div>
+        <div class="naowee-table-wrap" id="cargaHistWrap">
+          <table class="naowee-table naowee-table--compact" id="cargaHist"><thead><tr><th>Fecha</th><th>Usuario</th><th>Archivo</th><th>Destino</th><th>Detectados</th><th>Procesados</th><th>Fallidos</th><th>Reporte</th></tr></thead><tbody id="cargaHistBody"></tbody></table>
+        </div>
+        <div class="t-empty" id="cargaHistEmpty" style="padding:22px"><b>Aún no hay cargas</b><span>Cada carga confirmada queda aquí con su fecha, usuario y resultado.</span></div>
       </section>
 
       <!-- ══ VERSIONES ══ -->
@@ -335,10 +379,10 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.2"></script>
-<script src="../shared/ui.js?v=0.5.2"></script>
-<script src="../shared/shell.js?v=0.5.2"></script>
-<script src="detalle.js?v=0.5.2"></script>
-<script src="../shared/tour.js?v=0.5.2"></script>
+<script src="../shared/data-catalogo.js?v=0.5.3"></script>
+<script src="../shared/ui.js?v=0.5.3"></script>
+<script src="../shared/shell.js?v=0.5.3"></script>
+<script src="detalle.js?v=0.5.3"></script>
+<script src="../shared/tour.js?v=0.5.3"></script>
 </body>
 </html>

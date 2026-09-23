@@ -315,6 +315,31 @@
     return base + '.xls';
   };
 
+  // ── CSV → filas (PPTO-13): BOM, comillas, separador , o ; (Excel en español usa ;) ──
+  window.OBRAS_UI.parseCSV = function (txt) {
+    txt = (txt || '').replace(/^\uFEFF/, '');
+    // El separador se deduce de los encabezados, no de la fila de identificación (#plantilla=…;…),
+    // que puede venir entre comillas porque lleva ';'.
+    var primera = txt.split(/\r?\n/).filter(function (l) { return l && !/^"?#/.test(l); })[0] || '';
+    var sep = (primera.split(';').length > primera.split(',').length) ? ';' : ',';
+    var rows = [], row = [], cell = '', q = false;
+    for (var i = 0; i < txt.length; i++) {
+      var ch = txt[i];
+      if (q) {
+        if (ch === '"' && txt[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') q = false;
+        else cell += ch;
+      } else if (ch === '"') q = true;
+      else if (ch === sep) { row.push(cell); cell = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && txt[i + 1] === '\n') i++;
+        row.push(cell); rows.push(row); row = []; cell = '';
+      } else cell += ch;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (c) { return c.trim() !== ''; }); });
+  };
+
   document.addEventListener('click', function () { closeAllDD(null); });
   document.addEventListener('DOMContentLoaded', function () { window.OBRAS_UI.initDropdowns(); window.OBRAS_UI.initDatepickers(); });
 })();

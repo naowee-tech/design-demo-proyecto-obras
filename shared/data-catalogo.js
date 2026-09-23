@@ -168,7 +168,11 @@
         estado: estado, versionActiva: ver, creado: nuevaFecha(dias), creadoPor: 'Jesús Díaz',
         niveles: est.niveles, items: est.items,
         cambiosSinVersionar: 0,
-        versiones: versiones
+        versiones: versiones,
+        // La P1 corresponde a una estructura anterior: así el "ejemplo con una versión
+        // anterior" de la carga masiva tiene contra qué ser rechazado (PPTO-13.2).
+        plantillas: [{ v: 1, firma: 'estructura-inicial', fecha: nuevaFecha(dias) }],
+        cargas: []
       };
     }
     // Catálogo recién creado y todavía sin estructura: es el lienzo en blanco para
@@ -241,7 +245,7 @@
   function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
   // Sube cuando cambia la semilla: fuerza a resembrar datos guardados con una semilla vieja.
-  var SEED_V = 4, LS_SEEDV = 'obras-ppto-seedv';
+  var SEED_V = 5, LS_SEEDV = 'obras-ppto-seedv';
   function ensure() {
     var cats = read(LS_KEY);
     if (!cats || !cats.length || read(LS_SEEDV) !== SEED_V) {
@@ -352,6 +356,19 @@
     },
     presupuestosConItem: function (catId, itemId) {
       return this.presupuestosDe(catId).filter(function (p) { return p.itemsUsados.indexOf(itemId) >= 0; });
+    },
+    // PPTO-12.3: la plantilla de carga tiene su propia versión. Sube sola cuando cambia lo
+    // que define sus columnas (niveles y sus campos), aunque no se haya publicado versión.
+    plantillaVigente: function (cat) {
+      var firma = JSON.stringify((cat.niveles || []).filter(function (n) { return n.activo !== false; })
+        .map(function (n) { return [n.id, n.nombre, n.admiteItems ? 1 : 0, (n.admiteItems ? (n.campos && n.campos.length ? n.campos : CAMPOS_DEFAULT) : []).map(function (c) { return c.key + ':' + c.tipo + (c.req ? '*' : ''); })]; }));
+      cat.plantillas = cat.plantillas || [];
+      var last = cat.plantillas[cat.plantillas.length - 1];
+      if (!last || last.firma !== firma) {
+        last = { v: (last ? last.v : 0) + 1, firma: firma, fecha: nuevaFecha(0) };
+        cat.plantillas.push(last); this.saveCatalogo(cat);
+      }
+      return { v: 'P' + last.v, fecha: last.fecha, anterior: cat.plantillas.length > 1 ? 'P' + cat.plantillas[cat.plantillas.length - 2].v : null };
     },
     fmtCOP: function (n) {
       if (n == null || isNaN(n)) return '—';

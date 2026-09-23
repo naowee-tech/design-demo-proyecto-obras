@@ -136,20 +136,31 @@
       title: 'Descargar plantilla de carga masiva', purpose: 'Obtener la plantilla vigente con las columnas del catálogo, versionada.',
       steps: [
         { sel: '[data-tab="carga"]', body: 'Entra a la pestaña <b>Carga masiva</b>.', click: true },
-        { sel: '#btnPlantilla', body: 'Descarga la <b>plantilla vigente</b> (.xlsx). Trae las columnas de los ítems del catálogo y está <b>versionada</b>.' }
+        { sel: '#cargaNivel', body: 'Elige el <b>nivel destino</b>: la plantilla trae las columnas que ese nivel tiene configuradas para sus ítems.' },
+        { sel: '#cargaCols', body: 'La plantilla está <b>versionada</b> (P1, P2…): si cambian los niveles o sus campos se genera una versión nueva sola. Aquí se ven su versión, su fecha y sus columnas.' },
+        { sel: '#btnPlantilla', body: 'Descarga la <b>plantilla vigente</b>. El nombre del archivo lleva el catálogo, el nivel y la versión de la plantilla, y la descarga queda en la auditoría.' }
       ] },
     'PPTO-13': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Cargar archivo masivo de ítems', purpose: 'Ingresar múltiples ítems desde un archivo, con validación y vista previa.',
       steps: [
         { sel: '[data-tab="carga"]', body: 'Pestaña <b>Carga masiva</b>.', click: true },
-        { sel: '#cargaDrop', body: 'Arrastra o selecciona el archivo. El sistema valida que corresponda a la <b>versión vigente</b> de la plantilla.' },
-        { sel: '#cargaPrev .naowee-message, #cargaDrop', body: 'Muestra una <b>vista previa</b> de los ítems detectados antes de confirmar la carga.' }
+        { sel: '#cargaDrop', body: 'Se arrastra o selecciona el archivo (.csv o .xlsx). Primero probamos con uno hecho sobre una <b>versión anterior</b> de la plantilla.', act: function () { window.cargaDemo && window.cargaDemo(true); } },
+        { sel: '#cargaPrev .naowee-message, #cargaPrev', body: 'El sistema lo <b>rechaza</b>: no corresponde a la versión vigente y dice cuál usar. No se procesa nada.' },
+        { sel: '#cargaCambiar', body: 'Ahora con un archivo de la <b>plantilla vigente</b>.', act: function () { window.cargaDemo && window.cargaDemo(false); } },
+        { sel: '#cargaPreviewWrap', body: '<b>Vista previa</b> de los registros detectados antes de procesar. Los que tienen errores de formato u obligatorios vacíos se marcan en rojo con su motivo.' },
+        { sel: '#cargaConfirmar', body: 'Al <b>confirmar</b>, los válidos quedan cargados en el nivel destino; los que tienen error se omiten.', click: true },
+        { sel: '#cargaResult', body: 'Listo: los ítems ya están en el catálogo. El resultado se revisa en <b>PPTO-14</b>.' }
       ] },
     'PPTO-14': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Visualizar resultado de la carga', purpose: 'Ver qué ítems se procesaron y cuáles fallaron con su motivo.',
       steps: [
-        { sel: '[data-tab="carga"]', body: 'Pestaña <b>Carga masiva</b>.', click: true },
-        { sel: '#cargaResult', body: 'Resumen: <b>detectados, procesados y fallidos</b>. Cada fallido muestra el <b>motivo</b>; el reporte se puede descargar.' }
+        { sel: '[data-tab="carga"]', body: 'Pestaña <b>Carga masiva</b>. Hacemos una carga con el archivo de ejemplo para ver su resultado.', click: true },
+        { sel: '#cargaDrop', body: 'Cargamos el ejemplo de la plantilla vigente…', act: function () { window.cargaDemo && window.cargaDemo(false); } },
+        { sel: '#cargaConfirmar', body: '…y confirmamos.', click: true },
+        { sel: '#cargaResult', body: 'Resumen: total <b>detectados</b>, <b>procesados</b> y <b>fallidos</b>.' },
+        { sel: '#cargaErrWrap', body: 'Cada fallido con su <b>motivo específico</b> de error.' },
+        { sel: '#btnReporte', body: '<b>Descarga el reporte</b> con todas las filas y su estado, para revisarlo fuera del sistema.' },
+        { sel: '#cargaHistWrap', body: 'El <b>historial de cargas</b> queda con fecha, usuario, archivo y resultado, y cada carga conserva su reporte. También queda en la Auditoría.' }
       ] },
     // 5 · Versionamiento
     'PPTO-15': { ph: '5 · Versionamiento', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -422,6 +433,14 @@
         if (a === 'done') { endTour(); return; }
         if (a === 'nexthab') { var nh = _nextHab; endTour(); start(nh); return; }
         var step = t.steps[curStep];
+        // act: el paso ejecuta una acción de la página al avanzar (p. ej. cargar el archivo de
+        // ejemplo sin abrir el explorador de archivos) y espera a que se pinte.
+        if (step.act && !_stepActed) {
+          _stepActed = true;
+          try { step.act(); } catch (e) {}
+          setTimeout(function () { _stepActed = false; curStep = Math.min(t.steps.length - 1, curStep + 1); renderStep(); }, 450);
+          return;
+        }
         if (step.click && !_stepActed) {
           var el = findTarget(step.sel);
           if (el) { _stepActed = true; try { el.click(); } catch (e) {} setTimeout(function () { _stepActed = false; curStep = Math.min(t.steps.length - 1, curStep + 1); renderStep(); }, 400); return; }

@@ -116,7 +116,7 @@ Cada fase cierra con verificación en navegador, recorrido de los tours tocados,
 | **F0** ✅ | Bugs base + tours rotos | (desbloquea 06, 10, 13) | v0.5.0 | S |
 | **F1** ✅ | P1 + P2 + P3 | 02, 05, 06, 11 (+19 con detalle) | v0.5.1 | M |
 | **F2** ✅ | Cierres rápidos | 01, 03, 04, 09, 18, 20, 21 (07 parcial) | v0.5.2 | M |
-| **F3** | Carga masiva (P7) | 12, 13, 14 | v0.5.3 | M |
+| **F3** ✅ | Carga masiva (P7) | 12, 13, 14 | v0.5.3 | M |
 | **F4** | Motor de fórmulas (P4) | 08, 10 | v0.5.4 | M |
 | **F5** | Jerarquía (P5) — **requiere D4-D7 validadas** | 04, 05, 07 (completa), 17 | v0.6.0 | L |
 | **F6** | Barrido final: tours, índice, matriz de cobertura, QA | todas | v0.6.1 | S |
@@ -183,6 +183,19 @@ Van primero porque varios contaminan las demás HU.
 - **20** filtro por responsable, rango de fechas (`[data-dp-range]` en `initDP`), conteo "N de M registros".
 - **21** menú Excel / PDF / CSV (`OBRAS_UI.exportar`), exporta lo filtrado y declara los filtros en el archivo, nombre con fecha y hora de generación, queda en la auditoría.
 - Semilla v4.
+
+## 4d. F3 — cerrada 2026-09-22 (v0.5.3)
+
+- **Plantilla versionada propia** (`OBRAS.plantillaVigente`): P1, P2… según una firma de los niveles activos y sus campos; sube sola al cambiar la estructura. La semilla trae una P1 "anterior" para poder mostrar el rechazo.
+- **Plantilla por nivel destino**: columnas = claves de los campos del nivel (`cod,nombre,tipo,uni,cantidad,valorUnit,…`); fila 1 de identificación `#plantilla=P2;catalogo=…;tipo=items;nivel=…`. Nombre `plantilla-items-<catálogo>-<nivel>-P2.csv`. La descarga queda en auditoría.
+- **Asistente de 3 pasos** (`.naowee-stepper`): archivo → revisar → resultado.
+- **Lectura real del CSV** (`OBRAS_UI.parseCSV`: BOM, comillas, separador `,` o `;` de Excel en español). `.xlsx` se acepta y se procesa el ejemplo vigente con aviso explícito (sin librería).
+- **Rechazos antes de procesar**: formato, sin identificación, versión no vigente, otro catálogo, otro tipo, otro nivel, encabezados modificados, archivo vacío.
+- **Validación por fila** en la vista previa (obligatorios, números con `$` y puntos de miles, porcentaje, unidad, lista, sí/no, fecha, código repetido en el catálogo o en el archivo, nombre de nivel repetido). Botón "Cargar N válidos · omitir M".
+- **Carga real**: ítems al nivel destino (o niveles a la estructura), marca cambio sin versionar, auditoría con archivo y resultado.
+- **Resultado**: detectados / procesados / fallidos, lista de fallidos con motivo, reporte descargable (.xls), historial de cargas con reporte por carga.
+- Ejemplos descargables (vigente / versión anterior) con códigos libres, y `cargaDemo()` para el tour. Tour: nuevo campo `act` (ejecuta una acción al avanzar).
+- Semilla v5.
 
 ## 5. Fichas por HU (qué se hace, cómo fluye, cuándo es verde)
 
@@ -373,9 +386,9 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | 09 Admite ítems | ✅ | retoques | ✅ v0.5.2 |
 | 10 Crear ítem | 🟡 | F0 + F2 + F4 (falta evaluar fórmula) | ☐ |
 | 11 Editar ítem | 🔴 | F1 | ✅ v0.5.1 |
-| 12 Descargar plantilla | 🟡 | F3 | ☐ |
-| 13 Carga masiva | 🔴 | F3 | ☐ |
-| 14 Resultado de carga | 🟡 | F3 | ☐ |
+| 12 Descargar plantilla | 🟡 | F3 | ✅ v0.5.3 |
+| 13 Carga masiva | 🔴 | F3 | ✅ v0.5.3 |
+| 14 Resultado de carga | 🟡 | F3 | ✅ v0.5.3 |
 | 15 Nueva versión | ✅ | retoques | ☐ |
 | 16 Historial de versiones | ✅ | F0 (B13) | ☐ |
 | 17 Consultar catálogo | ✅ | F4 + F5 | ☐ |

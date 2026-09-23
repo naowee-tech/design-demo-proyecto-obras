@@ -630,64 +630,324 @@
     UI.toast('Ítem ' + esc(data.cod) + ' guardado.');
   }
 
-  // ── CARGA MASIVA (simulada) ──
-  var PLANTILLAS = {
-    items:   { label: 'Ítems del catálogo', cols: function () { return ['nivel', 'codigo', 'nombre'].concat(tableCampos().map(function (c) { return c.key; })); },
-               motivos: ['Unidad no reconocida', 'Valor unitario vacío', 'Nivel inexistente'], sujeto: 'ítems' },
-    niveles: { label: 'Estructura (niveles)', cols: function () { return ['codigo', 'nombre', 'orden', 'admite_items', 'tipo_valor', 'formula']; },
-               motivos: ['Orden duplicado', 'tipo_valor no válido (usa fijo/formula/ninguno)', 'Nombre repetido en el mismo padre'], sujeto: 'niveles' }
-  };
+  // ── CARGA MASIVA (PPTO-12 plantilla · 13 carga · 14 resultado) ──
+  // El CSV se lee de verdad: metadatos de la plantilla en la primera fila, encabezados en la
+  // segunda y una fila por registro. Un .xlsx no se puede leer sin librería en esta demo:
+  // se acepta y se procesa el ejemplo vigente, avisándolo en pantalla.
+  var carga = null;   // { tipo, nivelId, archivo, filas:[{fila, ref, ok, motivo, dato}] }
+  var ESTRUCTURA_COLS = [
+    { key: 'codigo', label: 'Código', req: true }, { key: 'nombre', label: 'Nombre', req: true },
+    { key: 'orden', label: 'Posición', tipo: 'numero' }, { key: 'descripcion', label: 'Descripción' },
+    { key: 'admite_items', label: 'Admite ítems (si/no)', tipo: 'booleano' },
+    { key: 'tipo_valor', label: 'Valor (formula/fijo/ninguno)' }, { key: 'valor_fijo', label: 'Valor fijo', tipo: 'moneda' }
+  ];
   function cargaTipo() { return UI.getDD('cargaTipo') || 'items'; }
+  function nivelesConItems() { return cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).sort(function (a, b) { return a.orden - b.orden; }); }
+  function cargaNivel() { return UI.getDD('cargaNivel'); }
+  function colsPlantilla() {
+    if (cargaTipo() === 'niveles') return ESTRUCTURA_COLS;
+    var n = nivelById(cargaNivel());
+    return n ? camposDe(n) : [];
+  }
+  function metaPlantilla(v) {
+    return '#plantilla=' + v + ';catalogo=' + cat.id + ';tipo=' + cargaTipo() + (cargaTipo() === 'items' ? ';nivel=' + cargaNivel() : '');
+  }
+  function csvDe(filas) {
+    return '﻿' + filas.map(function (r) { return r.map(function (v) { v = v == null ? '' : String(v); return /[",;\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\r\n') + '\r\n';
+  }
+  function nombreArchivo(pref, v) { return pref + '-' + cargaTipo() + '-' + slug(cat.nombre) + (cargaTipo() === 'items' ? '-' + slug((nivelById(cargaNivel()) || {}).nombre) : '') + '-' + v + '.csv'; }
+
+  function fillCargaNivel() {
+    var sel = cargaNivel(), ns = nivelesConItems();
+    UI.fillDD('cargaNivel', ns.map(function (n) { return { value: n.id, label: n.nombre }; }), null);
+    var keep = ns.filter(function (n) { return n.id === sel; })[0] || ns[0];
+    if (keep) UI.setDD('cargaNivel', keep.id, keep.nombre);
+  }
   function renderCarga() {
-    var t = PLANTILLAS[cargaTipo()];
-    document.getElementById('cargaCols').innerHTML = 'Columnas de la plantilla: ' + t.cols().map(function (c) { return '<code>' + esc(c) + '</code>'; }).join(' · ');
+    if (!document.getElementById('cargaTipo')) return;
+    fillCargaNivel();
+    var items = cargaTipo() === 'items';
+    document.getElementById('cargaNivelWrap').style.display = items ? '' : 'none';
+    var pv = D.plantillaVigente(cat), cols = colsPlantilla();
+    var sinNivel = items && !cargaNivel();
+    document.getElementById('btnPlantilla').disabled = sinNivel;
+    document.getElementById('cargaCols').innerHTML = sinNivel
+      ? 'Este catálogo aún no tiene niveles que admitan ítems. Crea uno en <b>Estructura</b> para poder cargar ítems.'
+      : 'Plantilla vigente <b>' + pv.v + '</b> · generada el ' + fdate(pv.fecha) + (pv.anterior ? ' (reemplaza a la ' + pv.anterior + ')' : '') +
+        '<br>Columnas: ' + cols.map(function (c) { return '<code>' + esc(c.key) + '</code>' + (c.req ? '*' : ''); }).join(' ') +
+        ' <span style="opacity:.8">· * obligatoria</span>';
+  }
+  function paso(n) {
+    [1, 2, 3].forEach(function (i) {
+      document.getElementById('cargaPaso' + i).hidden = i !== n;
+      var st = document.querySelector('#cargaStepper [data-paso="' + i + '"]');
+      st.classList.toggle('naowee-stepper__step--active', i === n);
+      st.classList.toggle('naowee-stepper__step--done', i < n);
+    });
+    document.querySelectorAll('#cargaStepper .naowee-stepper__connector').forEach(function (c, i) { c.classList.toggle('naowee-stepper__connector--done', i + 1 < n); });
+  }
+  function descargarPlantilla() {
+    var pv = D.plantillaVigente(cat), cols = colsPlantilla();
+    if (!cols.length) return;
+    var nombre = nombreArchivo('plantilla', pv.v);
+    UI.descargar(nombre, csvDe([[metaPlantilla(pv.v)], cols.map(function (c) { return c.key; })]), 'text/csv;charset=utf-8');
+    D.logAudit(cat, 'Descargar plantilla', 'Plantilla · ' + pv.v, null, { archivo: nombre });
+    renderAuditoria();
+    UI.toast('Plantilla ' + pv.v + ' descargada: ' + esc(nombre));
+  }
+  // Archivos de ejemplo para recorrer la demo sin preparar nada: 10 filas válidas y 2 con error.
+  function ejemploFilas() {
+    var cols = colsPlantilla();
+    if (cargaTipo() === 'niveles') {
+      return [['90', 'Obras exteriores', '8', 'Andenes y cerramientos', 'si', 'formula', ''], ['91', 'Carpintería metálica', '9', '', 'si', 'formula', ''],
+              ['92', 'Aseo final de obra', '10', '', 'no', 'fijo', '850000'], ['93', 'Señalización', '11', '', 'si', 'formula', ''],
+              ['94', 'Preliminares', '12', 'Nombre repetido', 'si', 'formula', ''], ['95', '', '13', 'Sin nombre', 'si', 'formula', '']]
+        .map(function (r) { return ESTRUCTURA_COLS.map(function (c, i) { return r[i]; }); });
+    }
+    var n = nivelById(cargaNivel()), base = (n && n.codigo) || '9', filas = [];
+    // Códigos libres: el ejemplo se puede cargar varias veces sin chocar con lo ya cargado.
+    var desde = 90 + cat.items.reduce(function (mx, it) {
+      var m = new RegExp('^' + base.replace('.', '\\.') + '\\.(\\d+)$').exec(it.cod || '');
+      return m ? Math.max(mx, +m[1] - 89) : mx;
+    }, 0);
+    var NOMBRES = ['Suministro e instalación de malla electrosoldada', 'Mortero de nivelación e=3 cm', 'Sello de juntas con masilla elástica', 'Retiro de sobrantes a botadero',
+                   'Limpieza de superficie con cepillo de acero', 'Curado de concreto con antisol', 'Anclaje químico ø 1/2"', 'Formaleta metálica (alquiler)', 'Bordillo prefabricado',
+                   'Imprimante asfáltico'];
+    for (var i = 0; i < 12; i++) {
+      var r = {}; cols.forEach(function (c) { r[c.key] = ''; });
+      r.cod = base + '.' + (desde + i); r.nombre = NOMBRES[i % NOMBRES.length];
+      r.tipo = i === 7 ? 'Servicio' : 'Producto'; r.uni = ['m2', 'm2', 'm', 'm3', 'm2', 'm2', 'un', 'mes', 'm', 'lt'][i % 10];
+      r.cantidad = 1; r.valorUnit = 12000 + i * 3750;
+      cols.forEach(function (c) {
+        if (STD[c.key]) return;
+        if (c.tipo === 'lista') r[c.key] = (c.opciones || [])[0] || '';
+        else if (c.tipo === 'booleano') r[c.key] = 'no';
+        else if (c.tipo === 'fecha') r[c.key] = D.hoy();
+        else if (NUMERICO[c.tipo]) r[c.key] = c.tipo === 'porcentaje' ? 5 : 1;
+        else r[c.key] = 'ok';
+      });
+      if (i === 10) r.uni = 'metros';        // unidad no reconocida
+      if (i === 11) r.valorUnit = '';        // obligatorio vacío
+      filas.push(cols.map(function (c) { return r[c.key]; }));
+    }
+    return filas;
+  }
+  function descargarEjemplo(viejo) {
+    var pv = D.plantillaVigente(cat), cols = colsPlantilla(); if (!cols.length) return;
+    var v = viejo ? 'P' + Math.max(1, parseInt(pv.v.slice(1), 10) - 1) : pv.v;
+    var nombre = nombreArchivo(viejo ? 'ejemplo-version-anterior' : 'ejemplo', v);
+    UI.descargar(nombre, csvDe([[metaPlantilla(v)], cols.map(function (c) { return c.key; })].concat(ejemploFilas())), 'text/csv;charset=utf-8');
+  }
+
+  function mensaje(tono, html) {
+    return '<div class="naowee-message naowee-message--' + tono + '" style="margin:0 0 12px"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">' +
+      (tono === 'negative' ? '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>' : tono === 'caution' ? '<path d="M12 3l9 17H3z"/><path d="M12 9v4M12 17h.01"/>' : '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>') +
+      '</svg></span><div class="naowee-message__body">' + html + '</div></div></div>';
+  }
+  // Rechazo: el archivo no se procesa y se explica por qué (PPTO-13.2).
+  function rechazar(html) {
+    carga = null;
+    document.getElementById('cargaPrev').innerHTML = mensaje('negative', html);
+    document.getElementById('cargaPreviewWrap').style.display = 'none';
+    document.getElementById('cargaConfirmar').style.display = 'none';
+    paso(2);
+  }
+  function leerArchivo(file) {
+    if (!file) return;
+    var ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext !== 'csv' && ext !== 'xlsx') { rechazar('<b>Formato no admitido (.' + esc(ext) + ').</b> Usa la plantilla oficial en .csv o .xlsx.'); return; }
+    if (ext === 'xlsx') {
+      var pv = D.plantillaVigente(cat);
+      procesar(csvDe([[metaPlantilla(pv.v)], colsPlantilla().map(function (c) { return c.key; })].concat(ejemploFilas())), file.name,
+        '<b>' + esc(file.name) + '</b>: en esta demo los .xlsx no se leen; se procesa el ejemplo de la plantilla vigente para mostrar el flujo. El .csv sí se lee tal cual.');
+      return;
+    }
+    var fr = new FileReader();
+    fr.onload = function () { procesar(fr.result, file.name); };
+    fr.readAsText(file, 'utf-8');
+  }
+  function valida(c, raw) {
+    raw = (raw == null ? '' : String(raw)).trim();
+    if (!raw) return c.req ? { err: c.label + ' es obligatorio' } : { v: NUMERICO[c.tipo] ? null : '' };
+    if (NUMERICO[c.tipo]) {
+      var n = num(raw.replace(/\$|\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'));
+      if (n == null) return { err: c.label + ' debe ser un número' };
+      if (c.tipo === 'porcentaje' && (n < 0 || n > 100)) return { err: c.label + ' debe estar entre 0 y 100' };
+      return { v: n };
+    }
+    if (c.tipo === 'unidad') { return D.UNIDADES.indexOf(raw) >= 0 ? { v: raw } : { err: 'Unidad «' + raw + '» no reconocida' }; }
+    if (c.tipo === 'lista') {
+      var op = (c.opciones || []).filter(function (o) { return norm(o) === norm(raw); })[0];
+      return op ? { v: op } : { err: c.label + ' debe ser una de: ' + (c.opciones || []).join(', ') };
+    }
+    if (c.tipo === 'booleano') {
+      if (/^(si|sí|s|true|1|x)$/i.test(raw)) return { v: 'Sí' };
+      if (/^(no|n|false|0)$/i.test(raw)) return { v: 'No' };
+      return { err: c.label + ' debe ser si o no' };
+    }
+    if (c.tipo === 'fecha') {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw) || /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(raw);
+      if (!m) return { err: c.label + ' debe ser AAAA-MM-DD o DD/MM/AAAA' };
+      return { v: m[1].length === 4 ? raw : m[3] + '-' + m[2] + '-' + m[1] };
+    }
+    return { v: raw };
+  }
+  function procesar(txt, archivo, aviso) {
+    var rows = UI.parseCSV(txt), pv = D.plantillaVigente(cat), cols = colsPlantilla();
+    var metaRow = rows[0] && rows[0][0] && rows[0][0].charAt(0) === '#' ? rows.shift()[0] : '';
+    var meta = {}; metaRow.slice(1).split(';').forEach(function (kv) { var p = kv.split('='); if (p[0]) meta[p[0].trim()] = (p[1] || '').trim(); });
+    if (!meta.plantilla) { rechazar('<b>El archivo no es la plantilla oficial.</b> Falta la fila de identificación de la plantilla. Descarga la plantilla vigente (' + pv.v + ') y vuelve a cargar.'); return; }
+    if (meta.plantilla !== pv.v) { rechazar('<b>La plantilla no corresponde a la versión vigente.</b> El archivo usa la <b>' + esc(meta.plantilla) + '</b> y la vigente es la <b>' + pv.v + '</b> (la estructura cambió el ' + fdate(pv.fecha) + '). Descarga la plantilla actual y vuelve a cargar.'); return; }
+    if (meta.catalogo && meta.catalogo !== cat.id) { rechazar('<b>La plantilla es de otro catálogo.</b> Descárgala desde este catálogo.'); return; }
+    if (meta.tipo && meta.tipo !== cargaTipo()) { rechazar('<b>La plantilla es de ' + (meta.tipo === 'items' ? 'ítems' : 'estructura') + '</b> y elegiste cargar ' + (cargaTipo() === 'items' ? 'ítems' : 'estructura') + '.'); return; }
+    if (cargaTipo() === 'items' && meta.nivel && meta.nivel !== cargaNivel()) {
+      var nv = nivelById(meta.nivel);
+      rechazar('<b>La plantilla es del nivel «' + esc(nv ? nv.nombre : meta.nivel) + '».</b> Cambia el nivel destino o descarga la plantilla del nivel elegido.'); return;
+    }
+    var head = (rows.shift() || []).map(function (h) { return h.trim(); });
+    var esperado = cols.map(function (c) { return c.key; });
+    if (head.join('|') !== esperado.join('|')) { rechazar('<b>Los encabezados no coinciden con la plantilla ' + pv.v + '.</b> Se esperaban: <code>' + esperado.join(', ') + '</code>. No modifiques ni reordenes las columnas.'); return; }
+    if (!rows.length) { rechazar('<b>El archivo no trae registros</b> debajo de los encabezados.'); return; }
+
+    var vistos = {}, filas = rows.map(function (r, i) {
+      var dato = {}, errs = [];
+      cols.forEach(function (c, j) { var x = valida(c, r[j]); if (x.err) errs.push(x.err); else dato[c.key] = x.v; });
+      var ref, dup;
+      if (cargaTipo() === 'items') {
+        ref = dato.cod || (r[0] || '').trim();
+        dup = dato.cod && (vistos[norm(dato.cod)] || cat.items.some(function (it) { return norm(it.cod) === norm(dato.cod); }));
+        if (dup) errs.push('Código ' + dato.cod + ' repetido');
+        if (dato.cod) vistos[norm(dato.cod)] = 1;
+      } else {
+        ref = dato.nombre || '(sin nombre)';
+        if (dato.tipo_valor && ['formula', 'fijo', 'ninguno'].indexOf(norm(dato.tipo_valor)) < 0) errs.push('Valor debe ser formula, fijo o ninguno');
+        dup = dato.nombre && (vistos[norm(dato.nombre)] || cat.niveles.some(function (n) { return norm(n.nombre) === norm(dato.nombre); }));
+        if (dup) errs.push('Ya existe un nivel «' + dato.nombre + '»');
+        if (dato.nombre) vistos[norm(dato.nombre)] = 1;
+      }
+      return { fila: i + 3, ref: ref, ok: !errs.length, motivo: errs.join(' · '), dato: dato };
+    });
+    carga = { tipo: cargaTipo(), nivelId: cargaNivel(), archivo: archivo, plantilla: pv.v, filas: filas };
+    var ok = filas.filter(function (f) { return f.ok; }).length, fail = filas.length - ok;
+    document.getElementById('cargaPrev').innerHTML = (aviso ? mensaje('caution', aviso) : '') + mensaje(fail ? 'caution' : 'informative',
+      'Vista previa de <b>' + esc(archivo) + '</b> · plantilla <b>' + pv.v + '</b> · destino <b>' + (carga.tipo === 'items' ? esc((nivelById(carga.nivelId) || {}).nombre) : 'estructura del catálogo') + '</b>: ' +
+      '<b>' + filas.length + '</b> registros detectados, <b>' + ok + '</b> válidos' + (fail ? ' y <b>' + fail + '</b> con error (marcados en rojo). Los que tienen error no se cargan.' : '. Nada se guarda hasta que confirmes.'));
+    var vis = cols.slice(0, 6);
+    document.getElementById('cargaPreviewHead').innerHTML = '<tr><th>Fila</th><th>Estado</th>' + vis.map(function (c) { return '<th>' + esc(c.label || c.key) + '</th>'; }).join('') + '<th>Motivo</th></tr>';
+    document.getElementById('cargaPreviewBody').innerHTML = filas.slice(0, 100).map(function (f, i) {
+      var raw = rows[i];
+      return '<tr' + (f.ok ? '' : ' class="t-carga-err"') + '><td>' + f.fila + '</td><td>' +
+        (f.ok ? '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Válido</span>' : '<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small">Error</span>') + '</td>' +
+        vis.map(function (c, j) { return '<td>' + esc(raw[cols.indexOf(c)]) + '</td>'; }).join('') +
+        '<td class="t-carga-motivo">' + esc(f.motivo) + '</td></tr>';
+    }).join('');
+    document.getElementById('cargaPreviewWrap').style.display = '';
+    var btn = document.getElementById('cargaConfirmar');
+    btn.style.display = ''; btn.disabled = !ok;
+    btn.textContent = ok ? 'Cargar ' + ok + ' válido' + (ok === 1 ? '' : 's') + (fail ? ' · omitir ' + fail : '') : 'No hay registros válidos';
+    paso(2);
+  }
+  function confirmarCarga() {
+    if (!carga) return;
+    var ok = carga.filas.filter(function (f) { return f.ok; });
+    if (carga.tipo === 'items') {
+      var n = nivelById(carga.nivelId), campos = camposDe(n);
+      ok.forEach(function (f, i) {
+        var d = f.dato, extra = {};
+        campos.forEach(function (c) { if (!STD[c.key]) extra[c.key] = d[c.key]; });
+        var cant = d.cantidad == null ? 1 : d.cantidad, vu = d.valorUnit || 0;
+        cat.items.unshift({ id: 'it-' + slugKey(d.cod) + '-' + Date.now().toString(36) + i, nivelId: n.id, cod: d.cod, nombre: d.nombre, tipo: d.tipo || 'Producto',
+          uni: d.uni || '', cantidad: cant, valorUnit: vu, extra: extra, formula: null, valorTotal: Math.round(vu * cant), nuevo: true });
+      });
+    } else {
+      var maxOrden = Math.max.apply(null, [0].concat(cat.niveles.map(function (x) { return x.orden; })));
+      ok.forEach(function (f, i) {
+        var d = f.dato, tv = norm(d.tipo_valor) || 'formula';
+        cat.niveles.push({ id: 'nv-' + slugKey(d.nombre) + '-' + Date.now().toString(36) + i, codigo: d.codigo, nombre: d.nombre, orden: d.orden || (maxOrden + i + 1),
+          descripcion: d.descripcion || '', admiteItems: d.admite_items !== 'No', valorTipo: tv, valorFijo: tv === 'fijo' ? (d.valor_fijo || 0) : null,
+          formula: tv === 'formula' ? 'SUMA(ítems del nivel)' : null, campos: D.camposDefault(), activo: true, creado: D.hoy(), creadoPor: D.usuarioActual() });
+      });
+    }
+    var ahora = new Date();
+    var reg = { id: 'cg-' + ahora.getTime().toString(36), fecha: D.hoy(), hora: ahora.toTimeString().slice(0, 5), usuario: D.usuarioActual(), archivo: carga.archivo,
+      tipo: carga.tipo, destino: carga.tipo === 'items' ? (nivelById(carga.nivelId) || {}).nombre : 'Estructura', plantilla: carga.plantilla,
+      detectados: carga.filas.length, ok: ok.length, fail: carga.filas.length - ok.length,
+      filas: carga.filas.map(function (f) { return { fila: f.fila, ref: f.ref, ok: f.ok, motivo: f.motivo }; }) };
+    cat.cargas = cat.cargas || []; cat.cargas.unshift(reg);
+    D.saveCatalogo(cat);
+    D.logAudit(cat, 'Carga masiva', (carga.tipo === 'items' ? 'Ítem' : 'Nivel') + ' · ' + reg.ok + ' cargados en ' + reg.destino, null, { archivo: reg.archivo, ok: reg.ok, fail: reg.fail });
+    tocado();
+    renderNiveles(); renderItems(); renderHead(); renderAuditoria(); renderCarga();
+    renderResultado(reg); renderHistorial();
+    carga = null;
+    paso(3);
   }
   function vgCard(kind, label, value, icon) {
     return '<div class="vg-card ' + kind + '"><div class="vg-ic">' + icon + '</div><div><div class="vg-l">' + label + '</div><div class="vg-v">' + value + '</div></div></div>';
   }
-  function renderCargaResult(det, ok, fail) {
-    var t = PLANTILLAS[cargaTipo()];
+  var _ultimo = null;
+  function renderResultado(reg) {
+    _ultimo = reg;
     var IC_FILE = '<svg viewBox="0 0 24 24"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>';
     var IC_OK = '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>';
     var IC_ERR = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
     document.getElementById('cargaResult').innerHTML =
-      vgCard('neutral', 'Detectados', det, IC_FILE) + vgCard('ok', 'Procesados', ok, IC_OK) + vgCard('rech', 'Fallidos', fail, IC_ERR);
-    var rows = '';
-    for (var i = 0; i < fail; i++) rows += '<tr><td data-label="Registro">fila ' + (det - fail + i + 1) + '</td><td data-label="Motivo">' + t.motivos[i % t.motivos.length] + '</td></tr>';
+      vgCard('neutral', 'Detectados', reg.detectados, IC_FILE) + vgCard('ok', 'Procesados', reg.ok, IC_OK) + vgCard('rech', 'Fallidos', reg.fail, IC_ERR);
+    var fallidos = reg.filas.filter(function (f) { return !f.ok; });
     var w = document.getElementById('cargaErrWrap');
-    w.innerHTML = fail ? '<table class="naowee-table"><thead><tr><th>Registro</th><th>Motivo del error</th></tr></thead><tbody>' + rows + '</tbody></table>' : '';
-    w.style.display = fail ? '' : 'none';
+    w.innerHTML = fallidos.length ? '<table class="naowee-table naowee-table--compact"><thead><tr><th>Fila</th><th>Registro</th><th>Motivo del error</th></tr></thead><tbody>' +
+      fallidos.map(function (f) { return '<tr><td data-label="Fila">' + f.fila + '</td><td data-label="Registro">' + esc(f.ref) + '</td><td data-label="Motivo" class="t-carga-motivo">' + esc(f.motivo) + '</td></tr>'; }).join('') + '</tbody></table>' : '';
+    w.style.display = fallidos.length ? '' : 'none';
   }
-  // Antes de la primera carga no hay resultado que mostrar (antes se pintaba uno inventado).
-  function renderCargaVacio() {
-    document.getElementById('cargaResult').innerHTML =
-      '<div class="t-empty show" style="grid-column:1/-1;flex:1 1 100%;width:100%;padding:18px"><b>Aún no hay cargas en esta sesión</b><span>Sube un archivo para ver cuántos registros se detectaron, procesaron y fallaron.</span></div>';
-    var w = document.getElementById('cargaErrWrap'); w.innerHTML = ''; w.style.display = 'none';
+  function reporte(reg) {
+    var archivo = UI.exportar({
+      formato: 'xls', nombre: 'reporte-carga-' + slug(cat.nombre),
+      titulo: 'Resultado de carga masiva · ' + cat.nombre,
+      meta: ['Archivo: ' + reg.archivo + ' · plantilla ' + reg.plantilla + ' · destino: ' + reg.destino,
+             'Cargado el ' + fdate(reg.fecha) + ' ' + reg.hora + ' por ' + reg.usuario + ' · ' + reg.detectados + ' detectados, ' + reg.ok + ' procesados, ' + reg.fail + ' fallidos'],
+      columnas: ['Fila', 'Registro', 'Estado', 'Motivo'],
+      filas: reg.filas.map(function (f) { return [f.fila, f.ref, f.ok ? 'Procesado' : 'Fallido', f.motivo]; })
+    });
+    if (archivo) UI.toast('Reporte descargado: ' + esc(archivo));
   }
-  function simulateCarga() {
-    var t = PLANTILLAS[cargaTipo()];
-    var det = cargaTipo() === 'niveles' ? 8 : 20, fail = 2, ok = det - fail;
-    document.getElementById('cargaPrev').innerHTML =
-      '<div class="naowee-message naowee-message--informative" style="margin:14px 0"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></span><div class="naowee-message__body">Vista previa: <b>' + det + ' ' + t.sujeto + '</b> detectados. Archivo válido para la versión <b>' + cat.versionActiva + '</b> de la plantilla. <i>Simulación de demo: no inserta datos.</i></div></div></div>';
-    renderCargaResult(det, ok, fail);
-    D.logAudit(cat, 'Carga masiva', t.sujeto.charAt(0).toUpperCase() + t.sujeto.slice(1) + ' · ' + ok + ' procesados');
-    renderAuditoria();
+  function renderHistorial() {
+    var hs = cat.cargas || [];
+    document.getElementById('cargaHistBody').innerHTML = hs.map(function (h) {
+      return '<tr><td data-label="Fecha">' + fdate(h.fecha) + ' ' + h.hora + '</td><td data-label="Usuario">' + esc(h.usuario) + '</td>' +
+        '<td data-label="Archivo"><span class="t-cname" title="' + esc(h.archivo) + '">' + esc(h.archivo) + '</span></td><td data-label="Destino">' + esc(h.destino) + '</td>' +
+        '<td data-label="Detectados" class="tnum">' + h.detectados + '</td><td data-label="Procesados" class="tnum">' + h.ok + '</td><td data-label="Fallidos" class="tnum">' + h.fail + '</td>' +
+        '<td data-label="Reporte"><button class="naowee-btn naowee-btn--mute naowee-btn--small" data-rep="' + h.id + '">Descargar</button></td></tr>';
+    }).join('');
+    document.querySelectorAll('#cargaHistBody [data-rep]').forEach(function (b) {
+      b.onclick = function () { reporte(hs.filter(function (h) { return h.id === b.dataset.rep; })[0]); };
+    });
+    document.getElementById('cargaHistWrap').style.display = hs.length ? '' : 'none';
+    document.getElementById('cargaHistEmpty').classList.toggle('show', !hs.length);
   }
   function initCarga() {
-    renderCarga(); renderCargaVacio();
+    renderCarga(); renderHistorial(); paso(1);
     var drop = document.getElementById('cargaDrop');
-    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.csv'; inp.style.display = 'none';
+    var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.csv,.xlsx'; inp.style.display = 'none'; inp.id = 'cargaFile';
     document.body.appendChild(inp);
-    drop.addEventListener('click', function () { inp.click(); });
-    drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } });
-    inp.addEventListener('change', simulateCarga);
+    drop.addEventListener('click', function () { inp.value = ''; inp.click(); });
+    drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.value = ''; inp.click(); } });
+    inp.addEventListener('change', function () { leerArchivo(inp.files[0]); });
     drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('drag'); });
     drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
-    drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('drag'); simulateCarga(); });
-    document.getElementById('cargaTipo').addEventListener('dd:change', function () { renderCarga(); renderCargaVacio(); document.getElementById('cargaPrev').innerHTML = ''; });
-    document.getElementById('btnPlantilla').onclick = function () {
-      var t = PLANTILLAS[cargaTipo()];
-      downloadFile('plantilla-' + cargaTipo() + '-' + slug(cat.nombre) + '-' + cat.versionActiva + '.csv', t.cols().join(',') + '\n');
+    drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('drag'); leerArchivo(e.dataTransfer.files[0]); });
+    document.getElementById('cargaTipo').addEventListener('dd:change', function () { renderCarga(); paso(1); });
+    document.getElementById('cargaNivel').addEventListener('dd:change', function () { renderCarga(); paso(1); });
+    document.getElementById('btnPlantilla').onclick = descargarPlantilla;
+    document.getElementById('btnEjemplo').onclick = function () { descargarEjemplo(false); };
+    document.getElementById('btnEjemploViejo').onclick = function () { descargarEjemplo(true); };
+    document.getElementById('cargaCambiar').onclick = function () { carga = null; paso(1); };
+    document.getElementById('cargaConfirmar').onclick = confirmarCarga;
+    document.getElementById('cargaNueva').onclick = function () { paso(1); };
+    document.getElementById('btnReporte').onclick = function () { if (_ultimo) reporte(_ultimo); };
+    // Para el recorrido guiado: carga el ejemplo (vigente o anterior) sin pasar por el explorador de archivos.
+    window.cargaDemo = function (viejo) {
+      var pv = D.plantillaVigente(cat), v = viejo ? 'P' + Math.max(1, parseInt(pv.v.slice(1), 10) - 1) : pv.v;
+      procesar(csvDe([[metaPlantilla(v)], colsPlantilla().map(function (c) { return c.key; })].concat(ejemploFilas())), nombreArchivo(viejo ? 'ejemplo-version-anterior' : 'ejemplo', v));
     };
   }
 
@@ -848,14 +1108,7 @@
   }
 
   function slug(s) { return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/gi, '-').toLowerCase(); }
-  function downloadFile(name, content) {
-    try {
-      var blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
-      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
-      document.body.appendChild(a); a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-    } catch (e) {}
-  }
+
 
   document.addEventListener('DOMContentLoaded', function () {
     loadCat();
