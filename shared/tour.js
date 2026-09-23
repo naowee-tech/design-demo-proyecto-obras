@@ -91,10 +91,14 @@
       title: 'Configurar valor o fórmula en un nivel', purpose: 'Definir si un nivel lleva valor fijo o una fórmula de cálculo (ej. suma de ítems).',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
-        { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del nivel.', click: true },
+        { sel: '#nivelBody tr[data-nivel="nv-16"] .t-kebab, #panel-estructura .t-kebab', body: 'Abre el menú (⋮) de <b>Pinturas</b>, que ya lleva una fórmula.', click: true },
         { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>.', click: true },
-        { sel: '#nvValorTipo', body: 'Elige si el nivel lleva <b>valor fijo</b> o <b>fórmula</b>. Si es fórmula, se define la expresión y el sistema la valida.' },
-        { sel: '#nvFormula, #nvValorFijo', body: 'Aquí se ingresa el <b>valor</b> o se define la <b>fórmula</b> (ej. SUMA de los ítems del nivel).' }
+        { sel: '#nvValorTipo', body: 'El valor del nivel puede ser <b>suma automática</b> de sus ítems, una <b>fórmula</b>, un <b>valor fijo</b> (reemplaza la suma) o <b>sin valor</b> (no suma al catálogo).' },
+        { sel: '#nvFormula', body: 'La fórmula usa <b>SUMA(items)</b>, <b>SUMA(items.campo)</b>, números y + − × ÷. Probemos una mal escrita…', fill: { sel: '#nvFormula', value: 'SUMA(items) * (1,05' } },
+        { sel: '#nvFormulaMsg', body: 'El sistema la <b>valida mientras se escribe</b> y explica el error. Con la fórmula inválida no deja guardar.' },
+        { sel: '#nvFormula', body: 'Corregida…', fill: { sel: '#nvFormula', value: 'SUMA(items) * 1,05' } },
+        { sel: '#nvFormulaMsg', body: '…es válida y muestra <b>cuánto da con los ítems actuales</b>. Al guardar se aplica sola al total del nivel, del catálogo y de la consulta.' },
+        { sel: '#nvFxChips', body: 'Los chips insertan términos sin tener que escribirlos.' }
       ] },
     'PPTO-09': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Definir que un nivel admite ítems', purpose: 'Habilitar qué niveles pueden tener ítems (productos/servicios) asociados.',
@@ -111,8 +115,11 @@
       steps: [
         { sel: '[data-tab="items"]', body: 'Entra a la pestaña <b>Ítems</b>.', click: true },
         { sel: '#btnItem', body: 'Clic en <b>Crear ítem</b>.', click: true },
-        { sel: '#itNivel', body: 'Primero elige el <b>nivel</b> del ítem: el formulario se arma con los campos que ese nivel tiene configurados.' },
+        { sel: '#itNivel', body: 'Primero elige el <b>nivel</b> del ítem: el formulario se arma con los campos que ese nivel tiene configurados.',
+          act: function () { var U = window.OBRAS_UI; if (U && !U.getDD('itNivel')) { var o = document.querySelector('#itNivel .naowee-dropdown__option'); if (o) o.click(); } } },
         { sel: '#itf-nombre, #itNivel', body: 'Diligencia código, nombre, <b>tipo</b> (producto o servicio), unidad y valor. El <b>V. total</b> se calcula solo y puedes asignarle o no una <b>fórmula</b>.' },
+        { sel: '#itFormula', body: 'La <b>fórmula</b> es opcional. Sin fórmula, V. total = cantidad × V. unitario. Con fórmula, el total lo da ella (aquí, 10 % más).', fill: { sel: '#itFormula', value: 'cantidad * valorUnit * 1,1' } },
+        { sel: '#itFormulaPreview', body: 'Se valida en vivo y muestra el <b>V. total calculado</b>, que queda en solo lectura. Si la fórmula usa un campo que no existe, lo dice.' },
         { sel: '#itGuardarOtro', body: '<b>Guardar y agregar otro</b> deja el formulario listo para el siguiente ítem del mismo nivel.' },
         { sel: '#itGuardar', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan obligatorios o si el <b>código</b> ya existe en el catálogo.' }
       ] },

@@ -28,7 +28,9 @@
   function nivelById(id) { return cat.niveles.filter(function (n) { return n.id === id; })[0]; }
   function camposDe(n) { return (n && n.campos && n.campos.length) ? n.campos : D.camposDefault(); }
   function itemsDe(nivelId) { return cat.items.filter(function (it) { return it.nivelId === nivelId; }); }
-  function nivelTotal(n) { return itemsDe(n.id).reduce(function (s, it) { return s + (it.valorTotal || 0); }, 0); }
+  // Valores calculados por el motor (PPTO-08): el total del nivel respeta su tipo de valor.
+  function calc() { return D.calcular(cat); }
+  function nivelTotal(n) { return calc().nodo[n.id] || 0; }
   function itemVal(it, key) { return STD[key] ? it[key] : ((it.extra || {})[key]); }
   function fmtCampo(c, v) {
     if (v == null || v === '') return '—';
@@ -56,7 +58,8 @@
       '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
       '<span class="naowee-badge naowee-badge--' + (badgeMap[cat.estado] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + cat.estado + '</span>' +
       '<span class="t-esq-chip">' + cat.niveles.filter(function (n) { return n.activo; }).length + ' niveles</span>' +
-      (cat.cambiosSinVersionar ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">' + cat.cambiosSinVersionar + ' sin versionar</span>' : '');
+      (cat.cambiosSinVersionar ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">' + cat.cambiosSinVersionar + ' sin versionar</span>' : '') +
+      (function () { var n = Object.keys(calc().errores).length; return n ? '<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small">' + n + ' fórmula' + (n === 1 ? '' : 's') + ' con error</span>' : ''; })();
   }
 
   window.selTab = function (id) {
@@ -133,7 +136,7 @@
     var ns = todos.filter(function (n) { return !fe || (fe === 'activo' ? n.activo : !n.activo); });
     document.getElementById('nvCount').innerHTML = todos.length ? '<b>' + ns.length + '</b> de ' + todos.length + ' niveles' : '';
     document.getElementById('nivelBody').innerHTML = ns.map(function (n, i) {
-      var valor = n.valorTipo === 'formula' ? 'Fórmula' : n.valorTipo === 'fijo' ? D.fmtCOP(n.valorFijo) : 'Sin valor';
+      var valor = valorTag(n, calc());
       return '<tr class="t-row-click' + (n.activo ? '' : ' t-row-off') + '" data-nivel="' + n.id + '" tabindex="0" title="Abrir el detalle del nivel">' +
         '<td data-label="#">' + (n.codigo || (i + 1)) + '</td>' +
         '<td data-label="Nivel"><span class="t-cname" title="' + esc(n.nombre) + '">' + esc(n.nombre) + '</span></td>' +
@@ -159,6 +162,13 @@
       tr.onkeydown = function (e) { if (e.key === 'Enter' && e.target === tr) openNivel(tr.dataset.nivel); };
     });
   }
+  function valorTag(n, r) {
+    if (r.errores[n.id]) return '<span class="t-fx-tag t-fx-err" title="' + esc(r.errores[n.id]) + '">ƒ Error de fórmula</span>';
+    if (n.valorTipo === 'formula') return '<span class="t-fx-tag" title="' + esc(n.formula) + '">ƒ <code>' + esc(n.formula) + '</code></span>';
+    if (n.valorTipo === 'fijo') return '<span class="t-fx-tag" title="Reemplaza la suma de sus ítems">Fijo ' + D.fmtCOP(n.valorFijo) + '</span>';
+    if (n.valorTipo === 'ninguno') return '<span class="t-fx-tag" title="Se muestra la suma pero no cuenta en el total del catálogo">Sin valor · no suma</span>';
+    return '<span class="t-fx-tag">Σ Suma automática</span>';
+  }
   function reactivarNivel(id) {
     var n = nivelById(id); if (!n) return;
     n.activo = true; delete n.motivoBaja;
@@ -172,6 +182,54 @@
   function valorCfg(tipo) {
     document.getElementById('nvFijoWrap').style.display = tipo === 'fijo' ? '' : 'none';
     document.getElementById('nvFormulaWrap').style.display = tipo === 'formula' ? '' : 'none';
+    var hint = document.getElementById('nvValorHint'), n = nivelEditId ? nivelById(nivelEditId) : null;
+    var suma = n ? (calc().suma[n.id] || 0) : 0;
+    hint.innerHTML = tipo === 'auto' ? 'El total del nivel es la <b>suma de sus ítems</b>' + (n ? ' (hoy ' + D.fmtCOP(suma) + ').' : '.')
+      : tipo === 'fijo' ? 'El valor fijo <b>reemplaza</b> la suma de los ítems' + (n ? ' (hoy suman ' + D.fmtCOP(suma) + ').' : '.')
+      : tipo === 'ninguno' ? 'El nivel muestra la suma de sus ítems, pero <b>no cuenta</b> en el total del catálogo.' : '';
+    hint.style.display = hint.innerHTML ? '' : 'none';
+    if (tipo === 'formula') validarFormulaNivel();
+  }
+  function specNivel() {
+    var tmp = { campos: getSwitch('nvAdmiteItems') ? camposDraft : [] };
+    return { nivel: true, itemCampos: D.specCampos(tmp), admiteItems: getSwitch('nvAdmiteItems'), tieneHijos: false };
+  }
+  // PPTO-08.4: la fórmula se valida mientras se escribe y muestra el valor que daría hoy.
+  function validarFormulaNivel() {
+    var el = document.getElementById('nvFormula'), msg = document.getElementById('nvFormulaMsg');
+    var r = window.OBRAS_FX.validar(el.value, specNivel()), w = el.closest('.naowee-textfield__input-wrap');
+    renderFxChips('nvFxChips', ['SUMA(items)', 'SUMA(hijos)'].concat(Object.keys(specNivel().itemCampos).map(function (k) { return 'SUMA(items.' + k + ')'; })).concat(['* 1,05', '+ 0']), 'nvFormula', validarFormulaNivel);
+    if (!r.ok) { msg.className = 'naowee-helper naowee-helper--negative'; msg.textContent = r.error; w.classList.add('t-invalid'); return false; }
+    w.classList.remove('t-invalid');
+    var n = nivelEditId ? nivelById(nivelEditId) : null, prev = '';
+    if (n) {
+      var its = itemsDe(n.id), suma = calc().suma[n.id] || 0;
+      try {
+        prev = D.fmtCOP(Math.round(window.OBRAS_FX.calcular(el.value, specNivel(), { ref: function () { return 0; }, agg: function (t, c) {
+          if (t === 'hijos') return 0;
+          if (!c) return suma;
+          return its.reduce(function (s, it) { var x = c === 'cantidad' ? it.cantidad : c === 'valorunit' ? it.valorUnit : (it.extra || {})[c]; return s + (+x || 0); }, 0);
+        } })));
+      } catch (e) { msg.className = 'naowee-helper naowee-helper--negative'; msg.textContent = e.message; return false; }
+    }
+    msg.className = 'naowee-helper naowee-helper--' + (r.avisos.length ? 'caution' : 'positive');
+    msg.textContent = 'Fórmula válida' + (prev ? ' · con los ítems actuales da ' + prev : '') + (r.avisos.length ? ' · ' + r.avisos.join(' ') : '') + '.';
+    return true;
+  }
+  // Chips que insertan un término en la posición del cursor.
+  function renderFxChips(hostId, terms, inputId, onChange) {
+    var host = document.getElementById(hostId); if (!host) return;
+    var key = terms.join('|'); if (host.dataset.k === key) return; host.dataset.k = key;
+    host.innerHTML = terms.map(function (t) { return '<button type="button" class="t-fx-chip" data-t="' + esc(t) + '">' + esc(t) + '</button>'; }).join('');
+    host.querySelectorAll('.t-fx-chip').forEach(function (b) {
+      b.onclick = function () {
+        var el = document.getElementById(inputId), a = el.selectionStart == null ? el.value.length : el.selectionStart, z = el.selectionEnd == null ? a : el.selectionEnd;
+        var t = b.dataset.t, pre = el.value.slice(0, a), sep = pre && !/[\s(]$/.test(pre) ? ' ' : '';
+        el.value = pre + sep + t + el.value.slice(z); el.focus();
+        var pos = (pre + sep + t).length; el.setSelectionRange(pos, pos);
+        onChange();
+      };
+    });
   }
 
   // PPTO-09 · configurador de campos del ítem
@@ -184,7 +242,19 @@
         '</span>';
     }).join('') || '<span class="t-esq-empty">Sin campos configurados.</span>';
     document.getElementById('nvCampos').querySelectorAll('.x').forEach(function (b) {
-      b.onclick = function (e) { e.stopPropagation(); camposDraft.splice(+b.dataset.i, 1); renderCampos(); };
+      b.onclick = function (e) {
+        e.stopPropagation();
+        // Un campo que usan fórmulas no se quita: dejaría esas fórmulas sin valor.
+        var c = camposDraft[+b.dataset.i], k = window.OBRAS_FX.norm(c.key), usos = [];
+        var re = new RegExp('(^|[^\\wÀ-ÿ.])' + k + '([^\\wÀ-ÿ]|$)');
+        if (nivelEditId) {
+          itemsDe(nivelEditId).forEach(function (it) { if (it.formula && re.test(window.OBRAS_FX.norm(it.formula))) usos.push(it.cod); });
+          var nv = nivelById(nivelEditId);
+          if (nv && nv.formula && window.OBRAS_FX.norm(nv.formula).indexOf('items.' + k) >= 0) usos.push('la fórmula del nivel');
+        }
+        if (usos.length) { UI.toast('El campo «' + esc(c.label) + '» se usa en ' + usos.length + ' fórmula' + (usos.length === 1 ? '' : 's') + ' (' + esc(usos.join(', ')) + '). Quítalo de ellas primero.', 'caution', 5000); return; }
+        camposDraft.splice(+b.dataset.i, 1); renderCampos();
+      };
     });
   }
   // PPTO-09: apagar "admite ítems" en un nivel que ya tiene ítems se advierte en el momento.
@@ -226,23 +296,23 @@
     document.getElementById('nvOrden').value = n ? n.orden : (cat.niveles.length + 1);
     document.getElementById('nvDesc').value = n && n.descripcion ? n.descripcion : '';
     document.getElementById('nvValorFijo').value = n && n.valorFijo != null ? n.valorFijo : '';
-    document.getElementById('nvFormula').value = n && n.formula ? n.formula : 'SUMA(ítems del nivel)';
-    var tipo = n ? n.valorTipo : 'formula';
-    UI.setDD('nvValorTipo', tipo, tipo === 'formula' ? 'Fórmula' : tipo === 'fijo' ? 'Valor fijo' : 'Sin valor');
-    valorCfg(tipo);
+    document.getElementById('nvFormula').value = n && n.formula ? n.formula : 'SUMA(items)';
+    var tipo = (n && n.valorTipo) || 'auto';
+    UI.setDD('nvValorTipo', tipo, VALOR_LBL[tipo]);
+    document.getElementById('nvFxChips').dataset.k = '';
     setSwitch('nvAdmiteItems', n ? !!n.admiteItems : true);
     camposDraft = camposDe(n).map(function (c) { return Object.assign({}, c); });
-    renderCampos(); toggleCamposWrap();
+    renderCampos(); toggleCamposWrap(); valorCfg(tipo);
     document.getElementById('nvAddForm').classList.remove('open');
     clearInvalid('#mNivel'); nombreErr('');
     openModal('mNivel');
   }
-  var VALOR_LBL = { formula: 'Fórmula', fijo: 'Valor fijo', ninguno: 'Sin valor' };
+  var VALOR_LBL = { auto: 'Suma automática', formula: 'Fórmula', fijo: 'Valor fijo', ninguno: 'Sin valor (no suma al catálogo)' };
   var CAMPOS_NIVEL = [
     { key: 'nombre', label: 'Nombre' },
     { key: 'orden', label: 'Posición' },
     { key: 'descripcion', label: 'Descripción' },
-    { key: 'valorTipo', label: 'Valor del nivel', fmt: function (v) { return VALOR_LBL[v] || '—'; } },
+    { key: 'valorTipo', label: 'Valor del nivel', fmt: function (v) { return VALOR_LBL[v || 'auto'] || '—'; } },
     { key: 'valorFijo', label: 'Valor fijo', fmt: function (v) { return v == null ? '—' : D.fmtCOP(v); } },
     { key: 'formula', label: 'Fórmula' },
     { key: 'admiteItems', label: 'Admite ítems', fmt: function (v) { return v ? 'Sí' : 'No'; } },
@@ -260,8 +330,9 @@
     if (!nombre) { nombreErr('El nombre del nivel es obligatorio.'); return; }
     var repetido = cat.niveles.filter(function (x) { return x.id !== nivelEditId && norm(x.nombre) === norm(nombre); })[0];
     if (repetido) { nombreErr('Ya existe un nivel llamado «' + repetido.nombre + '»' + (repetido.activo ? '' : ' (inactivo)') + ' en esta estructura.'); return; }
-    var tipo = UI.getDD('nvValorTipo') || 'formula';
+    var tipo = UI.getDD('nvValorTipo') || 'auto';
     var admite = getSwitch('nvAdmiteItems');
+    if (tipo === 'formula' && !validarFormulaNivel()) { document.getElementById('nvFormula').focus(); return; }
     var data = {
       nombre: nombre, orden: parseInt(document.getElementById('nvOrden').value, 10) || 1,
       descripcion: document.getElementById('nvDesc').value.trim(), valorTipo: tipo,
@@ -368,6 +439,7 @@
       return !q || norm(it.nombre).indexOf(q) >= 0 || norm(it.cod).indexOf(q) >= 0;
     });
     document.getElementById('itCount').innerHTML = '<b>' + rows.length + '</b> de ' + base.length + ' ítems';
+    var errs = calc().errores;
     document.getElementById('itemsBody').innerHTML = rows.map(function (it) {
       var n = nivelById(it.nivelId);
       return '<tr' + (it.nuevo ? ' class="t-row-new"' : '') + '>' +
@@ -378,7 +450,7 @@
           var v = itemVal(it, c.key);
           return '<td data-label="' + esc(c.label) + '"' + (NUMERICO[c.tipo] ? ' class="tnum"' : '') + '>' + fmtCampo(c, v) + '</td>';
         }).join('') +
-        '<td data-label="V. total" class="tnum">' + D.fmtCOP(it.valorTotal) + '</td>' +
+        '<td data-label="V. total" class="tnum">' + (errs[it.id] ? '<span class="t-fx-err" title="' + esc(errs[it.id]) + '">Error ƒ</span>' : (it.formula ? '<span title="' + esc(it.formula) + '">ƒ </span>' : '') + D.fmtCOP(it.valorTotal)) + '</td>' +
         '<td data-label="Acciones">' + kebab('item', it.id, 'Acciones del ítem') + '</td>' +
         '</tr>';
     }).join('');
@@ -467,8 +539,41 @@
     var f = document.createElement('div');
     f.className = 'naowee-textfield t-col-full'; f.setAttribute('data-campo', '__formula');
     f.innerHTML = '<label class="naowee-textfield__label">Fórmula (opcional)</label>' +
-      '<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="itFormula" placeholder="cantidad × valor unitario" value="' + (it && it.formula ? esc(it.formula) : '') + '"></div>';
+      '<div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="itFormula" autocomplete="off" spellcheck="false" placeholder="Vacío = cantidad × V. unitario" value="' + (it && it.formula ? esc(it.formula) : '') + '"></div>' +
+      '<div class="t-fx-chips" id="itFxChips"></div>' +
+      '<div class="naowee-helper naowee-helper--informative" id="itFormulaPreview" style="margin-top:6px"></div>';
     grid.appendChild(f);
+    var nums = D.specCampos(n);
+    renderFxChips('itFxChips', Object.keys(nums).concat(['*', '(1 + desperdicio%)'].filter(function (t) { return t.indexOf('desperdicio') < 0 || nums.desperdicio; })), 'itFormula', previewFormulaItem);
+    document.getElementById('itFormula').addEventListener('input', previewFormulaItem);
+    ['itf-cantidad', 'itf-valorUnit'].concat(Object.keys(it && it.extra || {}).map(function (k) { return 'itf-' + k; })).forEach(function (id) {
+      var e = document.getElementById(id); if (e) e.addEventListener('input', previewFormulaItem);
+    });
+    campos.forEach(function (c) { if (NUMERICO[c.tipo]) { var e = document.getElementById('itf-' + c.key); if (e) e.addEventListener('input', previewFormulaItem); } });
+    previewFormulaItem();
+  }
+
+  // PPTO-10: la fórmula del ítem se valida en vivo y calcula su V. total. Con fórmula propia,
+  // el V. total es de solo lectura (lo da la fórmula); sin fórmula, sigue el cálculo en 3 direcciones.
+  function previewFormulaItem() {
+    var fe = document.getElementById('itFormula'), msg = document.getElementById('itFormulaPreview');
+    if (!fe || !msg) return true;
+    var n = nivelById(UI.getDD('itNivel')), total = document.getElementById('itf-total'), w = fe.closest('.naowee-textfield__input-wrap');
+    var src = fe.value.trim();
+    if (total) { total.readOnly = !!src; total.closest('.naowee-textfield__input-wrap').classList.toggle('t-readonly', !!src); }
+    if (!src) { w.classList.remove('t-invalid'); msg.className = 'naowee-helper naowee-helper--informative'; msg.textContent = 'Sin fórmula: el V. total es cantidad × V. unitario.'; return true; }
+    var r = window.OBRAS_FX.validar(src, { campos: D.specCampos(n) });
+    if (!r.ok) { w.classList.add('t-invalid'); msg.className = 'naowee-helper naowee-helper--negative'; msg.textContent = r.error; return false; }
+    w.classList.remove('t-invalid');
+    var tmp = leerItemForm(); tmp.formula = src;
+    ['cantidad', 'valorUnit'].forEach(function (k) { if (tmp[k] != null) tmp[k] = num(tmp[k]); });
+    Object.keys(tmp.extra).forEach(function (k) { var x = num(tmp.extra[k]); if (x != null) tmp.extra[k] = x; });
+    try {
+      var v = D.valorItem(tmp, n);
+      if (total) total.value = v;
+      msg.className = 'naowee-helper naowee-helper--positive'; msg.textContent = 'Fórmula válida · V. total = ' + D.fmtCOP(v) + ' con los valores escritos.';
+      return true;
+    } catch (e) { msg.className = 'naowee-helper naowee-helper--negative'; msg.textContent = e.message; return false; }
   }
 
   // Cálculo automático en las 3 direcciones (PPTO-10 criterio 3)
@@ -480,11 +585,13 @@
     if (!unit || !total) return;
     function q() { return cant ? (num(cant.value) == null ? 1 : num(cant.value)) : 1; }
     function haciaTotal() {
+      var fe = document.getElementById('itFormula'); if (fe && fe.value.trim()) return;   // la fórmula manda
       var u = num(unit.value); if (u == null) return;
       total.value = Math.round(u * q());
       if (hint) hint.textContent = 'V. total calculado: ' + q() + ' × ' + D.fmtCOP(u);
     }
     function haciaUnit() {
+      if (total.readOnly) return;
       var t = num(total.value), c = q();
       if (t == null || !c) return;
       unit.value = Math.round(t / c);
@@ -563,6 +670,7 @@
       vals[c.key] = NUMERICO[c.tipo] ? (raw === '' ? null : num(raw)) : raw;
     });
 
+    if (!previewFormulaItem()) { msg.textContent = 'Corrige la fórmula del ítem: ' + document.getElementById('itFormulaPreview').textContent; err.style.display = ''; return; }
     // D13: el código del ítem es único en todo el catálogo.
     var dupCod = vals.cod && cat.items.filter(function (x) { return x.id !== itemEditId && norm(x.cod) === norm(vals.cod); })[0];
 
@@ -588,6 +696,7 @@
       formula: (document.getElementById('itFormula') || {}).value ? document.getElementById('itFormula').value.trim() : null,
       valorTotal: totalManual != null ? Math.round(totalManual) : Math.round(vu * cant)
     };
+    if (data.formula) data.valorTotal = D.valorItem(data, n);
 
     if (itemEditId) {
       // PPTO-11: el resumen incluye el recálculo (V. total del ítem y total de su nivel)
@@ -639,7 +748,7 @@
     { key: 'codigo', label: 'Código', req: true }, { key: 'nombre', label: 'Nombre', req: true },
     { key: 'orden', label: 'Posición', tipo: 'numero' }, { key: 'descripcion', label: 'Descripción' },
     { key: 'admite_items', label: 'Admite ítems (si/no)', tipo: 'booleano' },
-    { key: 'tipo_valor', label: 'Valor (formula/fijo/ninguno)' }, { key: 'valor_fijo', label: 'Valor fijo', tipo: 'moneda' }
+    { key: 'tipo_valor', label: 'Valor (auto/formula/fijo/ninguno)' }, { key: 'valor_fijo', label: 'Valor fijo', tipo: 'moneda' }
   ];
   function cargaTipo() { return UI.getDD('cargaTipo') || 'items'; }
   function nivelesConItems() { return cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).sort(function (a, b) { return a.orden - b.orden; }); }
@@ -699,9 +808,9 @@
   function ejemploFilas() {
     var cols = colsPlantilla();
     if (cargaTipo() === 'niveles') {
-      return [['90', 'Obras exteriores', '8', 'Andenes y cerramientos', 'si', 'formula', ''], ['91', 'Carpintería metálica', '9', '', 'si', 'formula', ''],
-              ['92', 'Aseo final de obra', '10', '', 'no', 'fijo', '850000'], ['93', 'Señalización', '11', '', 'si', 'formula', ''],
-              ['94', 'Preliminares', '12', 'Nombre repetido', 'si', 'formula', ''], ['95', '', '13', 'Sin nombre', 'si', 'formula', '']]
+      return [['90', 'Obras exteriores', '8', 'Andenes y cerramientos', 'si', 'auto', ''], ['91', 'Carpintería metálica', '9', '', 'si', 'auto', ''],
+              ['92', 'Aseo final de obra', '10', '', 'no', 'fijo', '850000'], ['93', 'Señalización', '11', '', 'si', 'auto', ''],
+              ['94', 'Preliminares', '12', 'Nombre repetido', 'si', 'auto', ''], ['95', '', '13', 'Sin nombre', 'si', 'auto', '']]
         .map(function (r) { return ESTRUCTURA_COLS.map(function (c, i) { return r[i]; }); });
     }
     var n = nivelById(cargaNivel()), base = (n && n.codigo) || '9', filas = [];
@@ -820,7 +929,7 @@
         if (dato.cod) vistos[norm(dato.cod)] = 1;
       } else {
         ref = dato.nombre || '(sin nombre)';
-        if (dato.tipo_valor && ['formula', 'fijo', 'ninguno'].indexOf(norm(dato.tipo_valor)) < 0) errs.push('Valor debe ser formula, fijo o ninguno');
+        if (dato.tipo_valor && ['auto', 'formula', 'fijo', 'ninguno'].indexOf(norm(dato.tipo_valor)) < 0) errs.push('Valor debe ser auto, formula, fijo o ninguno');
         dup = dato.nombre && (vistos[norm(dato.nombre)] || cat.niveles.some(function (n) { return norm(n.nombre) === norm(dato.nombre); }));
         if (dup) errs.push('Ya existe un nivel «' + dato.nombre + '»');
         if (dato.nombre) vistos[norm(dato.nombre)] = 1;
@@ -862,10 +971,10 @@
     } else {
       var maxOrden = Math.max.apply(null, [0].concat(cat.niveles.map(function (x) { return x.orden; })));
       ok.forEach(function (f, i) {
-        var d = f.dato, tv = norm(d.tipo_valor) || 'formula';
+        var d = f.dato, tv = norm(d.tipo_valor) || 'auto';
         cat.niveles.push({ id: 'nv-' + slugKey(d.nombre) + '-' + Date.now().toString(36) + i, codigo: d.codigo, nombre: d.nombre, orden: d.orden || (maxOrden + i + 1),
           descripcion: d.descripcion || '', admiteItems: d.admite_items !== 'No', valorTipo: tv, valorFijo: tv === 'fijo' ? (d.valor_fijo || 0) : null,
-          formula: tv === 'formula' ? 'SUMA(ítems del nivel)' : null, campos: D.camposDefault(), activo: true, creado: D.hoy(), creadoPor: D.usuarioActual() });
+          formula: tv === 'formula' ? 'SUMA(items)' : null, campos: D.camposDefault(), activo: true, creado: D.hoy(), creadoPor: D.usuarioActual() });
       });
     }
     var ahora = new Date();
@@ -1125,6 +1234,7 @@
     document.getElementById('btnNivel').onclick = function () { openNivel(null); };
     document.getElementById('nvGuardar').onclick = saveNivel;
     document.getElementById('nvValorTipo').addEventListener('dd:change', function (e) { valorCfg(e.detail.value); });
+    document.getElementById('nvFormula').addEventListener('input', validarFormulaNivel);
     document.getElementById('nvAdmiteItems').onclick = function () { setSwitch('nvAdmiteItems', !getSwitch('nvAdmiteItems')); toggleCamposWrap(); };
     document.getElementById('nvAddBtn').onclick = function () {
       var f = document.getElementById('nvAddForm');

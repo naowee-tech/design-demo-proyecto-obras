@@ -6,7 +6,7 @@
  * ========================================================================== */
 (function () {
   'use strict';
-  var VERSION = 'v0.5.3';
+  var VERSION = 'v0.5.4';
 
   var ROLES = {
     ADMIN:   { who: 'Jesús Díaz', rol: 'Admin Naowee',       av: 'JD', col: 'var(--naowee-color-territorio-700)' },

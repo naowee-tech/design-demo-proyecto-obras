@@ -50,6 +50,29 @@ Quedan abiertas del BPMN (no bloquean este plan): quién activa el catálogo y s
 
 ---
 
+### 1b. Cierre de decisiones — 2026-09-22 (con las fuentes de `PR_03.01.01_FASE_I`)
+
+Fuentes: Recepción de Requerimiento (Gate 0, 2026-09-07), flujo PR-09_FP (2026-08-10), matriz de HU PR-09_VM (2026-08-06) y la **matriz real de precios** (Base Matriz 2026-agosto-26 y Guajira + 15L). Ninguna cierra D4-D7 de forma explícita; se cierran por evidencia.
+
+| # | Decisión cerrada | Evidencia |
+|---|---|---|
+| D4 | **Esquema de niveles por catálogo**, con nombres y cantidad configurables; plantilla por defecto **Capítulo → APU**. | PPTO-04 obs. ("cada proyecto define nombres y cantidad"); el flujo FP crea niveles dentro de cada catálogo; el bloque L15 de Guajira usa otra taxonomía de capítulos que la base → no puede ser global. |
+| D5 | **El ítem es la hoja, no un nivel.** En la matriz real el ítem es el **insumo** (código, nombre, tipo, unidad, cantidad, valor unitario, valor total) y el **APU** es el nivel que admite ítems y vale la suma de ellos. | Recepción F-3/F-4 ("niveles que admiten ítems"); PPTO-09 obs.; PPTO-18.2 pide cantidad y valor total en el ítem → encaja con la línea de insumo. Matriz: capítulo → APU → insumo, 3 niveles, APU = SUM(insumos). |
+| D6 | **Se permite** que un nivel tenga subniveles e ítems, pero la plantilla por defecto no los mezcla. | PPTO-09.2 (varios niveles admiten ítems); la matriz nunca los mezcla. Permitirlo no cuesta y no contradice nada. |
+| D7 | **Profundidad estricta** (el hijo es del tipo siguiente), **máximo 6**. | Silencio en todos los documentos; la matriz tiene 3 y la estructura EnTerritorio que citan las HU tiene 4 eslabones. |
+| D8 | Valor del nivel: **suma automática** por defecto (el APU suma sus insumos; el capítulo suma sus APU), fórmula, fijo o sin valor. Ya implementado en F4. | PPTO-08 obs. ("niveles superiores muestran el total sumado"); matriz: APU = SUM(insumos). |
+| D10 | Fórmulas: **sumas y porcentajes simples**; sin referencias entre nodos (el AIU es del presupuesto, no del catálogo). Se agrega **una** referencia dentro del mismo nivel filtrada por tipo: `SUMA(tipo.MO)`, para la **herramienta menor = 5 % de la mano de obra del APU**. | Recepción p.3 (fuera de alcance "motor avanzado más allá de sumas y porcentajes"); PPTO-10.2 ("algunos [ítems] pueden tener relación con el nivel"); matriz: herramienta menor = 5 % × MO en 262 de 265 APU; AIU ausente de la matriz (PPTO-28: "el AIU se deduce del total del presupuesto"). |
+| D15 | **Tipo de ítem** = lista configurable por nivel; valores por defecto los de la matriz: **Material · MO · Equipo · Transporte**. El filtro de Consulta (PPTO-18) trabaja sobre la lista que tenga el nivel. | Matriz: 4 tipos cerrados (INSUMO, MO, EQUIPO, TRANSPORTE). PPTO-18.3 cita "(producto o servicio)" como ejemplo; PPTO-10.6 "el ítem puede ser cualquier tipo de dato". |
+| D1 | **Nace Activo** (ya implementado). Borrador queda como opción explícita, no como paso obligatorio. **Sin paso de aprobación** en Fase I (H-6 queda abierto para producto). | PPTO-01.4 "queda activo"; Recepción p.5 marca "[¿Borrador?]" y H-6 como duda. |
+| D16 | **Condición de aplicación = región + otra condición opcional** (texto: "Gestores", "Proyecto Esquemas"…). Se retira la opción inventada "Todos · base nacional" y la pregunta de precedencia. | PPTO-01 obs. ("Base de precios gestores de Guajira", "base de precios general proyecto esquemas"); ninguna fuente menciona un catálogo nacional; en la matriz la base es Bogotá, no "nacional". |
+| D2 | Impacto sobre presupuestos (PPTO-02 "se deben definir reglas"): **avisa y sugiere versión; no bloquea**. Cambiar datos generales no exige versión; precios, valores y estructura se acumulan para la próxima. Ya implementado en F1. | PPTO-15.1 (versión "cuando se modifiquen precios, valores, etc."); PPTO-15.4 y F-6 (los presupuestos quedan en su versión). |
+| — | **Variación regional por factores** (base Bogotá × factor por tipo; MO siempre 1,0) → **backlog**, no bloquea ninguna HU. Hoy cada región es su propio catálogo, como piden las HU. | Matriz: 33 hojas idénticas con factores por tipo; LINEAMIENTOS: "la calibración territorial nunca modifica la mano de obra". |
+| — | **Carga masiva**: se agregan validaciones vistas en los datos reales — alias de unidades (`lm`→`ml`, `libra`→`lb`), tipo con espacios, fila sin padre. | Matriz (unidades sin normalizar, `EQUIPO ` con espacio, 2 insumos huérfanos). |
+
+**Siguen abiertas, sin bloquear la demo:** H-6 aprobación antes de activar · H-8 partición en dos épicas · formato de plantilla "validar con analítica" (PPTO-12) · permisos del "otro administrador de cara al cliente" (PPTO-02) · significado de "L15" en Guajira.
+
+**Impacto en F5:** la semilla pasa a **Capítulo → APU → insumos** (valores sintéticos, mismo orden de magnitud): los 7 capítulos quedan como nivel 1, cada APU actual pasa a nivel 2 con 3-6 insumos (MO, Material, Equipo, Transporte) y una línea de *herramienta menor* con `5% * SUMA(tipo.MO)`. Los totales por APU se conservan aproximadamente.
+
 ## 2. Arquitectura de las piezas compartidas
 
 Se construyen una vez y las consumen varias HU.
@@ -117,7 +140,7 @@ Cada fase cierra con verificación en navegador, recorrido de los tours tocados,
 | **F1** ✅ | P1 + P2 + P3 | 02, 05, 06, 11 (+19 con detalle) | v0.5.1 | M |
 | **F2** ✅ | Cierres rápidos | 01, 03, 04, 09, 18, 20, 21 (07 parcial) | v0.5.2 | M |
 | **F3** ✅ | Carga masiva (P7) | 12, 13, 14 | v0.5.3 | M |
-| **F4** | Motor de fórmulas (P4) | 08, 10 | v0.5.4 | M |
+| **F4** ✅ | Motor de fórmulas (P4) | 08, 10 | v0.5.4 | M |
 | **F5** | Jerarquía (P5) — **requiere D4-D7 validadas** | 04, 05, 07 (completa), 17 | v0.6.0 | L |
 | **F6** | Barrido final: tours, índice, matriz de cobertura, QA | todas | v0.6.1 | S |
 
@@ -196,6 +219,16 @@ Van primero porque varios contaminan las demás HU.
 - **Resultado**: detectados / procesados / fallidos, lista de fallidos con motivo, reporte descargable (.xls), historial de cargas con reporte por carga.
 - Ejemplos descargables (vigente / versión anterior) con códigos libres, y `cargaDemo()` para el tour. Tour: nuevo campo `act` (ejecuta una acción al avanzar).
 - Semilla v5.
+
+## 4e. F4 — cerrada 2026-09-22 (v0.5.4)
+
+- **`shared/formula.js`** (`OBRAS_FX`): tokenizer + descenso recursivo, sin `eval`. Números con coma o punto, `+ − * / × ÷`, paréntesis, `%` sufijo, campos del ítem; en niveles `SUMA(items)`, `SUMA(items.campo)`, `SUMA(hijos)` (0 hasta F5, con aviso). Mensajes en español con posición. 24 casos probados en node (válidos, cada error, división por cero). Trampa pagada: el rango `À-ÿ` incluye `×` y `÷`; las letras con tilde van como `À-ÖØ-öø-ÿ`.
+- **`OBRAS.calcular(cat)`**: ítems primero (su fórmula o su total guardado), luego niveles según su valor — `auto` (suma), `formula`, `fijo` (reemplaza la suma, D9), `ninguno` (se ve pero no suma al catálogo, D8). Un error vale 0 y queda en `errores`; `totalCatalogo` delega aquí.
+- Semilla v6: niveles en `auto`; **Pinturas** con `SUMA(items) * 1,05` y el ítem **16.3** con `cantidad * valorUnit * (1 + desperdicio%)` (campo porcentaje nuevo en el nivel).
+- **Modal del nivel**: 4 tipos de valor con explicación de su efecto, validación en vivo con la cifra que daría hoy, chips que insertan términos, no guarda si la fórmula es inválida (incluye división por cero con los datos actuales).
+- **Modal del ítem**: fórmula validada en vivo, chips con sus campos numéricos, V. total calculado y de solo lectura cuando hay fórmula; sin fórmula sigue el cálculo en 3 direcciones.
+- Cabecera avisa "N fórmulas con error"; tabla de estructura muestra `Σ` / `ƒ fórmula` / `Fijo` / `Sin valor`; Consulta muestra el total calculado por nivel con su etiqueta y marca ítems con error.
+- No se puede quitar un campo que usan fórmulas (del nivel o de sus ítems).
 
 ## 5. Fichas por HU (qué se hace, cómo fluye, cuándo es verde)
 
@@ -382,9 +415,9 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | 05 Editar nivel | 🔴 | F1 (+ F5 padre/tipo) | ✅ v0.5.1 |
 | 06 Desactivar nivel | 🟡 | F0 + F1 (reactivar en F2) | ✅ v0.5.1 |
 | 07 Consultar niveles | 🟡 | F2 + F5 (falta jerarquía visual) | ☐ |
-| 08 Valor o fórmula | 🟡 | F4 | ☐ |
+| 08 Valor o fórmula | 🟡 | F4 | ✅ v0.5.4 |
 | 09 Admite ítems | ✅ | retoques | ✅ v0.5.2 |
-| 10 Crear ítem | 🟡 | F0 + F2 + F4 (falta evaluar fórmula) | ☐ |
+| 10 Crear ítem | 🟡 | F0 + F2 + F4 | ✅ v0.5.4 |
 | 11 Editar ítem | 🔴 | F1 | ✅ v0.5.1 |
 | 12 Descargar plantilla | 🟡 | F3 | ✅ v0.5.3 |
 | 13 Carga masiva | 🔴 | F3 | ✅ v0.5.3 |

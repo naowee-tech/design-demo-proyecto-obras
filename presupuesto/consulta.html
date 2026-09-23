@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.3">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.3">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.4">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.4">
 <style>
   /* Override pattern: el acordeón del DS abre con max-height fijo; aquí el contenido es una tabla */
   .naowee-accordion__item--open .naowee-accordion__body{ max-height:none; padding-bottom:14px; }
@@ -108,9 +108,10 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.3"></script>
-<script src="../shared/ui.js?v=0.5.3"></script>
-<script src="../shared/shell.js?v=0.5.3"></script>
+<script src="../shared/formula.js?v=0.5.4"></script>
+<script src="../shared/data-catalogo.js?v=0.5.4"></script>
+<script src="../shared/ui.js?v=0.5.4"></script>
+<script src="../shared/shell.js?v=0.5.4"></script>
 <script>
 (function () {
   var D = window.OBRAS, UI = window.OBRAS_UI, cat = null;
@@ -164,7 +165,7 @@
     var tipo = UI.getDD('itemFiltro'), fNivel = UI.getDD('itemNivel');
     var host = document.getElementById('catTree');
     var ns = cat.niveles.filter(function (n) { return n.activo && (!fNivel || n.id === fNivel); }).sort(function (a, b) { return a.orden - b.orden; });
-    var total = 0, filtrando = !!(q || tipo || fNivel);
+    var total = 0, filtrando = !!(q || tipo || fNivel), R = D.calcular(cat);
 
     host.innerHTML = ns.map(function (n) {
       var items = itemsDe(n.id).filter(function (it) {
@@ -174,7 +175,13 @@
       });
       if ((q || tipo) && !items.length) return '';
       total += items.length;
-      var tot = items.reduce(function (s, it) { return s + it.valorTotal; }, 0);
+      // PPTO-17.3: sin filtros, el total del nivel es el calculado (suma, fórmula o valor fijo);
+      // con filtros, el subtotal de lo que coincide.
+      var tot = filtrando ? items.reduce(function (s, it) { return s + it.valorTotal; }, 0) : (R.nodo[n.id] || 0);
+      var tag = R.errores[n.id] ? '<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small" title="' + esc(R.errores[n.id]) + '">Error de fórmula</span>'
+        : n.valorTipo === 'formula' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small" title="' + esc(n.formula) + '">ƒ ' + esc(n.formula) + '</span>'
+        : n.valorTipo === 'fijo' ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small" title="Reemplaza la suma de sus ítems">Valor fijo</span>'
+        : n.valorTipo === 'ninguno' ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small">No suma al total</span>' : '';
       var open = filtrando ? ' naowee-accordion__item--open' : '';
       var rows = items.map(function (it) {
         return '<tr class="t-row-click" data-item="' + it.id + '" tabindex="0" title="Ver detalle del ítem">' +
@@ -184,7 +191,7 @@
           '<td data-label="Unidad">' + esc(it.uni) + '</td>' +
           '<td data-label="Cantidad" class="tnum">' + it.cantidad + '</td>' +
           '<td data-label="V. unitario" class="tnum">' + D.fmtCOP(it.valorUnit) + '</td>' +
-          '<td data-label="V. total" class="tnum">' + D.fmtCOP(it.valorTotal) + '</td>' +
+          '<td data-label="V. total" class="tnum">' + (R.errores[it.id] ? '<span style="color:#b42318;font-weight:700" title="' + esc(R.errores[it.id]) + '">Error de fórmula</span>' : D.fmtCOP(it.valorTotal)) + '</td>' +
           '</tr>';
       }).join('');
       return '<div class="naowee-accordion__item' + open + '" data-nivel="' + n.id + '">' +
@@ -192,7 +199,7 @@
           '<span class="naowee-accordion__chevron"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>' +
           '<span class="t-lvl-code">' + esc(n.codigo || n.orden) + '</span>' +
           '<span class="naowee-accordion__title">' + esc(n.nombre) + ' <span class="t-lvl-count">· ' + items.length + ' ítems</span></span>' +
-          '<span class="naowee-accordion__action tnum" style="font-weight:700">' + D.fmtCOP(tot) + '</span>' +
+          '<span class="naowee-accordion__action tnum" style="font-weight:700;display:inline-flex;gap:8px;align-items:center">' + (filtrando ? '' : tag) + D.fmtCOP(tot) + '</span>' +
         '</div>' +
         '<div class="naowee-accordion__body"><div class="naowee-accordion__content">' +
           '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><thead><tr><th>Código</th><th>Ítem</th><th>Tipo</th><th>Unidad</th><th>Cantidad</th><th>V. unitario</th><th>V. total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
@@ -239,7 +246,7 @@
       return '<tr><td style="color:var(--t-text-2);width:42%">' + esc(c.label) + '</td><td><b>' + val(c) + '</b></td></tr>';
     }).join('');
     document.getElementById('foldCalc').innerHTML = it.formula
-      ? 'Fórmula del ítem: <code>' + esc(it.formula) + '</code>'
+      ? 'V. total calculado con la fórmula del ítem: <code>' + esc(it.formula) + '</code> = <b>' + D.fmtCOP(it.valorTotal) + '</b>.'
       : 'V. total = cantidad (' + (it.cantidad == null ? 1 : it.cantidad) + ') × V. unitario (' + D.fmtCOP(it.valorUnit) + ') = <b>' + D.fmtCOP(it.valorTotal) + '</b>.';
     var o = document.getElementById('itemFold');
     o.classList.add('open'); o.setAttribute('aria-hidden', 'false'); void o.offsetWidth; o.classList.add('t-fold--in');
@@ -273,6 +280,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.5.3"></script>
+<script src="../shared/tour.js?v=0.5.4"></script>
 </body>
 </html>

@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.3">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.3">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.4">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.4">
 <style>
   /* Sin overflow:visible aquí: el DS hace que el body scrollee entre el header y el
      footer fijos, y forzarlo rompía ese scroll (el contenido crecía por debajo del footer). */
@@ -272,13 +272,16 @@
         <div>
           <label class="naowee-textfield__label" style="display:block">Valor del nivel</label>
           <div class="naowee-dropdown" id="nvValorTipo" style="width:100%">
-            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Fórmula</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
-            <div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option" data-value="ninguno">Sin valor</div><div class="naowee-dropdown__option" data-value="fijo">Valor fijo</div><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="formula">Fórmula</div></div>
+            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Suma automática</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
+            <div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="auto">Suma automática</div><div class="naowee-dropdown__option" data-value="formula">Fórmula</div><div class="naowee-dropdown__option" data-value="fijo">Valor fijo</div><div class="naowee-dropdown__option" data-value="ninguno">Sin valor (no suma al catálogo)</div></div>
           </div>
         </div>
         <div class="naowee-textfield t-col-full"><label class="naowee-textfield__label">Descripción (opcional)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvDesc" placeholder="Descripción del nivel"></div></div>
         <div class="naowee-textfield t-col-full" id="nvFijoWrap" style="display:none"><label class="naowee-textfield__label">Valor fijo (COP)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvValorFijo" type="text" inputmode="decimal" placeholder="0"></div></div>
-        <div class="naowee-textfield t-col-full" id="nvFormulaWrap"><label class="naowee-textfield__label">Fórmula</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvFormula" value="SUMA(ítems del nivel)"></div></div>
+        <div class="naowee-textfield t-col-full" id="nvFormulaWrap"><label class="naowee-textfield__label">Fórmula</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvFormula" value="SUMA(items)" autocomplete="off" spellcheck="false"></div>
+          <div class="t-fx-chips" id="nvFxChips"></div>
+          <div class="naowee-helper naowee-helper--informative" id="nvFormulaMsg" style="margin-top:6px"></div></div>
+        <div class="t-col-full naowee-helper naowee-helper--informative" id="nvValorHint" style="margin-top:-4px"></div>
         <div class="t-col-full">
           <div class="naowee-switch naowee-switch--on" id="nvAdmiteItems" role="switch" aria-checked="true" style="cursor:pointer"><span class="naowee-switch__track"><span class="naowee-switch__handle"></span></span><span class="naowee-switch__label">Este nivel admite ítems</span></div>
         </div>
@@ -379,10 +382,11 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.3"></script>
-<script src="../shared/ui.js?v=0.5.3"></script>
-<script src="../shared/shell.js?v=0.5.3"></script>
-<script src="detalle.js?v=0.5.3"></script>
-<script src="../shared/tour.js?v=0.5.3"></script>
+<script src="../shared/formula.js?v=0.5.4"></script>
+<script src="../shared/data-catalogo.js?v=0.5.4"></script>
+<script src="../shared/ui.js?v=0.5.4"></script>
+<script src="../shared/shell.js?v=0.5.4"></script>
+<script src="detalle.js?v=0.5.4"></script>
+<script src="../shared/tour.js?v=0.5.4"></script>
 </body>
 </html>

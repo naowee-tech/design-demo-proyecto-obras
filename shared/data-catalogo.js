@@ -108,8 +108,8 @@
       var nid = 'nv-' + ch.cap;
       niveles.push({
         id: nid, nombre: ch.nombre, orden: i + 1, codigo: ch.cap,
-        admiteItems: true, valorTipo: 'formula', valorFijo: null,
-        formula: 'SUMA(ítems del nivel)', activo: true, campos: camposDefault()
+        admiteItems: true, valorTipo: 'auto', valorFijo: null,
+        formula: null, activo: true, campos: camposDefault()
       });
       ch.items.forEach(function (it) {
         var v = it.val[region] != null ? it.val[region] : it.val.Bogota;
@@ -120,6 +120,19 @@
         });
       });
     });
+    // PPTO-08 / 10: dos fórmulas reales en Pinturas para que la demo las muestre desde el
+    // inicio — el nivel suma 5 % de imprevistos y un ítem aplica su desperdicio.
+    var pint = niveles.filter(function (n) { return n.codigo === '16'; })[0];
+    if (pint) {
+      pint.valorTipo = 'formula'; pint.formula = 'SUMA(items) * 1,05';
+      pint.descripcion = 'Incluye 5 % de imprevistos de acabados.';
+      pint.campos = camposDefault().concat([{ key: 'desperdicio', label: 'Desperdicio', tipo: 'porcentaje', req: false, core: false }]);
+      items.forEach(function (it) {
+        if (it.nivelId !== pint.id) return;
+        it.extra = { desperdicio: it.cod === '16.3' ? 8 : 0 };
+        if (it.cod === '16.3') { it.formula = 'cantidad * valorUnit * (1 + desperdicio%)'; it.valorTotal = Math.round(it.valorUnit * 1.08); }
+      });
+    }
     return { niveles: niveles, items: items };
   }
 
@@ -245,7 +258,7 @@
   function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
   // Sube cuando cambia la semilla: fuerza a resembrar datos guardados con una semilla vieja.
-  var SEED_V = 5, LS_SEEDV = 'obras-ppto-seedv';
+  var SEED_V = 6, LS_SEEDV = 'obras-ppto-seedv';
   function ensure() {
     var cats = read(LS_KEY);
     if (!cats || !cats.length || read(LS_SEEDV) !== SEED_V) {
@@ -374,9 +387,63 @@
       if (n == null || isNaN(n)) return '—';
       return '$' + Math.round(n).toLocaleString('es-CO');
     },
-    totalCatalogo: function (cat) {
-      return this.itemsActivos(cat).reduce(function (s, it) { return s + (it.valorTotal || 0); }, 0);
-    }
+    // Campos numéricos de un nivel, como los espera el motor: { claveNorm: etiqueta }.
+    specCampos: function (nivel) {
+      var FX = window.OBRAS_FX, out = {};
+      ((nivel && nivel.campos && nivel.campos.length) ? nivel.campos : CAMPOS_DEFAULT).forEach(function (c) {
+        if (c.tipo === 'numero' || c.tipo === 'moneda' || c.tipo === 'porcentaje') out[FX ? FX.norm(c.key) : c.key] = c.label;
+      });
+      return out;
+    },
+    // Valor de un ítem: su fórmula si la tiene; si no, el V. total guardado (cantidad × V. unitario,
+    // o el total escrito a mano). Lanza con el mensaje del motor si la fórmula falla.
+    valorItem: function (it, nivel) {
+      var FX = window.OBRAS_FX;
+      if (!it.formula || !FX) return it.valorTotal || 0;
+      var vals = { cantidad: it.cantidad == null ? 1 : it.cantidad, valorunit: it.valorUnit };
+      Object.keys(it.extra || {}).forEach(function (k) { vals[FX.norm(k)] = it.extra[k]; });
+      return Math.round(FX.calcular(it.formula, { campos: this.specCampos(nivel) }, { ref: function (k) { return vals[k]; } }));
+    },
+    // PPTO-08 / 10 / 17: calcula el catálogo completo. Primero los ítems (su fórmula o su
+    // total), después cada nivel según su tipo de valor:
+    //   auto → suma de sus ítems · formula → la expresión · fijo → el valor fijo (reemplaza
+    //   la suma) · ninguno → se muestra la suma pero no cuenta en el total del catálogo.
+    // Un error de fórmula no rompe el cálculo: ese elemento vale 0 y queda en `errores`.
+    calcular: function (cat) {
+      var self = this, FX = window.OBRAS_FX, act = nivelesActivos(cat);
+      var r = { item: {}, nodo: {}, suma: {}, errores: {}, excluidos: {}, total: 0 };
+      var porNivel = {};
+      (cat.niveles || []).forEach(function (n) { porNivel[n.id] = n; });
+      (cat.items || []).forEach(function (it) {
+        var v;
+        try { v = self.valorItem(it, porNivel[it.nivelId]); } catch (e) { r.errores[it.id] = e.message; v = 0; }
+        r.item[it.id] = v; it.valorTotal = v;
+      });
+      (cat.niveles || []).forEach(function (n) {
+        var its = (cat.items || []).filter(function (it) { return it.nivelId === n.id; });
+        var suma = its.reduce(function (s, it) { return s + (r.item[it.id] || 0); }, 0), v = suma;
+        r.suma[n.id] = suma;
+        if (n.valorTipo === 'fijo') v = n.valorFijo || 0;
+        else if (n.valorTipo === 'formula' && n.formula && FX) {
+          try {
+            var spec = { nivel: true, itemCampos: self.specCampos(n), admiteItems: n.admiteItems !== false, tieneHijos: false };
+            v = Math.round(FX.calcular(n.formula, spec, {
+              ref: function () { return 0; },
+              agg: function (tipo, campo) {
+                if (tipo === 'hijos') return 0;   // la estructura aún no tiene subniveles (F5)
+                if (!campo) return suma;
+                return its.reduce(function (s, it) { var x = campo === 'cantidad' ? it.cantidad : campo === 'valorunit' ? it.valorUnit : (it.extra || {})[Object.keys(it.extra || {}).filter(function (k) { return FX.norm(k) === campo; })[0]]; return s + (+x || 0); }, 0);
+              }
+            }));
+          } catch (e) { r.errores[n.id] = e.message; v = 0; }
+        }
+        r.nodo[n.id] = v;
+        if (n.valorTipo === 'ninguno') r.excluidos[n.id] = 1;
+        else if (act[n.id]) r.total += v;
+      });
+      return r;
+    },
+    totalCatalogo: function (cat) { return this.calcular(cat).total; }
   };
 
   ensure();

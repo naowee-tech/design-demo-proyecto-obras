@@ -176,3 +176,12 @@
 .t-carga-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
 #cargaPreview tr.t-carga-err td { background: #fff5f5; }
 .t-carga-motivo { color: #b42318; font-size: 12px; }
+/* ── Fórmulas (PPTO-08, 10): chips que insertan un término y marcas de valor ── */
+.t-fx-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.t-fx-chip { border: 1px solid var(--t-line); background: #f7f9fb; border-radius: 999px; padding: 3px 10px; font: 600 11.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--naowee-color-territorio-700, #0B7E96); cursor: pointer; }
+.t-fx-chip:hover { background: #eef6f8; }
+.t-fx-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; white-space: nowrap; }
+.t-fx-tag code { font-size: 11px; background: #f1f4f7; border-radius: 4px; padding: 0 4px; }
+.t-fx-err { color: #b42318; font-weight: 700; }
+.naowee-textfield__input-wrap.t-readonly { background: #f4f6f8; }
+.naowee-textfield__input-wrap.t-readonly input { color: var(--t-text-2); }
