@@ -12,11 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/skin-gris.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.8">
-<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.8">
-<script>try{var _b=localStorage.getItem('obras-ppto-brand');document.documentElement.setAttribute('data-brand',(_b==='naowee'||_b==='territorio')?_b:'ds');}catch(e){document.documentElement.setAttribute('data-brand','ds');}</script>
-<link rel="stylesheet" href="../shared/theme.css?v=0.4.8">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.6.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.6.0">
 <style>
   /* Override pattern local (después del DS) — solo medidas de este modal */
   #mCrear .naowee-modal{ overflow:visible !important; width:720px; max-width:92vw; }
@@ -148,6 +145,9 @@
           </div>
         </div>
 
+        <!-- D16: además de la región, otra condición opcional (p. ej. «Gestores», «Proyecto Esquemas») -->
+        <div class="naowee-textfield"><label class="naowee-textfield__label">Otra condición (opcional)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="catCondicion" placeholder="Ej. Gestores · Proyecto Esquemas" autocomplete="off"></div></div>
+
         <div>
           <label class="naowee-textfield__label" style="display:block">Estado</label>
           <div class="naowee-dropdown" id="catEstado" style="width:100%">
@@ -207,15 +207,17 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.4.8"></script>
-<script src="../shared/ui.js?v=0.4.8"></script>
-<script src="../shared/shell.js?v=0.4.8"></script>
+<script src="../shared/formula.js?v=0.6.0"></script>
+<script src="../shared/data-catalogo.js?v=0.6.0"></script>
+<script src="../shared/ui.js?v=0.6.0"></script>
+<script src="../shared/shell.js?v=0.6.0"></script>
 <script>
 (function () {
   var UI = window.OBRAS_UI, D = window.OBRAS;
   var editId = null, sortIdx = null, sortDir = 1;
   function qsAll(extra) { var p = new URLSearchParams(location.search); if (extra) Object.keys(extra).forEach(function (k) { p.set(k, extra[k]); }); return '?' + p.toString(); }
   function esc(s) { return (s || '').toString().replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function norm(s) { return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
   function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
 
   var badgeMap = { Activo: 'positive', Borrador: 'caution', Inactivo: 'neutral' };
@@ -225,7 +227,7 @@
   function renderKpis() {
     var cats = D.listCatalogos();
     var activos = cats.filter(function (c) { return c.estado === 'Activo'; }).length;
-    var items = cats.reduce(function (s, c) { return s + c.items.length; }, 0);
+    var items = cats.reduce(function (s, c) { return s + D.itemsActivos(c).length; }, 0);
     var IC_BOOK = '<svg viewBox="0 0 24 24"><path d="M4 4h11a2 2 0 0 1 2 2v13H6a2 2 0 0 0-2 2V4z"/><path d="M17 19H6a2 2 0 0 0-2 2"/></svg>';
     var IC_LIST = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
     document.getElementById('kpiWrap').innerHTML =
@@ -234,10 +236,10 @@
   }
 
   function filtered() {
-    var q = (document.getElementById('tblSearch').value || '').toLowerCase();
+    var q = norm(document.getElementById('tblSearch').value);
     var fe = UI.getDD('fEstado'), fr = UI.getDD('fRegion');
     var rows = D.listCatalogos().filter(function (c) {
-      if (q && c.nombre.toLowerCase().indexOf(q) < 0 && c.region.toLowerCase().indexOf(q) < 0) return false;
+      if (q && norm(c.nombre).indexOf(q) < 0 && norm(c.region).indexOf(q) < 0 && norm(c.condicion).indexOf(q) < 0) return false;
       if (fe && c.estado !== fe) return false;
       if (fr && c.region !== fr) return false;
       return true;
@@ -260,7 +262,7 @@
       return '<tr>' +
         '<td data-label="#">' + (i + 1) + '</td>' +
         '<td data-label="Nombre"><span class="t-cname" title="' + esc(c.nombre) + '">' + esc(c.nombre) + '</span></td>' +
-        '<td data-label="Condición">' + esc(c.region) + '</td>' +
+        '<td data-label="Condición">' + esc(c.region) + (c.condicion ? ' <span style="color:var(--t-text-2)">· ' + esc(c.condicion) + '</span>' : '') + '</td>' +
         '<td data-label="Vigencia">' + fdate(c.vigenciaIni) + ' → ' + fdate(c.vigenciaFin) + '</td>' +
         '<td data-label="Versión"><span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + c.versionActiva + '</span></td>' +
         '<td data-label="Estado">' + estadoBadge(c.estado) + '</td>' +
@@ -339,8 +341,10 @@
     document.getElementById('mCrearTitle').textContent = 'Nuevo catálogo';
     document.getElementById('catNombre').value = '';
     UI.setDD('catRegion', '', 'Seleccione una opción');
+    document.getElementById('catCondicion').value = '';
     document.getElementById('catRegion').querySelector('.naowee-dropdown__value').classList.add('naowee-dropdown__placeholder');
-    UI.setDD('catEstado', 'Borrador', 'Borrador');
+    // D1 · PPTO-01.4: al guardar queda activo y disponible. Borrador sigue como opción explícita.
+    UI.setDD('catEstado', 'Activo', 'Activo');
     dpSet('dpIni', '2026-01-01'); dpSet('dpFin', '2026-12-31');
     setModo('');
     document.getElementById('estructuraRow').style.display = '';
@@ -353,16 +357,26 @@
     document.getElementById('mCrearTitle').textContent = 'Editar catálogo';
     document.getElementById('catNombre').value = c.nombre;
     UI.setDD('catRegion', c.region, c.region);
+    document.getElementById('catCondicion').value = c.condicion || '';
     UI.setDD('catEstado', c.estado, c.estado);
     dpSet('dpIni', c.vigenciaIni); dpSet('dpFin', c.vigenciaFin);
     document.getElementById('estructuraRow').style.display = 'none';
     document.getElementById('crearError').style.display = 'none';
     openModal('mCrear');
   }
+  function fdateCampo(v) { return v ? fdate(v) : '—'; }
+  var CAMPOS_CAT = [
+    { key: 'nombre', label: 'Nombre' },
+    { key: 'region', label: 'Condición de aplicación · Región' },
+    { key: 'condicion', label: 'Otra condición' },
+    { key: 'estado', label: 'Estado' },
+    { key: 'vigenciaIni', label: 'Vigencia desde', fmt: fdateCampo },
+    { key: 'vigenciaFin', label: 'Vigencia hasta', fmt: fdateCampo }
+  ];
   function save() {
     var nombreEl = document.getElementById('catNombre');
-    var nombre = nombreEl.value.trim(), region = UI.getDD('catRegion');
-    var estado = UI.getDD('catEstado') || 'Borrador';
+    var nombre = nombreEl.value.trim(), region = UI.getDD('catRegion'), condicion = document.getElementById('catCondicion').value.trim();
+    var estado = UI.getDD('catEstado') || 'Activo';
     var err = document.getElementById('crearError');
     nombreEl.closest('.naowee-textfield__input-wrap').classList.remove('t-invalid');
     if (!nombre || !region || (!editId && !getModo())) {
@@ -374,29 +388,53 @@
       if (!nombre) nombreEl.closest('.naowee-textfield__input-wrap').classList.add('t-invalid');
       return;
     }
-    var dup = D.listCatalogos().filter(function (c) { return c.id !== editId && c.nombre.toLowerCase() === nombre.toLowerCase() && c.region === region; });
+    var dup = D.listCatalogos().filter(function (c) { return c.id !== editId && norm(c.nombre) === norm(nombre) && c.region === region && norm(c.condicion) === norm(condicion); });
     if (dup.length) { document.getElementById('crearErrorMsg').textContent = 'Ya existe un catálogo con ese nombre y condición.'; err.style.display = ''; return; }
-    var ini = dpGet('dpIni') || '2026-01-01', fin = dpGet('dpFin') || '2026-12-31';
+    var ini = dpGet('dpIni'), fin = dpGet('dpFin');
+    if (!ini || !fin || fin < ini) {
+      document.getElementById('crearErrorMsg').textContent = (!ini || !fin) ? 'Indica la vigencia completa (desde y hasta).' : 'La vigencia debe terminar después de la fecha de inicio.';
+      err.style.display = ''; return;
+    }
     if (editId) {
+      // PPTO-02: resumen antes de confirmar, aviso si hay presupuestos activos, traza con
+      // antes/después, y el cambio queda pendiente de versionar.
       var c = D.getCatalogo(editId);
-      c.nombre = nombre; c.region = region; c.estado = estado; c.vigenciaIni = ini; c.vigenciaFin = fin;
-      D.saveCatalogo(c); D.logAudit(c, 'Editar catálogo', 'Catálogo', 'Jesús Díaz');
+      var nuevo = { nombre: nombre, region: region, condicion: condicion, estado: estado, vigenciaIni: ini, vigenciaFin: fin };
+      var cambios = D.diff(c, nuevo, CAMPOS_CAT);
+      var pptos = D.presupuestosDe(c.id);
+      UI.confirmarCambios({
+        titulo: 'Revisa los cambios del catálogo', desde: 'mCrear', cambios: cambios,
+        impacto: UI.avisoPresupuestos(pptos, 'Editar este catálogo')
+      }).then(function (ok) {
+        if (!ok) return;
+        Object.keys(nuevo).forEach(function (k) { c[k] = nuevo[k]; });
+        D.saveCatalogo(c);
+        D.logAudit(c, 'Editar catálogo', 'Catálogo', null, { cambios: cambios });
+        D.marcarCambio(c);
+        closeModal('mCrear'); render(); renderKpis();
+        UI.toast('Catálogo actualizado. ' + cambios.length + ' cambio' + (cambios.length === 1 ? '' : 's') + ' quedan en el historial.');
+      });
+      return;
     } else {
-      D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
+      var nuevo = D.newCatalogo({ nombre: nombre, region: region, condicion: condicion, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
+      closeModal('mCrear'); render(); renderKpis();
+      UI.toast('Catálogo <b>' + esc(nuevo.nombre) + '</b> creado (' + nuevo.estado + ', v1.0). <a href="catalogo-detalle.html?' + new URLSearchParams(Object.assign({ role: 'ADMIN', cat: nuevo.id }, new URLSearchParams(location.search).get('proyecto') ? { proyecto: new URLSearchParams(location.search).get('proyecto') } : {})).toString() + '" id="toastIrEstructura" style="color:inherit;text-decoration:underline">Configurar su estructura →</a>', 'positive', 6000);
+      return;
     }
     closeModal('mCrear'); render(); renderKpis();
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    // "Todos" = catálogo base nacional. La región específica manda sobre él
-    // (regla de precedencia pendiente de confirmar con negocio).
-    var CONDICIONES = [{ value: 'Todos', label: 'Todos · base nacional' }]
-      .concat(D.REGIONES.map(function (r) { return { value: r, label: r }; }));
+    // D16: la condición es la región (más una condición libre opcional). Se retiró la opción
+    // "Todos · base nacional": ninguna fuente de Fase I la menciona y en la matriz la base es Bogotá.
+    var CONDICIONES = D.REGIONES.map(function (r) { return { value: r, label: r }; });
     UI.fillDD('catRegion', CONDICIONES, 'Seleccione una opción');
     UI.fillDD('fRegion', [{ value: '', label: 'Toda condición' }].concat(CONDICIONES), null);
     renderKpis(); render();
 
     document.getElementById('btnCrear').onclick = openCreate;
+    var editQs = new URLSearchParams(location.search).get('edit');
+    if (editQs && D.getCatalogo(editQs)) setTimeout(function () { openEdit(editQs); }, 60);
     document.getElementById('catGuardar').onclick = save;
     document.querySelectorAll('#catModo .naowee-radio').forEach(function (r) {
       r.addEventListener('click', function () { setModo(r.dataset.modo); });
@@ -420,6 +458,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.4.8"></script>
+<script src="../shared/tour.js?v=0.6.0"></script>
 </body>
 </html>

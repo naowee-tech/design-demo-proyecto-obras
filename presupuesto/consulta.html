@@ -12,17 +12,20 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/skin-gris.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.8">
-<link rel="stylesheet" href="../shared/skin-ds.css?v=0.4.8">
-<script>try{var _b=localStorage.getItem('obras-ppto-brand');document.documentElement.setAttribute('data-brand',(_b==='naowee'||_b==='territorio')?_b:'ds');}catch(e){document.documentElement.setAttribute('data-brand','ds');}</script>
-<link rel="stylesheet" href="../shared/theme.css?v=0.4.8">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.6.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.6.0">
 <style>
   /* Override pattern: el acordeón del DS abre con max-height fijo; aquí el contenido es una tabla */
-  .naowee-accordion__item--open .naowee-accordion__body{ max-height:none; padding-bottom:14px; }
+  /* Acordeones anidados (PPTO-17): el estado abierto aplica solo al hijo directo; si no,
+     abrir un capítulo abría también todos sus APU (el DS usa selectores descendientes). */
+  .naowee-accordion__item > .naowee-accordion__body{ max-height:0; padding-bottom:0; }
+  .naowee-accordion__item--open > .naowee-accordion__body{ max-height:none; padding-bottom:10px; }
   .naowee-accordion__header{ padding:13px 4px; }
-  .naowee-accordion__chevron{ transition:transform .18s; }
-  .naowee-accordion__item--open .naowee-accordion__chevron{ transform:rotate(90deg); }
+  .naowee-accordion__chevron{ transition:transform .18s; transform:none !important; }
+  .naowee-accordion__item--open > .naowee-accordion__header .naowee-accordion__chevron{ transform:rotate(90deg) !important; }
+  /* El tema abre el encabezado con margin 0 -8px; anidado, ese sobrante queda recortado. */
+  .naowee-accordion .naowee-accordion .naowee-accordion__header{ padding:9px 8px 9px 4px; margin:0 !important; }
+  .t-lvl-uni{ font-size:11px;color:var(--t-text-2);font-weight:600;background:#f1f4f7;border-radius:5px;padding:1px 6px;margin-left:6px; }
   .t-lvl-code{ width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;
     background:var(--naowee-color-territorio-100);color:var(--naowee-color-territorio-700);font-size:12.5px;font-weight:700; }
   .t-lvl-count{ font-size:11.5px;color:var(--t-text-2);font-weight:500; }
@@ -64,10 +67,10 @@
             <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo tipo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
             <div class="naowee-dropdown__menu" role="listbox">
               <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo tipo</div>
-              <div class="naowee-dropdown__option" data-value="Producto">Producto</div>
-              <div class="naowee-dropdown__option" data-value="Servicio">Servicio</div>
+              <div class="naowee-dropdown__option" data-value="Material">Material</div><div class="naowee-dropdown__option" data-value="MO">Mano de obra (MO)</div><div class="naowee-dropdown__option" data-value="Equipo">Equipo</div><div class="naowee-dropdown__option" data-value="Transporte">Transporte</div>
             </div>
           </div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="itemNivel" data-search style="width:190px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo nivel</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
           <div style="width:1px;height:24px;background:var(--t-line);flex-shrink:0"></div>
           <div class="naowee-dropdown naowee-dropdown--small" id="cSel" data-search style="width:240px;flex-shrink:0">
             <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Catálogo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
@@ -84,6 +87,11 @@
         <div class="t-esq-chips" id="cChips"></div>
       </section>
 
+      <div style="display:flex;align-items:center;gap:8px;margin:0 0 8px 4px;flex-wrap:wrap">
+        <span class="t-count" id="itemCount" style="margin-right:auto"></span>
+        <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnAbrirTodo">Expandir todo</button>
+        <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnCerrarTodo">Contraer todo</button>
+      </div>
       <div class="naowee-accordion naowee-accordion--medium" id="catTree"></div>
 
       <div class="t-empty" id="treeEmpty">
@@ -94,9 +102,25 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.4.8"></script>
-<script src="../shared/ui.js?v=0.4.8"></script>
-<script src="../shared/shell.js?v=0.4.8"></script>
+<!-- ════ Panel lateral · detalle de ítem (PPTO-18.4) ════ -->
+<div class="naowee-modal-overlay t-fold-overlay" id="itemFold" aria-hidden="true">
+  <div class="naowee-modal t-fold" role="dialog" aria-modal="true" aria-labelledby="foldTitle">
+    <div class="naowee-modal__header t-fold__header">
+      <div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="foldTitle">Ítem</h2><p class="naowee-modal__subtitle" id="foldRuta"></p></div>
+      <button class="naowee-modal__dismiss" aria-label="Cerrar" id="foldClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="naowee-modal__body t-fold__body">
+      <div class="t-fold__stats" id="foldStats"></div>
+      <div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><tbody id="foldCampos"></tbody></table></div>
+      <div id="foldCalc" style="font-size:12.5px;color:var(--t-text-2);margin-top:12px;line-height:1.55"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/formula.js?v=0.6.0"></script>
+<script src="../shared/data-catalogo.js?v=0.6.0"></script>
+<script src="../shared/ui.js?v=0.6.0"></script>
+<script src="../shared/shell.js?v=0.6.0"></script>
 <script>
 (function () {
   var D = window.OBRAS, UI = window.OBRAS_UI, cat = null;
@@ -105,9 +129,18 @@
   function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
   function itemsDe(id) { return cat.items.filter(function (it) { return it.nivelId === id; }); }
 
+  // Solo catálogos Activos: un Borrador todavía se está armando y un Inactivo ya no rige.
+  // Un ?cat= que apunte a otro estado cae al primer Activo.
+  function consultables() { return D.listCatalogos().filter(function (c) { return c.estado === 'Activo'; }); }
   function pick(id) {
-    var list = D.listCatalogos().filter(function (c) { return c.estado !== 'Borrador'; });
-    cat = (id ? D.getCatalogo(id) : null) || list.filter(function (c) { return c.estado === 'Activo'; })[0] || list[0] || D.listCatalogos()[0];
+    var list = consultables();
+    cat = list.filter(function (c) { return c.id === id; })[0] || list[0] || null;
+  }
+  function vigencia(c) {
+    var hoy = D.hoy();
+    if (c.vigenciaIni && hoy < c.vigenciaIni) return { txt: 'Vigencia futura', tono: 'informative' };
+    if (c.vigenciaFin && hoy > c.vigenciaFin) return { txt: 'Vencido', tono: 'caution' };
+    return { txt: 'Vigente', tono: 'positive' };
   }
 
   function renderHead() {
@@ -115,15 +148,16 @@
     var IC_MONEY = '<svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
     document.getElementById('kpiWrap').innerHTML =
       '<div class="t-kpi"><div class="kpi-ic">' + IC_MONEY + '</div><div><div class="kpi-l">Valor total</div><div class="kpi-v">' + D.fmtCOP(D.totalCatalogo(cat)) + '</div></div></div>' +
-      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + cat.items.length + '</div></div></div>';
+      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + D.itemsActivos(cat).length + '</div></div></div>';
     document.getElementById('cTitle').textContent = cat.nombre;
     document.getElementById('cChips').innerHTML =
       '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
-      '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Vigente</span>' +
+      '<span class="naowee-badge naowee-badge--' + vigencia(cat).tono + ' naowee-badge--quiet naowee-badge--small">' + vigencia(cat).txt + '</span>' +
       '<span class="t-esq-chip">' + esc(cat.region) + '</span>' +
       '<span class="t-esq-chip">Vigencia ' + fdate(cat.vigenciaIni) + ' → ' + fdate(cat.vigenciaFin) + '</span>';
   }
 
+  var TONO_TIPO = { Material: 'informative', MO: 'positive', Equipo: 'caution', Transporte: 'neutral' };
   function highlight(txt, q) {
     if (!q) return esc(txt);
     var i = norm(txt).indexOf(q);
@@ -131,69 +165,147 @@
     return esc(txt.slice(0, i)) + '<mark>' + esc(txt.slice(i, i + q.length)) + '</mark>' + esc(txt.slice(i + q.length));
   }
 
+  function fillNiveles() {
+    var act = D.activos(cat);
+    var ns = D.arbol(cat).filter(function (x) { return act[x.n.id]; });
+    UI.fillDD('itemNivel', [{ value: '', label: 'Todo nivel' }].concat(ns.map(function (x) { return { value: x.n.id, label: ' '.repeat((x.d - 1) * 3) + (x.n.codigo ? x.n.codigo + ' · ' : '') + x.n.nombre }; })), null);
+    UI.setDD('itemNivel', '', 'Todo nivel');
+  }
+  var IC_CHEV = '<span class="naowee-accordion__chevron"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>';
+  function tagDe(n, R) {
+    return R.errores[n.id] ? '<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small" title="' + esc(R.errores[n.id]) + '">Error de fórmula</span>'
+      : n.valorTipo === 'formula' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small" title="' + esc(n.formula) + '">ƒ ' + esc(n.formula) + '</span>'
+      : n.valorTipo === 'fijo' ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small" title="Reemplaza la suma de lo que contiene">Valor fijo</span>'
+      : n.valorTipo === 'ninguno' ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small">No suma al total</span>' : '';
+  }
+  // PPTO-17: el catálogo se recorre como su estructura (capítulo → APU → insumos). Con búsqueda
+  // o filtros se podan las ramas sin coincidencias y se abren las que quedan.
   function render() {
     var q = norm(document.getElementById('itemSearch').value);
-    var tipo = UI.getDD('itemFiltro');
+    var tipo = UI.getDD('itemFiltro'), fNivel = UI.getDD('itemNivel');
     var host = document.getElementById('catTree');
-    var ns = cat.niveles.filter(function (n) { return n.activo; }).sort(function (a, b) { return a.orden - b.orden; });
-    var total = 0;
+    var filtrando = !!(q || tipo), R = D.calcular(cat), act = D.activos(cat), total = 0;
 
-    host.innerHTML = ns.map(function (n) {
+    function renderNodo(n, d) {
+      var hijosHtml = D.hijosDe(cat, n.id).filter(function (h) { return act[h.id]; }).map(function (h) { return renderNodo(h, d + 1); }).join('');
       var items = itemsDe(n.id).filter(function (it) {
-        if (tipo && it.tipo !== tipo) return false;
-        if (q && norm(it.nombre).indexOf(q) < 0 && norm(it.cod).indexOf(q) < 0) return false;
+        if (tipo && (it.tipo || '') !== tipo) return false;
+        if (q && norm(it.nombre).indexOf(q) < 0 && norm(it.cod).indexOf(q) < 0 && norm(n.nombre).indexOf(q) < 0) return false;
         return true;
       });
-      if ((q || tipo) && !items.length) return '';
+      if (filtrando && !items.length && !hijosHtml) return '';
       total += items.length;
-      var tot = items.reduce(function (s, it) { return s + it.valorTotal; }, 0);
-      var open = (q || tipo) ? ' naowee-accordion__item--open' : '';
+      var nHijos = D.hijosDe(cat, n.id).filter(function (h) { return act[h.id]; }).length;
+      var sub = (cat.esquema[d] || {}).nombre;
+      var conteo = [nHijos ? nHijos + ' ' + (sub || 'subniveles') : '', n.admiteItems ? itemsDe(n.id).length + ' ítems' : ''].filter(Boolean).join(' · ');
+      var tot = filtrando ? null : (R.nodo[n.id] || 0);
       var rows = items.map(function (it) {
-        return '<tr>' +
-          '<td data-label="Código">' + esc(it.cod) + '</td>' +
-          '<td data-label="Ítem">' + highlight(it.nombre, q) + '</td>' +
+        return '<tr class="t-row-click" data-item="' + it.id + '" tabindex="0" title="Ver detalle del ítem">' +
+          '<td data-label="Código">' + highlight(it.cod, q) + '</td>' +
+          '<td data-label="Ítem">' + highlight(it.nombre, q) + (it.formula ? ' <span title="' + esc(it.formula) + '" style="color:var(--t-text-2)">ƒ</span>' : '') + '</td>' +
+          '<td data-label="Tipo"><span class="naowee-badge naowee-badge--' + (TONO_TIPO[it.tipo] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + esc(it.tipo || '—') + '</span></td>' +
           '<td data-label="Unidad">' + esc(it.uni) + '</td>' +
           '<td data-label="Cantidad" class="tnum">' + it.cantidad + '</td>' +
           '<td data-label="V. unitario" class="tnum">' + D.fmtCOP(it.valorUnit) + '</td>' +
-          '<td data-label="V. total" class="tnum">' + D.fmtCOP(it.valorTotal) + '</td>' +
+          '<td data-label="V. total" class="tnum">' + (R.errores[it.id] ? '<span style="color:#b42318;font-weight:700" title="' + esc(R.errores[it.id]) + '">Error de fórmula</span>' : D.fmtCOP(it.valorTotal)) + '</td>' +
           '</tr>';
       }).join('');
-      return '<div class="naowee-accordion__item' + open + '" data-nivel="' + n.id + '">' +
-        '<div class="naowee-accordion__header" role="button" tabindex="0">' +
-          '<span class="naowee-accordion__chevron"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>' +
+      return '<div class="naowee-accordion__item' + (filtrando ? ' naowee-accordion__item--open' : '') + '" data-nivel="' + n.id + '">' +
+        '<div class="naowee-accordion__header" role="button" tabindex="0" aria-expanded="' + filtrando + '">' + IC_CHEV +
           '<span class="t-lvl-code">' + esc(n.codigo || n.orden) + '</span>' +
-          '<span class="naowee-accordion__title">' + esc(n.nombre) + ' <span class="t-lvl-count">· ' + items.length + ' ítems</span></span>' +
-          '<span class="naowee-accordion__action tnum" style="font-weight:700">' + D.fmtCOP(tot) + '</span>' +
+          '<span class="naowee-accordion__title">' + highlight(n.nombre, q) + (n.unidad ? '<span class="t-lvl-uni">' + esc(n.unidad) + '</span>' : '') + ' <span class="t-lvl-count">· ' + conteo + '</span></span>' +
+          '<span class="naowee-accordion__action tnum" style="font-weight:700;display:inline-flex;gap:8px;align-items:center">' + (tot == null ? '' : tagDe(n, R) + D.fmtCOP(tot)) + '</span>' +
         '</div>' +
         '<div class="naowee-accordion__body"><div class="naowee-accordion__content">' +
-          '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><thead><tr><th>Código</th><th>Ítem</th><th>Unidad</th><th>Cantidad</th><th>V. unitario</th><th>V. total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          (hijosHtml ? '<div class="naowee-accordion naowee-accordion--small">' + hijosHtml + '</div>' : '') +
+          (rows ? '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><thead><tr><th>Código</th><th>Ítem</th><th>Tipo</th><th>Unidad</th><th>Cantidad</th><th>V. unitario</th><th>V. total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
         '</div></div></div>';
-    }).join('');
+    }
+    var raices = fNivel ? [nivelDe(fNivel)].filter(Boolean) : D.hijosDe(cat, null).filter(function (n) { return act[n.id]; });
+    host.innerHTML = raices.map(function (n) { return renderNodo(n, fNivel ? D.profundidadDe(cat, n.id) : 1); }).join('');
+    if (fNivel && !filtrando) { var it0 = host.querySelector('.naowee-accordion__item'); if (it0) it0.classList.add('naowee-accordion__item--open'); }
 
-    var empty = (q || tipo) && total === 0;
+    var disp = D.itemsActivos(cat).length;
+    document.getElementById('itemCount').innerHTML = (filtrando || fNivel) ? '<b>' + total + '</b> de ' + disp + ' ítems coinciden' : '';
+    var empty = filtrando && total === 0;
     document.getElementById('treeEmpty').classList.toggle('show', empty);
     host.style.display = empty ? 'none' : '';
 
+    host.querySelectorAll('tr[data-item]').forEach(function (tr) {
+      tr.onclick = function () { abrirItem(tr.dataset.item); };
+      tr.onkeydown = function (e) { if (e.key === 'Enter') abrirItem(tr.dataset.item); };
+    });
     host.querySelectorAll('.naowee-accordion__header').forEach(function (h) {
-      function toggle() { h.parentElement.classList.toggle('naowee-accordion__item--open'); }
+      function toggle() { var o = h.parentElement.classList.toggle('naowee-accordion__item--open'); h.setAttribute('aria-expanded', o); }
       h.onclick = toggle;
       h.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
     });
   }
+  function nivelDe(id) { return cat.niveles.filter(function (n) { return n.id === id; })[0]; }
+  function abrirTodo(on) {
+    document.querySelectorAll('#catTree .naowee-accordion__item').forEach(function (i) { i.classList.toggle('naowee-accordion__item--open', on); var h = i.querySelector(':scope > .naowee-accordion__header'); if (h) h.setAttribute('aria-expanded', on); });
+  }
+
+  // Detalle de solo lectura: ruta de niveles, todos los campos y cómo se calculó el total.
+  function abrirItem(id) {
+    var it = cat.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
+    var n = cat.niveles.filter(function (x) { return x.id === it.nivelId; })[0] || {};
+    var campos = (n.campos && n.campos.length) ? n.campos : D.camposDefault();
+    document.getElementById('foldTitle').textContent = it.cod + ' · ' + it.nombre;
+    document.getElementById('foldRuta').textContent = [cat.nombre].concat(D.rutaDe(cat, it.nivelId).map(function (x) { return (x.codigo ? x.codigo + ' ' : '') + x.nombre; })).join(' › ');
+    document.getElementById('foldStats').innerHTML =
+      '<div class="t-statchip"><div class="v">' + D.fmtCOP(it.valorTotal) + '</div><span class="l">Valor total</span></div>' +
+      '<div class="t-statchip"><div class="v">' + esc(it.tipo || '—') + '</div><span class="l">Tipo</span></div>' +
+      '<div class="t-statchip"><div class="v">' + esc(cat.versionActiva) + '</div><span class="l">Versión</span></div>';
+    function val(c) {
+      var v = ({ cod: 1, nombre: 1, tipo: 1, uni: 1, cantidad: 1, valorUnit: 1 })[c.key] ? it[c.key] : (it.extra || {})[c.key];
+      if (v == null || v === '') return '—';
+      if (c.tipo === 'moneda') return D.fmtCOP(v);
+      if (c.tipo === 'porcentaje') return esc(v) + ' %';
+      if (c.tipo === 'fecha') return fdate(v);
+      return esc(v);
+    }
+    document.getElementById('foldCampos').innerHTML = campos.map(function (c) {
+      return '<tr><td style="color:var(--t-text-2);width:42%">' + esc(c.label) + '</td><td><b>' + val(c) + '</b></td></tr>';
+    }).join('');
+    document.getElementById('foldCalc').innerHTML = it.formula
+      ? 'V. total calculado con la fórmula del ítem: <code>' + esc(it.formula) + '</code> = <b>' + D.fmtCOP(it.valorTotal) + '</b>.'
+      : 'V. total = cantidad (' + (it.cantidad == null ? 1 : it.cantidad) + ') × V. unitario (' + D.fmtCOP(it.valorUnit) + ') = <b>' + D.fmtCOP(it.valorTotal) + '</b>.';
+    document.getElementById('foldCalc').innerHTML += '<br>Su nivel «' + esc(n.nombre || '') + '» vale <b>' + D.fmtCOP(D.calcular(cat).nodo[n.id] || 0) + '</b> (' + (n.valorTipo === 'formula' ? 'fórmula ' + esc(n.formula) : n.valorTipo === 'fijo' ? 'valor fijo' : 'suma de sus ítems') + ').';
+    var o = document.getElementById('itemFold');
+    o.classList.add('open'); o.setAttribute('aria-hidden', 'false'); void o.offsetWidth; o.classList.add('t-fold--in');
+    document.getElementById('foldClose').focus();
+  }
+  function cerrarItem() {
+    var o = document.getElementById('itemFold');
+    o.classList.remove('t-fold--in'); o.setAttribute('aria-hidden', 'true');
+    setTimeout(function () { o.classList.remove('open'); }, 320);
+  }
 
   document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('foldClose').onclick = cerrarItem;
+    document.getElementById('itemFold').addEventListener('click', function (e) { if (e.target.id === 'itemFold') cerrarItem(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('itemFold').classList.contains('open')) cerrarItem(); });
     pick(new URLSearchParams(location.search).get('cat'));
-    var opts = D.listCatalogos().filter(function (c) { return c.estado !== 'Borrador'; })
-      .map(function (c) { return { value: c.id, label: c.nombre }; });
+    if (!cat) {
+      document.getElementById('cTitle').textContent = 'No hay catálogos activos';
+      document.getElementById('cMeta').textContent = 'Cuando un administrador active un catálogo de precios, aparecerá aquí para consulta.';
+      document.querySelector('.t-board-actions').style.display = 'none';
+      return;
+    }
+    var opts = consultables().map(function (c) { return { value: c.id, label: c.nombre }; });
     UI.fillDD('cSel', opts, null);
     UI.setDD('cSel', cat.id, cat.nombre);
-    renderHead(); render();
-    document.getElementById('cSel').addEventListener('dd:change', function (e) { pick(e.detail.value); renderHead(); render(); });
+    fillNiveles(); renderHead(); render();
+    document.getElementById('cSel').addEventListener('dd:change', function (e) { pick(e.detail.value); fillNiveles(); renderHead(); render(); });
+    document.getElementById('itemNivel').addEventListener('dd:change', render);
+    document.getElementById('btnAbrirTodo').onclick = function () { abrirTodo(true); };
+    document.getElementById('btnCerrarTodo').onclick = function () { abrirTodo(false); };
     document.getElementById('itemSearch').addEventListener('input', render);
     document.getElementById('itemFiltro').addEventListener('dd:change', render);
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.4.8"></script>
+<script src="../shared/tour.js?v=0.6.0"></script>
 </body>
 </html>

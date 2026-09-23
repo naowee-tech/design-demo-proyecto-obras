@@ -5,7 +5,6 @@
  * TRANSPARENTE: intercepta localStorage y añade el sufijo `::<proyecto>` a las
  * claves de datos, sin que el resto del código tenga que cambiar.
  *
- * - `territorio-hab-brand` NO se namespacea (es preferencia de UI global).
  * - Las claves que ya traen `::` no se vuelven a sufijar (evita doble-sufijo en
  *   iteraciones del "Reiniciar demo").
  *
@@ -17,7 +16,7 @@
     var proy = ((new URLSearchParams(location.search).get('proyecto')) || 'default').trim() || 'default';
     var SUFFIX = '::' + proy;
     function nk(k) {
-      if (typeof k === 'string' && k.indexOf('obras-ppto-') === 0 && k !== 'obras-ppto-brand' && k.indexOf('::') < 0) {
+      if (typeof k === 'string' && k.indexOf('obras-ppto-') === 0 && k.indexOf('::') < 0) {
         return k + SUFFIX;
       }
       return k;
