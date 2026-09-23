@@ -181,6 +181,82 @@
   window.OBRAS_UI.dpSet = function (id, iso) { var dp = document.getElementById(id); if (dp && dp.__set) dp.__set(iso); };
   window.OBRAS_UI.dpGet = function (id) { var dp = document.getElementById(id); return dp ? (dp.dataset.value || '') : ''; };
 
+  // ── Toast (.t-toast del shell + .naowee-message) ──
+  var IC_MSG = {
+    positive: '<path d="M20 6L9 17l-5-5"/>',
+    caution: '<path d="M12 3l9 17H3z"/><path d="M12 9v4M12 17h.01"/>',
+    negative: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>',
+    informative: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/>'
+  };
+  function msgIcon(tono) { return '<span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">' + (IC_MSG[tono] || IC_MSG.informative) + '</svg></span>'; }
+  var _toastT = null;
+  window.OBRAS_UI.toast = function (html, tono) {
+    tono = tono || 'positive';
+    var t = document.getElementById('tToast');
+    if (!t) { t = document.createElement('div'); t.id = 'tToast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.className = 't-toast naowee-message naowee-message--' + tono;
+    t.innerHTML = '<div class="naowee-message__header">' + msgIcon(tono) + '<div class="naowee-message__body">' + html + '</div></div>';
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    clearTimeout(_toastT); _toastT = setTimeout(function () { t.classList.remove('show'); }, 3200);
+  };
+
+  // ── Aviso de impacto sobre presupuestos (PPTO-02, 11, 15) ──
+  function escH(s) { return (s == null ? '' : String(s)).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  window.OBRAS_UI.avisoPresupuestos = function (lista, sujeto) {
+    if (!lista || !lista.length) return '';
+    var n = lista.length;
+    return '<div class="naowee-message naowee-message--caution" style="margin-top:14px"><div class="naowee-message__header">' + msgIcon('caution') +
+      '<div class="naowee-message__body"><b>' + (sujeto || 'Este cambio') + ' afecta ' + n + ' presupuesto' + (n === 1 ? '' : 's') + ' activo' + (n === 1 ? '' : 's') + ':</b>' +
+      '<ul style="margin:6px 0 6px 18px;padding:0">' + lista.map(function (p) { return '<li>' + escH(p.nombre) + ' <span style="opacity:.75">· ' + escH(p.version) + ' · ' + escH(p.estado) + '</span></li>'; }).join('') + '</ul>' +
+      'Cada presupuesto queda en la versión con la que se creó; el cambio aplica desde la próxima versión. Te sugerimos <b>crear una nueva versión</b> al terminar.</div></div></div>';
+  };
+
+  // ── Resumen de cambios antes de confirmar (PPTO-02, 05, 11) ──
+  // Cierra el modal de edición mientras muestra el resumen (nunca dos fondos a la vez) y lo
+  // reabre si el usuario vuelve a editar. Sin cambios no abre nada: avisa y resuelve false.
+  function ensureCambios() {
+    var o = document.getElementById('mCambios');
+    if (o) return o;
+    o = document.createElement('div');
+    o.className = 'naowee-modal-overlay'; o.id = 'mCambios';
+    o.innerHTML =
+      '<div class="naowee-modal naowee-modal--wide naowee-modal--fixed-header naowee-modal--fixed-footer">' +
+        '<div class="naowee-modal__header"><div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="mCambiosTitle">Revisa los cambios</h2><p class="naowee-modal__subtitle" id="mCambiosSub"></p></div>' +
+          '<button class="naowee-modal__dismiss" aria-label="Cerrar" data-act="volver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+        '<div class="naowee-modal__body">' +
+          '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact" id="mCambiosTable"><thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead><tbody id="mCambiosBody"></tbody></table></div>' +
+          '<div id="mCambiosImpacto"></div>' +
+        '</div>' +
+        '<div class="naowee-modal__footer naowee-modal__footer--end"><button class="naowee-btn naowee-btn--mute" style="margin-right:8px" data-act="volver">Volver a editar</button><button class="naowee-btn naowee-btn--loud" id="mCambiosOk" data-act="ok">Confirmar cambios</button></div>' +
+      '</div>';
+    document.body.appendChild(o);
+    return o;
+  }
+  window.OBRAS_UI.confirmarCambios = function (opts) {
+    return new Promise(function (resolve) {
+      if (!opts.cambios || !opts.cambios.length) { window.OBRAS_UI.toast('Sin cambios que guardar.', 'informative'); resolve(false); return; }
+      var o = ensureCambios();
+      document.getElementById('mCambiosTitle').textContent = opts.titulo || 'Revisa los cambios';
+      document.getElementById('mCambiosSub').textContent = opts.subtitulo || (opts.cambios.length + ' campo' + (opts.cambios.length === 1 ? '' : 's') + ' cambia' + (opts.cambios.length === 1 ? '' : 'n') + '. Confirma para guardar y dejarlo en el historial.');
+      document.getElementById('mCambiosBody').innerHTML = opts.cambios.map(function (c) {
+        return '<tr><td data-label="Campo"><b>' + escH(c.etiqueta) + '</b></td>' +
+          '<td data-label="Antes"><span style="color:var(--t-text-2);text-decoration:line-through">' + escH(c.antes) + '</span></td>' +
+          '<td data-label="Después"><b>' + escH(c.despues) + '</b></td></tr>';
+      }).join('');
+      document.getElementById('mCambiosImpacto').innerHTML = opts.impacto || '';
+      if (opts.desde) window.closeModal(opts.desde);
+      window.openModal('mCambios');
+      o.querySelectorAll('[data-act]').forEach(function (b) {
+        b.onclick = function () {
+          var ok = b.dataset.act === 'ok';
+          window.closeModal('mCambios');
+          if (!ok && opts.desde) window.openModal(opts.desde);
+          resolve(ok);
+        };
+      });
+    });
+  };
+
   document.addEventListener('click', function () { closeAllDD(null); });
   document.addEventListener('DOMContentLoaded', function () { window.OBRAS_UI.initDropdowns(); window.OBRAS_UI.initDatepickers(); });
 })();

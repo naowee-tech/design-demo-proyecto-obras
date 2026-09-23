@@ -27,10 +27,15 @@
     'PPTO-02': { ph: '1 · CRUD del Catálogo', page: 'catalogos.html', role: 'ADMIN',
       title: 'Editar catálogo', purpose: 'Actualizar nombre, condición de aplicación o vigencia de un catálogo existente, con traza.',
       steps: [
-        { sel: '.t-kebab', body: 'En la fila de un catálogo, abre el menú de <b>acciones</b> (⋮).', click: true },
+        { sel: '#catBody tr:nth-child(2) .t-kebab, .t-kebab', body: 'En la fila de <b>Vivienda Rural — Bogotá</b>, abre el menú de <b>acciones</b> (⋮). También se llega desde el detalle con <b>Editar datos generales</b>.', click: true },
         { sel: '#rmEdit', body: 'Elige <b>Editar catálogo</b> para abrir sus datos generales.', click: true },
-        { sel: '#catNombre, #mCrear', body: 'Modifica <b>nombre, condición o vigencia</b>. El sistema muestra un resumen antes de confirmar.' },
-        { sel: '#mCrear .naowee-modal__footer .naowee-btn--loud', body: 'Al guardar, los cambios quedan en el <b>historial</b> del catálogo.' }
+        { sel: '#catNombre, #mCrear .naowee-modal', body: 'Se pueden cambiar <b>nombre, condición y vigencia</b>. Para el recorrido le ajustamos el nombre.',
+          fill: { sel: '#catNombre', value: function (v) { return / \(ajuste\)$/.test(v) ? v.replace(/ \(ajuste\)$/, '') : v + ' (ajuste)'; } } },
+        { sel: '#catGuardar', body: 'Clic en <b>Guardar</b>: antes de guardar, el sistema muestra qué cambia.', click: true },
+        { sel: '#mCambiosTable, #mCrear .naowee-modal', body: '<b>Resumen de cambios</b>: cada campo con su valor anterior y el nuevo.' },
+        { sel: '#mCambiosImpacto .naowee-message, #mCambiosTable', body: 'Este catálogo tiene <b>presupuestos activos</b>: el sistema lista cuáles y sugiere crear una nueva versión, porque cada presupuesto queda en la versión con la que se creó.' },
+        { sel: '#mCambiosOk', body: '<b>Confirma</b>. El cambio queda en el historial con antes/después, quién y cuándo, y suma un cambio pendiente de versionar.', click: true },
+        { center: true, body: 'Listo. En el detalle del catálogo, la pestaña <b>Auditoría</b> muestra la entrada <b>Editar catálogo</b> con su detalle, y <b>Versiones</b> avisa que hay cambios sin versionar.' }
       ] },
     'PPTO-03': { ph: '1 · CRUD del Catálogo', page: 'catalogos.html', role: 'ADMIN',
       title: 'Consultar y buscar catálogos', purpose: 'Ver el listado de catálogos con su condición, vigencia, versión y estado; buscar y filtrar.',
@@ -53,8 +58,14 @@
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
         { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) de un nivel.', click: true },
-        { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b> para ajustar su nombre o posición.', click: true },
-        { sel: '#mNivel .naowee-modal__footer .naowee-btn--loud', body: 'El sistema muestra un resumen y registra el cambio en el historial.' }
+        { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>: se pueden cambiar nombre, descripción y posición.', click: true },
+        { sel: '#nvOrden', body: 'Para el recorrido movemos <b>Preliminares</b> de posición.',
+          fill: { sel: '#nvOrden', value: function (v) { return v === '1' ? '9' : '1'; } } },
+        { sel: '#nvGuardar', body: 'Clic en <b>Guardar nivel</b>.', click: true },
+        { sel: '#mCambiosTable, #mNivel .naowee-modal', body: '<b>Resumen de cambios</b> antes de confirmar: campo, valor anterior y nuevo.' },
+        { sel: '#mCambiosImpacto .naowee-message, #mCambiosTable', body: 'Como el nivel <b>tiene ítems</b>, el sistema advierte el impacto de moverlo, y lista los <b>presupuestos</b> que usan sus ítems.' },
+        { sel: '#mCambiosOk', body: '<b>Confirma</b>: el cambio queda en el historial con qué cambió, quién y cuándo.', click: true },
+        { center: true, body: 'Listo. La entrada <b>Editar nivel</b> de la pestaña Auditoría se despliega para ver el detalle.' }
       ] },
     'PPTO-06': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Desactivar nivel de agrupación', purpose: 'Retirar un nivel de la estructura sin eliminarlo, preservando la trazabilidad.',
@@ -103,9 +114,16 @@
       title: 'Editar ítem', purpose: 'Actualizar precios, unidades u otros campos; el sistema recalcula lo impactado.',
       steps: [
         { sel: '[data-tab="items"]', body: 'Pestaña <b>Ítems</b>.', click: true },
+        { sel: '#itSearch', body: 'Buscamos el ítem <b>3.4 · Concreto ciclópeo</b>.', fill: { sel: '#itSearch', value: '3.4' } },
         { sel: '#panel-items .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del ítem.', click: true },
         { sel: '#rmItemEdit', body: 'Elige <b>Editar ítem</b>.', click: true },
-        { sel: '#mItem .naowee-modal__footer .naowee-btn--loud', body: 'Al modificar, el sistema <b>recalcula</b> y registra el cambio en el historial del ítem.' }
+        { sel: '#itf-valorUnit, #mItem .naowee-modal', body: 'Actualizamos el <b>valor unitario</b>: el <b>V. total</b> se recalcula solo.',
+          fill: { sel: '#itf-valorUnit', value: function (v) { return v === '690000' ? '672480' : '690000'; } } },
+        { sel: '#itGuardar', body: 'Clic en <b>Guardar</b>.', click: true },
+        { sel: '#mCambiosTable, #mItem .naowee-modal', body: 'El resumen incluye el <b>recálculo</b>: el V. total del ítem y el total de su nivel, antes y después.' },
+        { sel: '#mCambiosImpacto .naowee-message, #mCambiosTable', body: 'El ítem está en <b>presupuestos activos</b>: el sistema muestra en cuáles antes de confirmar.' },
+        { sel: '#mCambiosOk', body: '<b>Confirma</b>: el cambio queda en el historial con antes/después, quién y cuándo.', click: true },
+        { center: true, body: 'Listo. El detalle del cambio se ve en la pestaña <b>Auditoría</b>.' }
       ] },
     // 4 · Carga Masiva
     'PPTO-12': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -159,7 +177,9 @@
       title: 'Consultar historial de cambios del catálogo', purpose: 'Trazabilidad ante auditorías y procesos legales: toda acción sobre catálogo, niveles e ítems.',
       steps: [
         { sel: '[data-tab="auditoria"]', body: 'Entra a la pestaña <b>Auditoría</b>.', click: true },
-        { sel: '#audTable', body: 'Cada entrada muestra <b>acción, elemento afectado, responsable y fecha/hora</b>. Es de solo lectura y no se puede modificar.' }
+        { sel: '#audTable', body: 'Cada entrada muestra <b>acción, elemento afectado, responsable y fecha/hora</b>. Es de solo lectura y no se puede modificar.' },
+        { sel: '#audBody .t-aud-row', body: 'Las entradas con <b>ver detalle</b> se despliegan: muestran qué cambió (antes/después), el motivo de una desactivación o el resultado de una carga.', click: true },
+        { sel: '#audBody .t-aud-det:not([hidden]), #audTable', body: 'El detalle de la entrada, tal como quedó registrado.' }
       ] },
     'PPTO-20': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Filtrar historial por acción, elemento y fecha', purpose: 'Ubicar rápidamente un cambio específico.',
@@ -178,7 +198,7 @@
   var ORDER = ['PPTO-01','PPTO-02','PPTO-03','PPTO-04','PPTO-05','PPTO-06','PPTO-07','PPTO-08','PPTO-09','PPTO-10','PPTO-11','PPTO-12','PPTO-13','PPTO-14','PPTO-15','PPTO-16','PPTO-17','PPTO-18','PPTO-19','PPTO-20','PPTO-21'];
 
   // ── Estado ──
-  var curHab = null, curStep = 0, _retry = null, _stepActed = false, _curEl = null, _curSel = null, _remeasure = null;
+  var curHab = null, curStep = 0, _retry = null, _stepActed = false, _curEl = null, _curSel = null, _remeasure = null, _filled = {};
   function scrollHost(el) {
     var p = el.parentElement;
     while (p && p !== document.body) {
@@ -287,7 +307,7 @@
   function runTour(hab) {
     var t = TOURS[hab]; if (!t) return;
     closeOverlays(null);
-    curHab = hab; curStep = 0; _stepActed = false; renderStep();
+    curHab = hab; curStep = 0; _stepActed = false; _filled = {}; renderStep();
   }
   // Algunas HU solo se entienden sobre un catálogo en blanco (crear el primer nivel).
   // catMode: 'vacio' apunta el recorrido al catálogo sin estructura; 'lleno' a uno con datos.
@@ -341,6 +361,17 @@
     var last = curStep === t.steps.length - 1;
     var _i = ORDER.indexOf(curHab), _nextHab = (_i >= 0 && _i < ORDER.length - 1) ? ORDER[_i + 1] : null;
     _curEl = step.center ? null : (el || null);
+    // fill: el tour escribe en un campo para mostrar un cambio real (una vez por paso;
+    // volver atrás no lo vuelve a aplicar).
+    var fk = curHab + '#' + curStep;
+    if (step.fill && !_filled[fk]) {
+      var fe = document.querySelector(step.fill.sel);
+      if (fe) {
+        _filled[fk] = 1;
+        var nv = typeof step.fill.value === 'function' ? step.fill.value(fe.value) : step.fill.value;
+        if (fe.value !== nv) { fe.value = nv; fe.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
+    }
     closeOverlays(overlayOf(_curEl));
     if (_curEl) {
       backdrop.style.display = 'none';

@@ -46,7 +46,8 @@
       '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + D.itemsActivos(cat).length + '</div></div></div>';
     document.getElementById('pageTitle').textContent = cat.nombre;
     document.getElementById('catName').textContent = cat.nombre;
-    document.getElementById('catMeta').textContent = 'Condición de aplicación: ' + cat.region + ' · Vigencia ' + fdate(cat.vigenciaIni) + ' → ' + fdate(cat.vigenciaFin);
+    document.getElementById('catMeta').textContent = 'Condición de aplicación: ' + cat.region + ' · Vigencia ' + fdate(cat.vigenciaIni) + ' → ' + fdate(cat.vigenciaFin) +
+      (cat.creado ? ' · Creado por ' + (cat.creadoPor || '—') + ' el ' + fdate(cat.creado) : '');
     document.getElementById('catChips').innerHTML =
       '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
       '<span class="naowee-badge naowee-badge--' + (badgeMap[cat.estado] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + cat.estado + '</span>' +
@@ -177,6 +178,17 @@
     clearInvalid('#mNivel');
     openModal('mNivel');
   }
+  var VALOR_LBL = { formula: 'Fórmula', fijo: 'Valor fijo', ninguno: 'Sin valor' };
+  var CAMPOS_NIVEL = [
+    { key: 'nombre', label: 'Nombre' },
+    { key: 'orden', label: 'Posición' },
+    { key: 'descripcion', label: 'Descripción' },
+    { key: 'valorTipo', label: 'Valor del nivel', fmt: function (v) { return VALOR_LBL[v] || '—'; } },
+    { key: 'valorFijo', label: 'Valor fijo', fmt: function (v) { return v == null ? '—' : D.fmtCOP(v); } },
+    { key: 'formula', label: 'Fórmula' },
+    { key: 'admiteItems', label: 'Admite ítems', fmt: function (v) { return v ? 'Sí' : 'No'; } },
+    { key: 'campos', label: 'Campos del ítem', fmt: function (v) { return (v && v.length) ? v.map(function (c) { return c.label + (c.req ? '*' : ''); }).join(', ') : '—'; } }
+  ];
   function saveNivel() {
     var el = document.getElementById('nvNombre'), nombre = el.value.trim();
     if (!nombre) { markInvalid(el); el.focus(); return; }
@@ -190,10 +202,26 @@
       admiteItems: admite, campos: admite ? camposDraft.slice() : []
     };
     if (nivelEditId) {
-      // Editar no toca `activo`: reactivar un nivel es una acción aparte, con su traza.
+      // PPTO-05: resumen antes de confirmar; si cambia la posición de un nivel con ítems,
+      // se advierte el impacto. Editar no toca `activo` (reactivar es otra acción).
       var n = nivelById(nivelEditId);
-      Object.keys(data).forEach(function (k) { n[k] = data[k]; });
-      D.logAudit(cat, 'Editar nivel', 'Nivel · ' + nombre);
+      var cambios = D.diff(n, data, CAMPOS_NIVEL);
+      var its = itemsDe(n.id), impacto = '';
+      if (data.orden !== n.orden && its.length) {
+        impacto += '<div class="naowee-message naowee-message--caution" style="margin-top:14px"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 3l9 17H3z"/><path d="M12 9v4M12 17h.01"/></svg></span>' +
+          '<div class="naowee-message__body"><b>Cambia la posición de un nivel con ítems.</b> «' + esc(n.nombre) + '» pasa de la posición ' + n.orden + ' a la ' + data.orden + ' y arrastra sus <b>' + its.length + ' ítems</b> (' + D.fmtCOP(nivelTotal(n)) + '). Cambia el orden en que se muestran la estructura, la consulta y la plantilla de carga.</div></div></div>';
+      }
+      var ids = its.map(function (x) { return x.id; });
+      impacto += UI.avisoPresupuestos(D.presupuestosDe(cat.id).filter(function (p) { return p.itemsUsados.some(function (i) { return ids.indexOf(i) >= 0; }); }), 'Editar este nivel');
+      UI.confirmarCambios({ titulo: 'Revisa los cambios del nivel', desde: 'mNivel', cambios: cambios, impacto: impacto }).then(function (ok) {
+        if (!ok) return;
+        Object.keys(data).forEach(function (k) { n[k] = data[k]; });
+        D.logAudit(cat, 'Editar nivel', 'Nivel · ' + nombre, null, { cambios: cambios });
+        D.saveCatalogo(cat); tocado();
+        renderNiveles(); renderItems(); renderHead(); renderAuditoria(); renderCarga();
+        UI.toast('Nivel actualizado. El cambio queda en el historial.');
+      });
+      return;
     } else {
       // Código = siguiente número libre (el orden puede chocar con un capítulo existente,
       // p. ej. '8' de Instalaciones); id único aunque se repitan nombres.
@@ -224,7 +252,7 @@
     if (!motivo) { markInvalid(el); el.focus(); return; }
     var n = nivelById(nivelDesId);
     n.activo = false; n.motivoBaja = motivo;
-    D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre);
+    D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre, null, { motivo: motivo, items: itemsDe(n.id).length });
     closeModal('mMotivo'); tocado();
     renderNiveles(); renderItems(); renderHead(); renderAuditoria();
   }
@@ -398,6 +426,19 @@
     openModal('mItem');
   }
 
+  // Vista plana de un ítem para compararlo campo a campo (estándar + propios + cálculo).
+  function planoItem(it) {
+    var o = { __nivel: (nivelById(it.nivelId) || {}).nombre, formula: it.formula, valorTotal: it.valorTotal };
+    Object.keys(STD).forEach(function (k) { o[k] = it[k]; });
+    Object.keys(it.extra || {}).forEach(function (k) { o[k] = it.extra[k]; });
+    return o;
+  }
+  function camposResumenItem(n) {
+    var fmt = function (c) { return function (v) { return v == null || v === '' ? '—' : (c.tipo === 'moneda' ? D.fmtCOP(v) : String(v)); }; };
+    return [{ key: '__nivel', label: 'Nivel' }]
+      .concat(camposDe(n).map(function (c) { return { key: c.key, label: c.label, fmt: fmt(c) }; }))
+      .concat([{ key: 'formula', label: 'Fórmula' }, { key: 'valorTotal', label: 'V. total', fmt: function (v) { return D.fmtCOP(v); } }]);
+  }
   function saveItem() {
     var nivelId = UI.getDD('itNivel');
     var err = document.getElementById('itemError'), msg = document.getElementById('itemErrorMsg');
@@ -434,15 +475,34 @@
 
     var data = {
       nivelId: nivelId, cod: vals.cod || '', nombre: vals.nombre || '', uni: vals.uni || '',
-      tipo: 'Producto', cantidad: cant, valorUnit: vu, extra: extra,
+      tipo: itemEditId ? (cat.items.filter(function (x) { return x.id === itemEditId; })[0].tipo || 'Producto') : 'Producto',
+      cantidad: cant, valorUnit: vu, extra: extra,
       formula: (document.getElementById('itFormula') || {}).value ? document.getElementById('itFormula').value.trim() : null,
       valorTotal: totalManual != null ? Math.round(totalManual) : Math.round(vu * cant)
     };
 
     if (itemEditId) {
+      // PPTO-11: el resumen incluye el recálculo (V. total del ítem y total de su nivel)
+      // y avisa si el ítem está en presupuestos activos.
       var it = cat.items.filter(function (x) { return x.id === itemEditId; })[0];
-      Object.keys(data).forEach(function (k) { it[k] = data[k]; });
-      D.logAudit(cat, 'Editar ítem', 'Ítem · ' + data.cod);
+      var cambios = D.diff(planoItem(it), planoItem(data), camposResumenItem(n));
+      var nvAntes = nivelById(it.nivelId), totAntes = nivelTotal(nvAntes);
+      var totDespues = it.nivelId === data.nivelId ? totAntes - (it.valorTotal || 0) + data.valorTotal : nivelTotal(n) + data.valorTotal;
+      if (totAntes !== totDespues || it.nivelId !== data.nivelId) {
+        cambios.push({ campo: '__nivelTotal', etiqueta: 'Total del nivel ' + n.nombre, antes: D.fmtCOP(it.nivelId === data.nivelId ? totAntes : nivelTotal(n)), despues: D.fmtCOP(totDespues) });
+      }
+      UI.confirmarCambios({
+        titulo: 'Revisa los cambios del ítem ' + (it.cod || ''), desde: 'mItem', cambios: cambios,
+        impacto: UI.avisoPresupuestos(D.presupuestosConItem(cat.id, it.id), 'Este ítem está en uso y el cambio')
+      }).then(function (ok) {
+        if (!ok) return;
+        Object.keys(data).forEach(function (k) { it[k] = data[k]; });
+        D.logAudit(cat, 'Editar ítem', 'Ítem · ' + data.cod, null, { cambios: cambios });
+        D.saveCatalogo(cat); tocado();
+        renderItems(); renderNiveles(); renderHead(); renderAuditoria();
+        UI.toast('Ítem actualizado y recalculado.');
+      });
+      return;
     } else {
       data.id = 'it-' + slugKey(data.cod) + '-' + cat.items.length;
       data.nuevo = true;
@@ -572,16 +632,39 @@
     var rows = D.listAuditoria().filter(function (a) { return a.catId === cat.id; })
       .filter(function (a) { return (!acc || a.accion === acc) && (!elem || a.elemento.indexOf(elem) === 0) && (!fecha || a.fecha === fecha); });
     document.getElementById('audBody').innerHTML = rows.map(function (a) {
-      return '<tr>' +
-        '<td data-label="Acción"><span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + esc(a.accion) + '</span></td>' +
-        '<td data-label="Elemento">' + esc(a.elemento) + '</td>' +
+      var det = detalleAud(a.detalle);
+      return '<tr' + (det ? ' class="t-aud-row" data-aud="' + a.id + '" tabindex="0" aria-expanded="false"' : '') + '>' +
+        '<td data-label="Acción">' + (det ? '<span class="t-aud-chev" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg></span>' : '<span class="t-aud-chev t-aud-chev--none"></span>') +
+          '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + esc(a.accion) + '</span></td>' +
+        '<td data-label="Elemento">' + esc(a.elemento) + (det ? ' <span class="t-aud-more">· ver detalle</span>' : '') + '</td>' +
         '<td data-label="Responsable">' + esc(a.responsable) + '</td>' +
         '<td data-label="Fecha">' + fdate(a.fecha) + '</td>' +
-        '<td data-label="Hora">' + a.hora + '</td></tr>';
+        '<td data-label="Hora">' + a.hora + '</td></tr>' +
+        (det ? '<tr class="t-aud-det" data-aud-det="' + a.id + '" hidden><td colspan="5">' + det + '</td></tr>' : '');
     }).join('');
+    document.querySelectorAll('#audBody .t-aud-row').forEach(function (tr) {
+      function toggle() {
+        var d = document.querySelector('[data-aud-det="' + tr.dataset.aud + '"]'), open = d.hidden;
+        d.hidden = !open; tr.setAttribute('aria-expanded', open ? 'true' : 'false'); tr.classList.toggle('open', open);
+      }
+      tr.onclick = toggle;
+      tr.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
+    });
     var empty = rows.length === 0;
     document.getElementById('audEmpty').classList.toggle('show', empty);
     document.querySelector('#panel-auditoria .naowee-table-wrap').style.display = empty ? 'none' : '';
+  }
+  // Detalle de una entrada de auditoría: antes/después, motivo o resultado de carga.
+  function detalleAud(d) {
+    if (!d) return '';
+    var out = '';
+    if (d.cambios && d.cambios.length) {
+      out += '<table class="naowee-table naowee-table--compact t-aud-diff"><thead><tr><th>Campo</th><th>Antes</th><th>Después</th></tr></thead><tbody>' +
+        d.cambios.map(function (c) { return '<tr><td>' + esc(c.etiqueta) + '</td><td class="t-aud-old">' + esc(c.antes) + '</td><td><b>' + esc(c.despues) + '</b></td></tr>'; }).join('') + '</tbody></table>';
+    }
+    if (d.motivo) out += '<div class="t-aud-kv"><b>Motivo:</b> ' + esc(d.motivo) + (d.items != null ? ' · ' + d.items + ' ítems asociados' : '') + '</div>';
+    if (d.archivo) out += '<div class="t-aud-kv"><b>Archivo:</b> ' + esc(d.archivo) + ' · ' + (d.ok || 0) + ' procesados · ' + (d.fail || 0) + ' fallidos</div>';
+    return out;
   }
   // Las opciones salen de las acciones que ya hay en el historial; se rearman en cada
   // render para que una acción nueva (p. ej. "Desactivar nivel") sea filtrable sin recargar.
@@ -618,6 +701,10 @@
   document.addEventListener('DOMContentLoaded', function () {
     loadCat();
     document.getElementById('btnVolver').href = 'catalogos.html?role=' + ((window.OBRAS_SHELL || {}).role || 'ADMIN');
+    // Solo rol, proyecto y el catálogo a editar: no arrastra ?tour= ni ?cat= a la otra pantalla.
+    var qEd = new URLSearchParams({ role: (window.OBRAS_SHELL || {}).role || 'ADMIN', edit: cat.id });
+    var proy = qs('proyecto'); if (proy) qEd.set('proyecto', proy);
+    document.getElementById('btnEditarCat').href = 'catalogos.html?' + qEd.toString();
     renderHead(); renderNiveles(); renderItems(); initCarga(); renderVersiones();
     fillAudAcciones(); renderAuditoria();
     soloNumeros(document.getElementById('nvOrden'));

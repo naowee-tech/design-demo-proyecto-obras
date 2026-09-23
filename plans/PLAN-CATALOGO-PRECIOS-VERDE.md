@@ -114,7 +114,7 @@ Cada fase cierra con verificación en navegador, recorrido de los tours tocados,
 | Fase | Contenido | HU que pasan a verde | Versión | Esfuerzo |
 |---|---|---|---|---|
 | **F0** ✅ | Bugs base + tours rotos | (desbloquea 06, 10, 13) | v0.5.0 | S |
-| **F1** | P1 + P2 + P3 | 02, 11 (05 parcial) | v0.5.1 | M |
+| **F1** ✅ | P1 + P2 + P3 | 02, 05, 06, 11 (+19 con detalle) | v0.5.1 | M |
 | **F2** | Cierres rápidos | 01, 06, 07*, 18, 20, 21 | v0.5.2 | M |
 | **F3** | Carga masiva (P7) | 12, 13, 14 | v0.5.3 | M |
 | **F4** | Motor de fórmulas (P4) | 08, 10 | v0.5.4 | M |
@@ -158,6 +158,17 @@ Van primero porque varios contaminan las demás HU.
 - Pendiente para F6: `catMode: 'vacio'` sigue sin resembrar el catálogo en blanco después de recorrer PPTO-04.
 
 ---
+
+## 4b. F1 — cerrada 2026-09-22 (v0.5.1)
+
+- **P1** `OBRAS_UI.confirmarCambios` (modal `#mCambios` inyectado; cierra el modal de edición mientras muestra el resumen → nunca dos fondos; "Volver a editar" lo reabre con lo escrito; sin cambios → toast y no abre). `OBRAS.diff(antes, despues, campos)`.
+- **P2** `logAudit(..., detalle)` con `{cambios}` / `{motivo, items}` / `{archivo, ok, fail}`; filas de auditoría desplegables (`.t-aud-row` / `.t-aud-det`). Una entrada sembrada con detalle (Editar ítem 3.4) para que PPTO-19 tenga qué mostrar.
+- **P3** `obras-ppto-presupuestos` (5 presupuestos: 4 en Bogotá v1.2/v1.3, 1 en Antioquia), `presupuestosDe`, `presupuestosConItem`, `OBRAS_UI.avisoPresupuestos`. Semilla v3.
+- Editar catálogo: accesible también desde la cabecera del detalle (`Editar datos generales` → `catalogos.html?edit=<id>`); marca cambio sin versionar (D3). Cabecera con "Creado por … el …".
+- Editar nivel: aviso de impacto al cambiar la posición de un nivel con ítems + presupuestos que usan sus ítems. **05 queda verde por criterios** (la posición hoy es el orden); F5 la amplía a padre/tipo.
+- Editar ítem: resumen incluye V. total recalculado y total del nivel; ya no resetea `tipo`.
+- Tour: nuevo campo `fill` en los pasos (el tour escribe un valor para mostrar un cambio real; una vez por paso). Tours 02, 05, 11 y 19 reescritos y verificados.
+- Nota: `smoke-tours.js` marca como "sin objetivo" los pasos finales `center:true`; es esperado.
 
 ## 5. Fichas por HU (qué se hace, cómo fluye, cuándo es verde)
 
@@ -338,16 +349,16 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | HU | Hoy | Fase | Verde |
 |---|---|---|---|
 | 01 Crear catálogo | 🟡 | F2 | ☐ |
-| 02 Editar catálogo | 🔴 | F1 | ☐ |
+| 02 Editar catálogo | 🔴 | F1 | ✅ v0.5.1 |
 | 03 Consultar y buscar catálogos | ✅ | F2 (retoque) | ☐ |
 | 04 Crear nivel | 🟡 | F2 + F5 | ☐ |
-| 05 Editar nivel | 🔴 | F1 + F5 | ☐ |
-| 06 Desactivar nivel | 🟡 | F0 + F2 | ☐ |
+| 05 Editar nivel | 🔴 | F1 (+ F5 padre/tipo) | ✅ v0.5.1 |
+| 06 Desactivar nivel | 🟡 | F0 + F1 (reactivar en F2) | ✅ v0.5.1 |
 | 07 Consultar niveles | 🟡 | F2 + F5 | ☐ |
 | 08 Valor o fórmula | 🟡 | F4 | ☐ |
 | 09 Admite ítems | ✅ | retoques | ☐ |
 | 10 Crear ítem | 🟡 | F0 + F2 + F4 | ☐ |
-| 11 Editar ítem | 🔴 | F1 | ☐ |
+| 11 Editar ítem | 🔴 | F1 | ✅ v0.5.1 |
 | 12 Descargar plantilla | 🟡 | F3 | ☐ |
 | 13 Carga masiva | 🔴 | F3 | ☐ |
 | 14 Resultado de carga | 🟡 | F3 | ☐ |
@@ -355,7 +366,7 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | 16 Historial de versiones | ✅ | F0 (B13) | ☐ |
 | 17 Consultar catálogo | ✅ | F4 + F5 | ☐ |
 | 18 Buscar ítems | 🟡 | F2 | ☐ |
-| 19 Historial de cambios | ✅ | F1 | ☐ |
+| 19 Historial de cambios | ✅ | F1 | ✅ v0.5.1 |
 | 20 Filtrar historial | 🟡 | F2 | ☐ |
 | 21 Exportar historial | 🟡 | F2 | ☐ |
 

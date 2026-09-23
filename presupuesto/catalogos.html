@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.0">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.0">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.1">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.1">
 <style>
   /* Override pattern local (después del DS) — solo medidas de este modal */
   #mCrear .naowee-modal{ overflow:visible !important; width:720px; max-width:92vw; }
@@ -204,9 +204,9 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.0"></script>
-<script src="../shared/ui.js?v=0.5.0"></script>
-<script src="../shared/shell.js?v=0.5.0"></script>
+<script src="../shared/data-catalogo.js?v=0.5.1"></script>
+<script src="../shared/ui.js?v=0.5.1"></script>
+<script src="../shared/shell.js?v=0.5.1"></script>
 <script>
 (function () {
   var UI = window.OBRAS_UI, D = window.OBRAS;
@@ -356,6 +356,14 @@
     document.getElementById('crearError').style.display = 'none';
     openModal('mCrear');
   }
+  function fdateCampo(v) { return v ? fdate(v) : '—'; }
+  var CAMPOS_CAT = [
+    { key: 'nombre', label: 'Nombre' },
+    { key: 'region', label: 'Condición de aplicación' },
+    { key: 'estado', label: 'Estado' },
+    { key: 'vigenciaIni', label: 'Vigencia desde', fmt: fdateCampo },
+    { key: 'vigenciaFin', label: 'Vigencia hasta', fmt: fdateCampo }
+  ];
   function save() {
     var nombreEl = document.getElementById('catNombre');
     var nombre = nombreEl.value.trim(), region = UI.getDD('catRegion');
@@ -375,9 +383,25 @@
     if (dup.length) { document.getElementById('crearErrorMsg').textContent = 'Ya existe un catálogo con ese nombre y condición.'; err.style.display = ''; return; }
     var ini = dpGet('dpIni') || '2026-01-01', fin = dpGet('dpFin') || '2026-12-31';
     if (editId) {
+      // PPTO-02: resumen antes de confirmar, aviso si hay presupuestos activos, traza con
+      // antes/después, y el cambio queda pendiente de versionar.
       var c = D.getCatalogo(editId);
-      c.nombre = nombre; c.region = region; c.estado = estado; c.vigenciaIni = ini; c.vigenciaFin = fin;
-      D.saveCatalogo(c); D.logAudit(c, 'Editar catálogo', 'Catálogo');
+      var nuevo = { nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin };
+      var cambios = D.diff(c, nuevo, CAMPOS_CAT);
+      var pptos = D.presupuestosDe(c.id);
+      UI.confirmarCambios({
+        titulo: 'Revisa los cambios del catálogo', desde: 'mCrear', cambios: cambios,
+        impacto: UI.avisoPresupuestos(pptos, 'Editar este catálogo')
+      }).then(function (ok) {
+        if (!ok) return;
+        Object.keys(nuevo).forEach(function (k) { c[k] = nuevo[k]; });
+        D.saveCatalogo(c);
+        D.logAudit(c, 'Editar catálogo', 'Catálogo', null, { cambios: cambios });
+        D.marcarCambio(c);
+        closeModal('mCrear'); render(); renderKpis();
+        UI.toast('Catálogo actualizado. ' + cambios.length + ' cambio' + (cambios.length === 1 ? '' : 's') + ' quedan en el historial.');
+      });
+      return;
     } else {
       D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
     }
@@ -394,6 +418,8 @@
     renderKpis(); render();
 
     document.getElementById('btnCrear').onclick = openCreate;
+    var editQs = new URLSearchParams(location.search).get('edit');
+    if (editQs && D.getCatalogo(editQs)) setTimeout(function () { openEdit(editQs); }, 60);
     document.getElementById('catGuardar').onclick = save;
     document.querySelectorAll('#catModo .naowee-radio').forEach(function (r) {
       r.addEventListener('click', function () { setModo(r.dataset.modo); });
@@ -417,6 +443,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.5.0"></script>
+<script src="../shared/tour.js?v=0.5.1"></script>
 </body>
 </html>

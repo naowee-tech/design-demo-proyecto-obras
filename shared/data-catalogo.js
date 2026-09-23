@@ -13,6 +13,7 @@
 
   var LS_KEY = 'obras-ppto-catalogos';
   var LS_AUDIT = 'obras-ppto-auditoria';
+  var LS_PPTOS = 'obras-ppto-presupuestos';
 
   // 33 regiones reales (condición de aplicación de un catálogo).
   var REGIONES = ["Amazonas","Antioquia","Arauca","Atlantico","Bogota","Boyaca","Bolivar","Caldas","Caqueta","Cauca","Casanare","Cesar","Choco","Cordoba","Cundinamarca","Guajira","Guaviare","Guania","Huila","Magdalena","Meta","Nariño","Norte de Santander","Putumayo","Quindio","Risaralda","San Andres","Santander","Sucre","Tolima","Valle del Cauca","Vaupes","Vichada"];
@@ -198,7 +199,13 @@
       if (!c.niveles.length) return;   // sin estructura: no hay niveles ni ítems que auditar
       add(c, 'Crear nivel', 'Nivel · Preliminares', 'Jesús Díaz', d0, '09:05');
       add(c, 'Crear ítem', 'Ítem · 1.1', 'Carla Méndez', d0 - 1, '10:20');
+      var it34 = c.items.filter(function (it) { return it.cod === '3.4'; })[0];
       add(c, 'Editar ítem', 'Ítem · 3.4', 'Andrés Pérez', d0 - 2, '15:45');
+      // Una entrada sembrada con detalle, para que PPTO-19 tenga qué desplegar desde el inicio.
+      if (it34) log[log.length - 1].detalle = { cambios: [
+        { campo: 'valorUnit', etiqueta: 'V. unitario', antes: '$' + Math.round(it34.valorUnit * 0.96).toLocaleString('es-CO'), despues: '$' + it34.valorUnit.toLocaleString('es-CO') },
+        { campo: 'valorTotal', etiqueta: 'V. total', antes: '$' + Math.round(it34.valorUnit * 0.96).toLocaleString('es-CO'), despues: '$' + it34.valorUnit.toLocaleString('es-CO') }
+      ] };
       c.versiones.slice(1).forEach(function (v) {
         add(c, 'Crear versión', 'Versión · ' + v.v, v.autor, diasDesde(v.fecha), '11:30');
       });
@@ -206,11 +213,29 @@
     return log;
   }
 
+  // Presupuestos de ejemplo que "usan" el catálogo. La demo no arma presupuestos (eso es
+  // de fases posteriores), pero sin ellos no se puede mostrar el aviso de impacto que piden
+  // PPTO-02, 11 y 15: cada uno queda ligado a una versión y a los ítems que consume.
+  function seedPresupuestos(cats) {
+    var bog = cats.filter(function (c) { return /Bogot/.test(c.nombre); })[0];
+    var ant = cats.filter(function (c) { return /Antioquia/.test(c.nombre); })[0];
+    var out = [];
+    function add(cat, nombre, version, estado, items, resp) {
+      if (cat) out.push({ id: uid('pp'), catId: cat.id, nombre: nombre, version: version, estado: estado, responsable: resp, itemsUsados: items.map(function (c) { return 'it-' + c.replace('.', '_'); }) });
+    }
+    add(bog, 'Mejoramiento de vivienda rural — Usme, lote 1', 'v1.3', 'En elaboración', ['1.1', '3.4', '4.4', '16.4'], 'Laura Gómez');
+    add(bog, 'Vivienda rural nueva — Sumapaz, fase 2', 'v1.3', 'En revisión', ['2.1', '3.4', '5.6'], 'Andrés Pérez');
+    add(bog, 'Reforzamiento estructural — Ciudad Bolívar', 'v1.3', 'Aprobado', ['4.1', '4.2', '4.4'], 'Laura Gómez');
+    add(bog, 'Vivienda rural — Pasquilla', 'v1.2', 'Aprobado', ['3.4', '8.3'], 'Andrés Pérez');
+    add(ant, 'Mejoramiento de vivienda — Urabá', 'v1.1', 'En elaboración', ['1.2', '3.3'], 'Laura Gómez');
+    return out;
+  }
+
   function read(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
   function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
   // Sube cuando cambia la semilla: fuerza a resembrar datos guardados con una semilla vieja.
-  var SEED_V = 2, LS_SEEDV = 'obras-ppto-seedv';
+  var SEED_V = 3, LS_SEEDV = 'obras-ppto-seedv';
   function ensure() {
     var cats = read(LS_KEY);
     if (!cats || !cats.length || read(LS_SEEDV) !== SEED_V) {
@@ -218,6 +243,7 @@
       cats = seedCatalogos();
       write(LS_KEY, cats);
       write(LS_AUDIT, seedAuditoria(cats));
+      write(LS_PPTOS, seedPresupuestos(cats));
     }
     return cats;
   }
@@ -263,7 +289,7 @@
       return next;
     },
     DEMO_REGIONS: ['Bogota', 'Antioquia', 'Amazonas', 'Vichada'],
-    reset: function () { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_AUDIT); localStorage.removeItem(LS_SEEDV); ensure(); },
+    reset: function () { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_AUDIT); localStorage.removeItem(LS_PPTOS); localStorage.removeItem(LS_SEEDV); ensure(); },
     listCatalogos: function () { return ensure(); },
     getCatalogo: function (id) { return ensure().filter(function (c) { return c.id === id; })[0] || null; },
     saveCatalogo: function (cat) {
@@ -293,11 +319,32 @@
         return ka < kb ? 1 : ka > kb ? -1 : 0;
       });
     },
-    logAudit: function (cat, accion, elemento, resp) {
+    // detalle (opcional): { cambios: [{etiqueta, antes, despues}] } · { motivo } · { archivo, ok, fail }
+    logAudit: function (cat, accion, elemento, resp, detalle) {
       var log = read(LS_AUDIT) || [];
       var d = new Date();
-      log.unshift({ id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp || usuarioActual(), fecha: isoLocal(d), hora: d.toTimeString().slice(0, 5) });
+      var row = { id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp || usuarioActual(), fecha: isoLocal(d), hora: d.toTimeString().slice(0, 5) };
+      if (detalle) row.detalle = detalle;
+      log.unshift(row);
       write(LS_AUDIT, log);
+    },
+    // Compara dos estados de un objeto campo por campo. campos: [{key, label, fmt?}].
+    // Devuelve solo lo que cambió, ya formateado para mostrarlo y para la auditoría.
+    diff: function (antes, despues, campos) {
+      return campos.reduce(function (out, c) {
+        var f = c.fmt || function (v) { return v == null || v === '' ? '—' : String(v); };
+        var a = f(antes ? antes[c.key] : null), b = f(despues ? despues[c.key] : null);
+        if (a !== b) out.push({ campo: c.key, etiqueta: c.label, antes: a, despues: b });
+        return out;
+      }, []);
+    },
+    // Presupuestos vigentes (no cerrados) que usan el catálogo, y los que usan un ítem.
+    presupuestosDe: function (catId) {
+      ensure();
+      return (read(LS_PPTOS) || []).filter(function (p) { return p.catId === catId && p.estado !== 'Cerrado'; });
+    },
+    presupuestosConItem: function (catId, itemId) {
+      return this.presupuestosDe(catId).filter(function (p) { return p.itemsUsados.indexOf(itemId) >= 0; });
     },
     fmtCOP: function (n) {
       if (n == null || isNaN(n)) return '—';
