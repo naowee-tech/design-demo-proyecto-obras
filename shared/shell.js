@@ -6,7 +6,7 @@
  * ========================================================================== */
 (function () {
   'use strict';
-  var VERSION = 'v0.4.9';
+  var VERSION = 'v0.5.0';
 
   var ROLES = {
     ADMIN:   { who: 'Jesús Díaz', rol: 'Admin Naowee',       av: 'JD', col: 'var(--naowee-color-territorio-700)' },
@@ -44,6 +44,15 @@
     var p = new URLSearchParams(location.search); p.set('role', role);
     if (extra) Object.keys(extra).forEach(function (k) { p.set(k, extra[k]); });
     return '?' + p.toString();
+  }
+  // Guarda de página: el menú ya esconde lo de ADMIN, pero la URL directa
+  // (catalogos.html?role=USUARIO) dejaba editar. Se conserva ?proyecto= y ?cat=.
+  var SOLO_ADMIN = { 'catalogos.html': 1, 'catalogo-detalle.html': 1 };
+  if (SOLO_ADMIN[PAGE] && role !== 'ADMIN') {
+    var dest = new URLSearchParams(); dest.set('role', role);
+    ['proyecto', 'cat'].forEach(function (k) { var v = qsGet(k); if (v) dest.set(k, v); });
+    location.replace('consulta.html?' + dest.toString());
+    return;
   }
   window.OBRAS_SHELL = { role: role, roleData: ROLES[role], qs: qs, qsAll: qsAll };
   if (document.body) document.body.dataset.role = role;

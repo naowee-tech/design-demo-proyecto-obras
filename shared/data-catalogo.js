@@ -117,32 +117,51 @@
     return { niveles: niveles, items: items };
   }
 
+  // Fecha local AAAA-MM-DD. toISOString() da la fecha en UTC: en Colombia, después de
+  // las 7 p. m. registraba el día siguiente (y la hora sí era local).
+  function isoLocal(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
   function nuevaFecha(daysAgo) {
     var d = new Date(); d.setDate(d.getDate() - (daysAgo || 0));
-    return d.toISOString().slice(0, 10);
+    return isoLocal(d);
   }
 
+  // Días entre hoy y una fecha ISO (para que la auditoría sembrada cuadre con `creado`).
+  function diasDesde(iso) { return Math.max(0, Math.round((Date.now() - Date.parse(iso + 'T12:00:00')) / 864e5)); }
+
   function seedCatalogos() {
+    // Historial continuo v1.0 → versión activa. Cada versión histórica congela un
+    // catálogo más pequeño y con precios algo menores: así "Ver contenido" muestra
+    // una evolución real (capítulos que se suman, precios que se actualizan).
+    var MOTIVOS = ['Versión inicial del catálogo', 'Se agregan estructuras en concreto y mampostería', 'Se agregan instalaciones hidrosanitarias y pinturas'];
+    function congelar(est, k) {
+      var nv = est.niveles.slice(0, Math.min(est.niveles.length, 3 + 2 * k));
+      var ids = nv.map(function (n) { return n.id; }), f = Math.min(0.99, 0.94 + 0.025 * k);
+      var its = est.items.filter(function (it) { return ids.indexOf(it.nivelId) >= 0; }).map(function (it) {
+        var c = JSON.parse(JSON.stringify(it)); c.valorUnit = Math.round(c.valorUnit * f); c.valorTotal = Math.round(c.valorUnit * c.cantidad); return c;
+      });
+      return { niveles: JSON.parse(JSON.stringify(nv)), items: its };
+    }
     function mk(nombre, region, estado, ver, dias) {
       var est = buildEstructura(region);
-      // La v1.0 se congela con un catálogo más pequeño (3 primeros niveles): así el
-      // snapshot histórico muestra una diferencia real frente a la versión activa.
-      var nv0 = est.niveles.slice(0, 3);
-      var ids0 = nv0.map(function (n) { return n.id; });
-      var snap0 = {
-        niveles: JSON.parse(JSON.stringify(nv0)),
-        items: JSON.parse(JSON.stringify(est.items.filter(function (it) { return ids0.indexOf(it.nivelId) >= 0; })))
-      };
+      var n = parseInt(ver.split('.')[1], 10) || 0, versiones = [];
+      for (var k = 0; k <= n; k++) {
+        var d = n ? Math.round(dias - (dias - 6) * k / n) : dias;
+        versiones.push({
+          v: 'v1.' + k,
+          motivo: k === n && k > 0 ? 'Actualización de precios ' + region + ' 2026' : (MOTIVOS[k] || 'Ajuste de precios'),
+          autor: k % 2 ? 'Carla Méndez' : 'Jesús Díaz', fecha: nuevaFecha(d),
+          snapshot: k < n ? congelar(est, k) : undefined
+        });
+      }
       return {
         id: uid('cat'), nombre: nombre, region: region,
         vigenciaIni: '2026-01-01', vigenciaFin: '2026-12-31',
-        estado: estado, versionActiva: ver, creado: nuevaFecha(dias || 40),
+        estado: estado, versionActiva: ver, creado: nuevaFecha(dias), creadoPor: 'Jesús Díaz',
         niveles: est.niveles, items: est.items,
         cambiosSinVersionar: 0,
-        versiones: [
-          { v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha((dias || 40)), snapshot: snap0 },
-          (ver !== 'v1.0' ? { v: ver, motivo: 'Actualización de precios ' + region + ' 2026', autor: 'Jesús Díaz', fecha: nuevaFecha(6) } : null)
-        ].filter(Boolean)
+        versiones: versiones
       };
     }
     // Catálogo recién creado y todavía sin estructura: es el lienzo en blanco para
@@ -151,10 +170,10 @@
       return {
         id: uid('cat'), nombre: nombre, region: region,
         vigenciaIni: '2026-01-01', vigenciaFin: '2026-12-31',
-        estado: 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(dias || 1),
+        estado: 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(dias), creadoPor: 'Jesús Díaz',
         niveles: [], items: [],
         cambiosSinVersionar: 0,
-        versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha(dias || 1) }]
+        versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha(dias) }]
       };
     }
     return [
@@ -166,18 +185,23 @@
     ];
   }
 
+  // La auditoría sembrada sale de las mismas fechas del catálogo (creado y versiones),
+  // con varios responsables para que el filtro por usuario tenga qué mostrar.
   function seedAuditoria(cats) {
     var log = [];
-    function add(cat, accion, elemento, resp, dias) {
-      log.push({ id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp, fecha: nuevaFecha(dias), hora: '09:' + (10 + log.length % 40) });
+    function add(cat, accion, elemento, resp, dias, hora) {
+      log.push({ id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp, fecha: nuevaFecha(Math.max(0, dias)), hora: hora });
     }
-    cats.forEach(function (c, i) {
-      // Un catálogo sin estructura solo registra su creación: no hay niveles ni ítems que auditar.
-      if (!c.niveles.length) { add(c, 'Crear catálogo', 'Catálogo', 'Jesús Díaz', 1); return; }
-      add(c, 'Crear catálogo', 'Catálogo', 'Jesús Díaz', 40 - i * 5);
-      add(c, 'Crear nivel', 'Nivel · Preliminares', 'Jesús Díaz', 38 - i * 5);
-      add(c, 'Crear ítem', 'Ítem · 1.1', 'Carla Méndez', 30 - i * 4);
-      if (c.versionActiva !== 'v1.0') add(c, 'Crear versión', 'Versión · ' + c.versionActiva, 'Jesús Díaz', 6);
+    cats.forEach(function (c) {
+      var d0 = diasDesde(c.creado);
+      add(c, 'Crear catálogo', 'Catálogo', c.creadoPor || 'Jesús Díaz', d0, '08:40');
+      if (!c.niveles.length) return;   // sin estructura: no hay niveles ni ítems que auditar
+      add(c, 'Crear nivel', 'Nivel · Preliminares', 'Jesús Díaz', d0, '09:05');
+      add(c, 'Crear ítem', 'Ítem · 1.1', 'Carla Méndez', d0 - 1, '10:20');
+      add(c, 'Editar ítem', 'Ítem · 3.4', 'Andrés Pérez', d0 - 2, '15:45');
+      c.versiones.slice(1).forEach(function (v) {
+        add(c, 'Crear versión', 'Versión · ' + v.v, v.autor, diasDesde(v.fecha), '11:30');
+      });
     });
     return log;
   }
@@ -185,9 +209,12 @@
   function read(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
   function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
+  // Sube cuando cambia la semilla: fuerza a resembrar datos guardados con una semilla vieja.
+  var SEED_V = 2, LS_SEEDV = 'obras-ppto-seedv';
   function ensure() {
     var cats = read(LS_KEY);
-    if (!cats || !cats.length) {
+    if (!cats || !cats.length || read(LS_SEEDV) !== SEED_V) {
+      write(LS_SEEDV, SEED_V);
       cats = seedCatalogos();
       write(LS_KEY, cats);
       write(LS_AUDIT, seedAuditoria(cats));
@@ -195,8 +222,24 @@
     return cats;
   }
 
+  // Responsable de las acciones: el usuario del rol activo (shell.js se carga después,
+  // por eso se resuelve en el momento de la llamada y no al cargar este archivo).
+  function usuarioActual() {
+    try { return window.OBRAS_SHELL.roleData.who; } catch (e) { return 'Jesús Díaz'; }
+  }
+  function nivelesActivos(cat) {
+    var m = {}; (cat.niveles || []).forEach(function (n) { if (n.activo !== false) m[n.id] = 1; }); return m;
+  }
+
   // ── API pública ──
   window.OBRAS = {
+    usuarioActual: usuarioActual,
+    hoy: function () { return nuevaFecha(0); },
+    // Ítems vigentes: los de un nivel desactivado se conservan para la traza, pero no suman.
+    itemsActivos: function (cat) {
+      var act = nivelesActivos(cat);
+      return (cat.items || []).filter(function (it) { return act[it.nivelId]; });
+    },
     REGIONES: REGIONES,
     UNIDADES: UNIDADES,
     camposDefault: camposDefault,
@@ -211,7 +254,8 @@
       if (actual) actual.snapshot = JSON.parse(JSON.stringify({ niveles: cat.niveles, items: cat.items }));
       var p = cat.versionActiva.replace('v', '').split('.').map(Number);
       var next = 'v' + p[0] + '.' + (p[1] + 1);
-      cat.versiones.push({ v: next, motivo: motivo, autor: autor || 'Jesús Díaz', fecha: nuevaFecha(0) });
+      autor = autor || usuarioActual();
+      cat.versiones.push({ v: next, motivo: motivo, autor: autor, fecha: nuevaFecha(0) });
       cat.versionActiva = next;
       cat.cambiosSinVersionar = 0;
       this.saveCatalogo(cat);
@@ -219,7 +263,7 @@
       return next;
     },
     DEMO_REGIONS: ['Bogota', 'Antioquia', 'Amazonas', 'Vichada'],
-    reset: function () { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_AUDIT); ensure(); },
+    reset: function () { localStorage.removeItem(LS_KEY); localStorage.removeItem(LS_AUDIT); localStorage.removeItem(LS_SEEDV); ensure(); },
     listCatalogos: function () { return ensure(); },
     getCatalogo: function (id) { return ensure().filter(function (c) { return c.id === id; })[0] || null; },
     saveCatalogo: function (cat) {
@@ -232,20 +276,27 @@
       var cat = {
         id: uid('cat'), nombre: data.nombre, region: data.region,
         vigenciaIni: data.vigenciaIni, vigenciaFin: data.vigenciaFin,
-        estado: data.estado || 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(0),
+        estado: data.estado || 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(0), creadoPor: usuarioActual(),
         niveles: data.conEstructura ? est.niveles : [], items: data.conEstructura ? est.items : [],
         cambiosSinVersionar: 0,
-        versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha(0) }]
+        versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: usuarioActual(), fecha: nuevaFecha(0) }]
       };
       this.saveCatalogo(cat);
-      this.logAudit(cat, 'Crear catálogo', 'Catálogo', 'Jesús Díaz');
+      this.logAudit(cat, 'Crear catálogo', 'Catálogo');
       return cat;
     },
-    listAuditoria: function () { ensure(); return read(LS_AUDIT) || []; },
+    // Siempre de la más reciente a la más antigua (la semilla y lo vivo se escriben distinto).
+    listAuditoria: function () {
+      ensure();
+      return (read(LS_AUDIT) || []).slice().sort(function (a, b) {
+        var ka = a.fecha + ' ' + a.hora, kb = b.fecha + ' ' + b.hora;
+        return ka < kb ? 1 : ka > kb ? -1 : 0;
+      });
+    },
     logAudit: function (cat, accion, elemento, resp) {
       var log = read(LS_AUDIT) || [];
       var d = new Date();
-      log.unshift({ id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp || 'Jesús Díaz', fecha: d.toISOString().slice(0, 10), hora: d.toTimeString().slice(0, 5) });
+      log.unshift({ id: uid('aud'), catId: cat.id, catNombre: cat.nombre, accion: accion, elemento: elemento, responsable: resp || usuarioActual(), fecha: isoLocal(d), hora: d.toTimeString().slice(0, 5) });
       write(LS_AUDIT, log);
     },
     fmtCOP: function (n) {
@@ -253,7 +304,7 @@
       return '$' + Math.round(n).toLocaleString('es-CO');
     },
     totalCatalogo: function (cat) {
-      return (cat.items || []).reduce(function (s, it) { return s + (it.valorTotal || 0); }, 0);
+      return this.itemsActivos(cat).reduce(function (s, it) { return s + (it.valorTotal || 0); }, 0);
     }
   };
 

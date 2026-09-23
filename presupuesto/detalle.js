@@ -43,7 +43,7 @@
     var IC_LIST = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
     document.getElementById('kpiWrap').innerHTML =
       '<div class="t-kpi"><div class="kpi-ic">' + IC_MONEY + '</div><div><div class="kpi-l">Valor total del catálogo</div><div class="kpi-v">' + D.fmtCOP(D.totalCatalogo(cat)) + '</div></div></div>' +
-      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + cat.items.length + '</div></div></div>';
+      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + D.itemsActivos(cat).length + '</div></div></div>';
     document.getElementById('pageTitle').textContent = cat.nombre;
     document.getElementById('catName').textContent = cat.nombre;
     document.getElementById('catMeta').textContent = 'Condición de aplicación: ' + cat.region + ' · Vigencia ' + fdate(cat.vigenciaIni) + ' → ' + fdate(cat.vigenciaFin);
@@ -152,7 +152,9 @@
     if (!label) { inp.focus(); return; }
     var key = slugKey(label);
     if (camposDraft.some(function (c) { return c.key === key; })) { inp.select(); return; }
-    camposDraft.push({ key: key, label: label, tipo: UI.getDD('nvAddTipo') || 'texto', req: false, core: false });
+    var req = document.getElementById('nvAddReq');
+    camposDraft.push({ key: key, label: label, tipo: UI.getDD('nvAddTipo') || 'texto', req: req.classList.contains('naowee-checkbox--checked'), core: false });
+    req.classList.remove('naowee-checkbox--checked'); req.setAttribute('aria-checked', 'false');
     inp.value = ''; renderCampos(); inp.focus();
   }
 
@@ -185,17 +187,24 @@
       descripcion: document.getElementById('nvDesc').value.trim(), valorTipo: tipo,
       valorFijo: tipo === 'fijo' ? (num(document.getElementById('nvValorFijo').value) || 0) : null,
       formula: tipo === 'formula' ? document.getElementById('nvFormula').value.trim() : null,
-      admiteItems: admite, campos: admite ? camposDraft.slice() : [], activo: true
+      admiteItems: admite, campos: admite ? camposDraft.slice() : []
     };
     if (nivelEditId) {
+      // Editar no toca `activo`: reactivar un nivel es una acción aparte, con su traza.
       var n = nivelById(nivelEditId);
       Object.keys(data).forEach(function (k) { n[k] = data[k]; });
-      D.logAudit(cat, 'Editar nivel', 'Nivel · ' + nombre, 'Jesús Díaz');
+      D.logAudit(cat, 'Editar nivel', 'Nivel · ' + nombre);
     } else {
-      data.id = 'nv-' + slugKey(nombre) + '-' + cat.niveles.length;
-      data.codigo = String(data.orden);
+      // Código = siguiente número libre (el orden puede chocar con un capítulo existente,
+      // p. ej. '8' de Instalaciones); id único aunque se repitan nombres.
+      var usados = cat.niveles.map(function (x) { return parseInt(x.codigo, 10) || 0; });
+      data.id = 'nv-' + slugKey(nombre) + '-' + Date.now().toString(36);
+      data.codigo = String(Math.max.apply(null, [0].concat(usados)) + 1);
+      data.activo = true;
+      data.creado = D.hoy();
+      data.creadoPor = D.usuarioActual();
       cat.niveles.push(data);
-      D.logAudit(cat, 'Crear nivel', 'Nivel · ' + nombre, 'Jesús Díaz');
+      D.logAudit(cat, 'Crear nivel', 'Nivel · ' + nombre);
     }
     D.saveCatalogo(cat); closeModal('mNivel'); tocado();
     renderNiveles(); renderItems(); renderHead(); renderAuditoria(); renderCarga();
@@ -215,7 +224,7 @@
     if (!motivo) { markInvalid(el); el.focus(); return; }
     var n = nivelById(nivelDesId);
     n.activo = false; n.motivoBaja = motivo;
-    D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre, 'Jesús Díaz');
+    D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre);
     closeModal('mMotivo'); tocado();
     renderNiveles(); renderItems(); renderHead(); renderAuditoria();
   }
@@ -254,7 +263,7 @@
       '<th>V. total</th><th>Acciones</th></tr>';
 
     var q = (document.getElementById('itSearch').value || '').toLowerCase();
-    var rows = cat.items.filter(function (it) {
+    var rows = D.itemsActivos(cat).filter(function (it) {
       return !q || it.nombre.toLowerCase().indexOf(q) >= 0 || (it.cod || '').toLowerCase().indexOf(q) >= 0;
     });
     document.getElementById('itemsBody').innerHTML = rows.map(function (it) {
@@ -360,6 +369,21 @@
     total.addEventListener('input', haciaUnit);
   }
 
+  // Lo escrito en el formulario del ítem, con la misma forma de un ítem guardado.
+  function leerItemForm() {
+    var it = { extra: {} };
+    document.querySelectorAll('#itGrid [data-campo]').forEach(function (div) {
+      var k = div.getAttribute('data-campo');
+      if (k === '__total') { var t = document.getElementById('itf-total'); if (t && t.value !== '') it.valorTotal = t.value; return; }
+      if (k === '__formula') { var f = document.getElementById('itFormula'); if (f && f.value) it.formula = f.value; return; }
+      var el = document.getElementById('itf-' + k);
+      var v = el && el.classList.contains('naowee-dropdown') ? UI.getDD('itf-' + k) : (el ? el.value : '');
+      if (v === '' || v == null) return;
+      if (STD[k]) it[k] = v; else it.extra[k] = v;
+    });
+    return it;
+  }
+
   function openItem(id, presetNivel) {
     itemEditId = id || null;
     fillNivelDD();
@@ -418,12 +442,12 @@
     if (itemEditId) {
       var it = cat.items.filter(function (x) { return x.id === itemEditId; })[0];
       Object.keys(data).forEach(function (k) { it[k] = data[k]; });
-      D.logAudit(cat, 'Editar ítem', 'Ítem · ' + data.cod, 'Jesús Díaz');
+      D.logAudit(cat, 'Editar ítem', 'Ítem · ' + data.cod);
     } else {
       data.id = 'it-' + slugKey(data.cod) + '-' + cat.items.length;
       data.nuevo = true;
       cat.items.unshift(data);   // los nuevos se listan de primeros
-      D.logAudit(cat, 'Crear ítem', 'Ítem · ' + data.cod, 'Jesús Díaz');
+      D.logAudit(cat, 'Crear ítem', 'Ítem · ' + data.cod);
     }
     D.saveCatalogo(cat); closeModal('mItem'); tocado();
     renderItems(); renderNiveles(); renderHead(); renderAuditoria();
@@ -457,17 +481,23 @@
     w.innerHTML = fail ? '<table class="naowee-table"><thead><tr><th>Registro</th><th>Motivo del error</th></tr></thead><tbody>' + rows + '</tbody></table>' : '';
     w.style.display = fail ? '' : 'none';
   }
+  // Antes de la primera carga no hay resultado que mostrar (antes se pintaba uno inventado).
+  function renderCargaVacio() {
+    document.getElementById('cargaResult').innerHTML =
+      '<div class="t-empty show" style="grid-column:1/-1;flex:1 1 100%;width:100%;padding:18px"><b>Aún no hay cargas en esta sesión</b><span>Sube un archivo para ver cuántos registros se detectaron, procesaron y fallaron.</span></div>';
+    var w = document.getElementById('cargaErrWrap'); w.innerHTML = ''; w.style.display = 'none';
+  }
   function simulateCarga() {
     var t = PLANTILLAS[cargaTipo()];
     var det = cargaTipo() === 'niveles' ? 8 : 20, fail = 2, ok = det - fail;
     document.getElementById('cargaPrev').innerHTML =
       '<div class="naowee-message naowee-message--informative" style="margin:14px 0"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></span><div class="naowee-message__body">Vista previa: <b>' + det + ' ' + t.sujeto + '</b> detectados. Archivo válido para la versión <b>' + cat.versionActiva + '</b> de la plantilla. <i>Simulación de demo: no inserta datos.</i></div></div></div>';
     renderCargaResult(det, ok, fail);
-    D.logAudit(cat, 'Carga masiva', t.sujeto.charAt(0).toUpperCase() + t.sujeto.slice(1) + ' · ' + ok + ' procesados', 'Jesús Díaz');
+    D.logAudit(cat, 'Carga masiva', t.sujeto.charAt(0).toUpperCase() + t.sujeto.slice(1) + ' · ' + ok + ' procesados');
     renderAuditoria();
   }
   function initCarga() {
-    renderCarga(); renderCargaResult(20, 18, 2);
+    renderCarga(); renderCargaVacio();
     var drop = document.getElementById('cargaDrop');
     var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx,.csv'; inp.style.display = 'none';
     document.body.appendChild(inp);
@@ -477,7 +507,7 @@
     drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('drag'); });
     drop.addEventListener('dragleave', function () { drop.classList.remove('drag'); });
     drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('drag'); simulateCarga(); });
-    document.getElementById('cargaTipo').addEventListener('dd:change', function () { renderCarga(); renderCargaResult(cargaTipo() === 'niveles' ? 8 : 20, cargaTipo() === 'niveles' ? 6 : 18, 2); });
+    document.getElementById('cargaTipo').addEventListener('dd:change', function () { renderCarga(); renderCargaVacio(); document.getElementById('cargaPrev').innerHTML = ''; });
     document.getElementById('btnPlantilla').onclick = function () {
       var t = PLANTILLAS[cargaTipo()];
       downloadFile('plantilla-' + cargaTipo() + '-' + slug(cat.nombre) + '-' + cat.versionActiva + '.csv', t.cols().join(',') + '\n');
@@ -530,13 +560,14 @@
     var el = document.getElementById('verMotivo'), motivo = el.value.trim();
     if (!motivo) { markInvalid(el); el.focus(); return; }
     cat.items.forEach(function (it) { delete it.nuevo; });
-    D.nuevaVersion(cat, motivo, 'Jesús Díaz');
+    D.nuevaVersion(cat, motivo);
     closeModal('mVersion'); el.value = '';
     renderVersiones(); renderHead(); renderAuditoria(); renderItems();
   }
 
   // ── AUDITORÍA ──
   function renderAuditoria() {
+    refreshAudAcciones();
     var acc = UI.getDD('audAccion'), elem = UI.getDD('audElemento'), fecha = UI.dpGet('audFecha');
     var rows = D.listAuditoria().filter(function (a) { return a.catId === cat.id; })
       .filter(function (a) { return (!acc || a.accion === acc) && (!elem || a.elemento.indexOf(elem) === 0) && (!fecha || a.fecha === fecha); });
@@ -552,10 +583,20 @@
     document.getElementById('audEmpty').classList.toggle('show', empty);
     document.querySelector('#panel-auditoria .naowee-table-wrap').style.display = empty ? 'none' : '';
   }
-  function fillAudAcciones() {
+  // Las opciones salen de las acciones que ya hay en el historial; se rearman en cada
+  // render para que una acción nueva (p. ej. "Desactivar nivel") sea filtrable sin recargar.
+  var _audAccKey = null;
+  function refreshAudAcciones() {
     var accs = {}; D.listAuditoria().filter(function (a) { return a.catId === cat.id; }).forEach(function (a) { accs[a.accion] = 1; });
-    UI.fillDD('audAccion', [{ value: '', label: 'Toda acción' }].concat(Object.keys(accs).map(function (a) { return { value: a, label: a }; })), null);
-    UI.setDD('audAccion', '', 'Toda acción');
+    var keys = Object.keys(accs).sort(), k = keys.join('|');
+    if (k === _audAccKey) return;
+    _audAccKey = k;
+    var sel = UI.getDD('audAccion');
+    UI.fillDD('audAccion', [{ value: '', label: 'Toda acción' }].concat(keys.map(function (a) { return { value: a, label: a }; })), null);
+    UI.setDD('audAccion', accs[sel] ? sel : '', accs[sel] ? sel : 'Toda acción');
+  }
+  function fillAudAcciones() {
+    refreshAudAcciones();
     document.getElementById('audAccion').addEventListener('dd:change', renderAuditoria);
   }
   function exportAud() {
@@ -592,13 +633,19 @@
       if (f.classList.contains('open')) document.getElementById('nvAddIn').focus();
     };
     document.getElementById('nvAddOk').onclick = addCampo;
+    var reqBox = document.getElementById('nvAddReq');
+    function toggleReq() { var on = reqBox.classList.toggle('naowee-checkbox--checked'); reqBox.setAttribute('aria-checked', on ? 'true' : 'false'); }
+    reqBox.onclick = toggleReq;
+    reqBox.onkeydown = function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleReq(); } };
     document.getElementById('nvAddIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addCampo(); } });
     document.getElementById('motivoConfirm').onclick = confirmDesactivar;
 
     document.getElementById('btnItem').onclick = function () { openItem(null); };
     document.getElementById('itGuardar').onclick = saveItem;
     document.getElementById('itSearch').addEventListener('input', renderItems);
-    document.getElementById('itNivel').addEventListener('dd:change', function (e) { renderItemFields(e.detail.value, null); });
+    // Cambiar de nivel re-arma el formulario con los campos del nuevo nivel, pero conserva
+    // lo ya escrito en los campos que ambos niveles comparten.
+    document.getElementById('itNivel').addEventListener('dd:change', function (e) { renderItemFields(e.detail.value, leerItemForm()); });
 
     document.getElementById('btnVersion').onclick = function () { clearInvalid('#mVersion'); openModal('mVersion'); };
     document.getElementById('verGuardar').onclick = createVersion;

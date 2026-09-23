@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.9">
-<link rel="stylesheet" href="../shared/theme.css?v=0.4.9">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.0">
 <style>
   /* Override pattern local (después del DS) — solo medidas de este modal */
   #mCrear .naowee-modal{ overflow:visible !important; width:720px; max-width:92vw; }
@@ -204,9 +204,9 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.4.9"></script>
-<script src="../shared/ui.js?v=0.4.9"></script>
-<script src="../shared/shell.js?v=0.4.9"></script>
+<script src="../shared/data-catalogo.js?v=0.5.0"></script>
+<script src="../shared/ui.js?v=0.5.0"></script>
+<script src="../shared/shell.js?v=0.5.0"></script>
 <script>
 (function () {
   var UI = window.OBRAS_UI, D = window.OBRAS;
@@ -222,7 +222,7 @@
   function renderKpis() {
     var cats = D.listCatalogos();
     var activos = cats.filter(function (c) { return c.estado === 'Activo'; }).length;
-    var items = cats.reduce(function (s, c) { return s + c.items.length; }, 0);
+    var items = cats.reduce(function (s, c) { return s + D.itemsActivos(c).length; }, 0);
     var IC_BOOK = '<svg viewBox="0 0 24 24"><path d="M4 4h11a2 2 0 0 1 2 2v13H6a2 2 0 0 0-2 2V4z"/><path d="M17 19H6a2 2 0 0 0-2 2"/></svg>';
     var IC_LIST = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
     document.getElementById('kpiWrap').innerHTML =
@@ -377,7 +377,7 @@
     if (editId) {
       var c = D.getCatalogo(editId);
       c.nombre = nombre; c.region = region; c.estado = estado; c.vigenciaIni = ini; c.vigenciaFin = fin;
-      D.saveCatalogo(c); D.logAudit(c, 'Editar catálogo', 'Catálogo', 'Jesús Díaz');
+      D.saveCatalogo(c); D.logAudit(c, 'Editar catálogo', 'Catálogo');
     } else {
       D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
     }
@@ -417,6 +417,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.4.9"></script>
+<script src="../shared/tour.js?v=0.5.0"></script>
 </body>
 </html>

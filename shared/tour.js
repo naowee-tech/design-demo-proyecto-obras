@@ -62,7 +62,7 @@
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
         { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del nivel.', click: true },
         { sel: '#rmNivelOff', body: 'Elige <b>Desactivar nivel</b>. Si tiene ítems o valores, el sistema advierte antes.', click: true },
-        { sel: '#mMotivo', body: 'La desactivación exige un <b>motivo obligatorio</b>. El nivel deja de aparecer como opción pero queda en la traza.' }
+        { sel: '#motivoTxt, #mMotivo .naowee-modal', body: 'La desactivación exige un <b>motivo obligatorio</b>. El nivel deja de aparecer como opción pero queda en la traza.' }
       ] },
     'PPTO-07': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Consultar niveles configurados', purpose: 'Revisar la organización jerárquica de la estructura y su estado.',
@@ -95,7 +95,8 @@
       steps: [
         { sel: '[data-tab="items"]', body: 'Entra a la pestaña <b>Ítems</b>.', click: true },
         { sel: '#btnItem', body: 'Clic en <b>Crear ítem</b>.', click: true },
-        { sel: '#itNombre', body: 'Diligencia código, nombre, unidad y valor. Puedes asignarle o no una <b>fórmula</b>.' },
+        { sel: '#itNivel', body: 'Primero elige el <b>nivel</b> del ítem: el formulario se arma con los campos que ese nivel tiene configurados.' },
+        { sel: '#itf-nombre, #itNivel', body: 'Diligencia código, nombre, unidad y valor. El <b>V. total</b> se calcula solo y puedes asignarle o no una <b>fórmula</b>.' },
         { sel: '#mItem .naowee-modal__footer .naowee-btn--loud', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan campos obligatorios.' }
       ] },
     'PPTO-11': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -118,7 +119,7 @@
       steps: [
         { sel: '[data-tab="carga"]', body: 'Pestaña <b>Carga masiva</b>.', click: true },
         { sel: '#cargaDrop', body: 'Arrastra o selecciona el archivo. El sistema valida que corresponda a la <b>versión vigente</b> de la plantilla.' },
-        { sel: '#cargaPrev', body: 'Muestra una <b>vista previa</b> de los ítems detectados antes de confirmar la carga.' }
+        { sel: '#cargaPrev .naowee-message, #cargaDrop', body: 'Muestra una <b>vista previa</b> de los ítems detectados antes de confirmar la carga.' }
       ] },
     'PPTO-14': { ph: '4 · Carga Masiva', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Visualizar resultado de la carga', purpose: 'Ver qué ítems se procesaron y cuáles fallaron con su motivo.',

@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.4.9">
-<link rel="stylesheet" href="../shared/theme.css?v=0.4.9">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.0">
 <style>
   /* Override pattern: el acordeón del DS abre con max-height fijo; aquí el contenido es una tabla */
   .naowee-accordion__item--open .naowee-accordion__body{ max-height:none; padding-bottom:14px; }
@@ -91,9 +91,9 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.4.9"></script>
-<script src="../shared/ui.js?v=0.4.9"></script>
-<script src="../shared/shell.js?v=0.4.9"></script>
+<script src="../shared/data-catalogo.js?v=0.5.0"></script>
+<script src="../shared/ui.js?v=0.5.0"></script>
+<script src="../shared/shell.js?v=0.5.0"></script>
 <script>
 (function () {
   var D = window.OBRAS, UI = window.OBRAS_UI, cat = null;
@@ -102,9 +102,18 @@
   function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
   function itemsDe(id) { return cat.items.filter(function (it) { return it.nivelId === id; }); }
 
+  // Solo catálogos Activos: un Borrador todavía se está armando y un Inactivo ya no rige.
+  // Un ?cat= que apunte a otro estado cae al primer Activo.
+  function consultables() { return D.listCatalogos().filter(function (c) { return c.estado === 'Activo'; }); }
   function pick(id) {
-    var list = D.listCatalogos().filter(function (c) { return c.estado !== 'Borrador'; });
-    cat = (id ? D.getCatalogo(id) : null) || list.filter(function (c) { return c.estado === 'Activo'; })[0] || list[0] || D.listCatalogos()[0];
+    var list = consultables();
+    cat = list.filter(function (c) { return c.id === id; })[0] || list[0] || null;
+  }
+  function vigencia(c) {
+    var hoy = D.hoy();
+    if (c.vigenciaIni && hoy < c.vigenciaIni) return { txt: 'Vigencia futura', tono: 'informative' };
+    if (c.vigenciaFin && hoy > c.vigenciaFin) return { txt: 'Vencido', tono: 'caution' };
+    return { txt: 'Vigente', tono: 'positive' };
   }
 
   function renderHead() {
@@ -112,11 +121,11 @@
     var IC_MONEY = '<svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
     document.getElementById('kpiWrap').innerHTML =
       '<div class="t-kpi"><div class="kpi-ic">' + IC_MONEY + '</div><div><div class="kpi-l">Valor total</div><div class="kpi-v">' + D.fmtCOP(D.totalCatalogo(cat)) + '</div></div></div>' +
-      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + cat.items.length + '</div></div></div>';
+      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + D.itemsActivos(cat).length + '</div></div></div>';
     document.getElementById('cTitle').textContent = cat.nombre;
     document.getElementById('cChips').innerHTML =
       '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
-      '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Vigente</span>' +
+      '<span class="naowee-badge naowee-badge--' + vigencia(cat).tono + ' naowee-badge--quiet naowee-badge--small">' + vigencia(cat).txt + '</span>' +
       '<span class="t-esq-chip">' + esc(cat.region) + '</span>' +
       '<span class="t-esq-chip">Vigencia ' + fdate(cat.vigenciaIni) + ' → ' + fdate(cat.vigenciaFin) + '</span>';
   }
@@ -180,8 +189,13 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     pick(new URLSearchParams(location.search).get('cat'));
-    var opts = D.listCatalogos().filter(function (c) { return c.estado !== 'Borrador'; })
-      .map(function (c) { return { value: c.id, label: c.nombre }; });
+    if (!cat) {
+      document.getElementById('cTitle').textContent = 'No hay catálogos activos';
+      document.getElementById('cMeta').textContent = 'Cuando un administrador active un catálogo de precios, aparecerá aquí para consulta.';
+      document.querySelector('.t-board-actions').style.display = 'none';
+      return;
+    }
+    var opts = consultables().map(function (c) { return { value: c.id, label: c.nombre }; });
     UI.fillDD('cSel', opts, null);
     UI.setDD('cSel', cat.id, cat.nombre);
     renderHead(); render();
@@ -191,6 +205,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.4.9"></script>
+<script src="../shared/tour.js?v=0.5.0"></script>
 </body>
 </html>
