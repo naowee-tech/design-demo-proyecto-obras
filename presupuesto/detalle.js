@@ -57,7 +57,10 @@
     document.getElementById('catChips').innerHTML =
       '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
       '<span class="naowee-badge naowee-badge--' + (badgeMap[cat.estado] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + cat.estado + '</span>' +
-      '<span class="t-esq-chip">' + cat.niveles.filter(function (n) { return n.activo; }).length + ' niveles</span>' +
+      (cat.esquema || []).map(function (e, i) {
+        var act = D.activos(cat), c = D.arbol(cat).filter(function (x) { return x.d === i + 1 && act[x.n.id]; }).length;
+        return c ? '<span class="t-esq-chip">' + esc(e.nombre) + ': ' + c + '</span>' : '';
+      }).join('') +
       (cat.cambiosSinVersionar ? '<span class="naowee-badge naowee-badge--caution naowee-badge--quiet naowee-badge--small">' + cat.cambiosSinVersionar + ' sin versionar</span>' : '') +
       (function () { var n = Object.keys(calc().errores).length; return n ? '<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small">' + n + ' fórmula' + (n === 1 ? '' : 's') + ' con error</span>' : ''; })();
   }
@@ -82,9 +85,14 @@
       return '<button class="naowee-menu__item" role="menuitem" id="rmNivelEdit" onclick="rowAct(\'nivel-edit\')">' + IC_EDIT + 'Editar nivel</button>' +
         '<button class="naowee-menu__item" role="menuitem" id="rmNivelOn" onclick="rowAct(\'nivel-on\')">' + IC_ON + 'Reactivar nivel</button>';
     }
-    // "Agregar ítem" solo en niveles que admiten ítems.
-    if (n && n.admiteItems) return MENUS.nivel;
-    return MENUS.nivel.replace(/<button[^>]*id="rmNivelAdd"[\s\S]*?<\/button>/, '');
+    var html = MENUS.nivel;
+    // "Agregar ítem" solo en niveles que admiten ítems; "Agregar subnivel" si el esquema tiene un nivel debajo.
+    if (!(n && n.admiteItems)) html = html.replace(/<button[^>]*id="rmNivelAdd"[\s\S]*?<\/button>/, '');
+    if (n && D.profundidadDe(cat, n.id) < (cat.esquema || []).length) {
+      var sub = (cat.esquema[D.profundidadDe(cat, n.id)] || {}).nombre || 'subnivel';
+      html = '<button class="naowee-menu__item" role="menuitem" id="rmNivelSub" onclick="rowAct(\'nivel-sub\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Agregar ' + esc(sub) + '</button>' + html;
+    }
+    return html;
   }
   var MENUS = {
     exportar: '<button class="naowee-menu__item" role="menuitem" id="rmExportXls" onclick="rowAct(\'exp-xls\')">' + IC_DL + 'Excel (.xls)</button>' +
@@ -117,6 +125,7 @@
   window.rowAct = function (a) {
     var id = rowId; closeRowMenu();
     if (a === 'nivel-edit') openNivel(id);
+    else if (a === 'nivel-sub') openNivel(null, id);
     else if (a === 'nivel-off') openDesactivar(id);
     else if (a === 'nivel-add-item') { window.selTab('items'); openItem(null, id); }
     else if (a === 'item-edit') openItem(id);
@@ -130,42 +139,121 @@
   }
 
   // ── ESTRUCTURA ──
+  // PPTO-07: la estructura se ve como árbol (código, sangría por profundidad, chevron para
+  // abrir y cerrar). Al filtrar por estado, los ancestros de lo que coincide se ven atenuados
+  // para no perder la jerarquía.
+  var abiertos = null;   // ids de nodos desplegados; null = estado inicial (solo el primer nivel)
+  var CHEV_R = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>';
+  function renderEsquema() {
+    var esq = cat.esquema || [];
+    document.getElementById('esqChips').innerHTML = esq.map(function (e, i) {
+      var cuantos = D.arbol(cat).filter(function (x) { return x.d === i + 1; }).length;
+      return (i ? '<span class="t-esq-sep">›</span>' : '') +
+        '<span class="t-esq-chip clickable" data-esq="' + i + '" tabindex="0" role="button" title="' + esc(e.descripcion || '') + '">' + (i + 1) + ' · ' + esc(e.nombre) +
+        ' <span style="opacity:.65;font-weight:500">(' + cuantos + ')</span></span>';
+    }).join('') || '<span class="t-esq-empty">Sin niveles en el esquema.</span>';
+    document.querySelectorAll('#esqChips [data-esq]').forEach(function (c) {
+      c.onclick = function () { openEsquema(+c.dataset.esq); };
+      c.onkeydown = function (e) { if (e.key === 'Enter') openEsquema(+c.dataset.esq); };
+    });
+    document.getElementById('btnEsqAdd').disabled = esq.length >= D.MAX_PROFUNDIDAD;
+  }
+  var esqIdx = null;
+  function openEsquema(i) {
+    esqIdx = i;
+    var e = i == null ? null : cat.esquema[i];
+    document.getElementById('mEsqTitle').textContent = e ? 'Nivel ' + (i + 1) + ' del esquema' : 'Nuevo nivel del esquema';
+    document.getElementById('mEsqSub').textContent = e ? 'Cambiar el nombre no toca los niveles ya creados.' : 'Se agrega debajo de «' + (cat.esquema[cat.esquema.length - 1] || {}).nombre + '» (posición ' + (cat.esquema.length + 1) + ' de ' + D.MAX_PROFUNDIDAD + ' posibles).';
+    document.getElementById('esqNombre').value = e ? e.nombre : '';
+    document.getElementById('esqDesc').value = e ? (e.descripcion || '') : '';
+    document.getElementById('esqErr').style.display = 'none';
+    openModal('mEsquema');
+    setTimeout(function () { document.getElementById('esqNombre').focus(); }, 50);
+  }
+  function saveEsquema() {
+    var nombre = document.getElementById('esqNombre').value.trim(), err = document.getElementById('esqErr');
+    var dup = (cat.esquema || []).filter(function (e, i) { return i !== esqIdx && norm(e.nombre) === norm(nombre); })[0];
+    if (!nombre || dup) { err.textContent = !nombre ? 'El nombre es obligatorio.' : 'El esquema ya tiene un nivel «' + dup.nombre + '».'; err.style.display = ''; return; }
+    var desc = document.getElementById('esqDesc').value.trim();
+    if (esqIdx == null) {
+      cat.esquema.push({ id: 'tn-' + (cat.esquema.length + 1) + '-' + Date.now().toString(36), nombre: nombre, profundidad: cat.esquema.length + 1, descripcion: desc });
+      D.logAudit(cat, 'Editar esquema', 'Nivel · esquema', null, { cambios: [{ etiqueta: 'Nivel ' + cat.esquema.length + ' del esquema', antes: '—', despues: nombre }] });
+    } else {
+      var e = cat.esquema[esqIdx], cambios = D.diff(e, { nombre: nombre, descripcion: desc }, [{ key: 'nombre', label: 'Nombre del nivel ' + (esqIdx + 1) }, { key: 'descripcion', label: 'Descripción' }]);
+      if (!cambios.length) { closeModal('mEsquema'); return; }
+      e.nombre = nombre; e.descripcion = desc;
+      D.logAudit(cat, 'Editar esquema', 'Nivel · esquema', null, { cambios: cambios });
+    }
+    D.saveCatalogo(cat); closeModal('mEsquema'); tocado();
+    renderNiveles(); renderAuditoria();
+    UI.toast('Esquema actualizado: ' + cat.esquema.map(function (x) { return esc(x.nombre); }).join(' › '));
+  }
   function renderNiveles() {
-    var fe = UI.getDD('nvFiltroEstado');
-    var todos = cat.niveles.slice().sort(function (a, b) { return a.orden - b.orden; });
-    var ns = todos.filter(function (n) { return !fe || (fe === 'activo' ? n.activo : !n.activo); });
-    document.getElementById('nvCount').innerHTML = todos.length ? '<b>' + ns.length + '</b> de ' + todos.length + ' niveles' : '';
-    document.getElementById('nivelBody').innerHTML = ns.map(function (n, i) {
-      var valor = valorTag(n, calc());
-      return '<tr class="t-row-click' + (n.activo ? '' : ' t-row-off') + '" data-nivel="' + n.id + '" tabindex="0" title="Abrir el detalle del nivel">' +
-        '<td data-label="#">' + (n.codigo || (i + 1)) + '</td>' +
-        '<td data-label="Nivel"><span class="t-cname" title="' + esc(n.nombre) + '">' + esc(n.nombre) + '</span></td>' +
-        '<td data-label="Valor">' + valor + '</td>' +
-        '<td data-label="Campos">' + (n.admiteItems ? camposDe(n).length + ' campos' : '—') + '</td>' +
-        '<td data-label="Ítems">' + (n.admiteItems ? itemsDe(n.id).length : '—') + '</td>' +
+    renderEsquema();
+    var fe = UI.getDD('nvFiltroEstado'), r = calc(), act = D.activos(cat);
+    var arbol = D.arbol(cat);
+    if (abiertos === null) { abiertos = {}; }
+    var coincide = {}, visible = {};
+    arbol.forEach(function (x) { if (!fe || (fe === 'activo' ? act[x.n.id] : !act[x.n.id])) coincide[x.n.id] = 1; });
+    // Con filtro: se ven los que coinciden y sus ancestros; sin filtro: lo desplegado.
+    arbol.forEach(function (x) {
+      var ruta = D.rutaDe(cat, x.n.id);
+      if (fe) { if (coincide[x.n.id]) ruta.forEach(function (a) { visible[a.id] = 1; }); }
+      else if (ruta.slice(0, -1).every(function (a) { return abiertos[a.id]; })) visible[x.n.id] = 1;
+    });
+    var filas = arbol.filter(function (x) { return visible[x.n.id]; });
+    var nCoinc = Object.keys(coincide).length;
+    document.getElementById('nvCount').innerHTML = arbol.length ? '<b>' + nCoinc + '</b> de ' + arbol.length + ' niveles' : '';
+    document.getElementById('nivelBody').innerHTML = filas.map(function (x) {
+      var n = x.n, hijos = D.hijosDe(cat, n.id), abierto = fe ? true : !!abiertos[n.id], its = itemsDe(n.id).length;
+      var tipoN = (cat.esquema[x.d - 1] || {}).nombre || ('Nivel ' + x.d);
+      var off = !act[n.id], ghost = fe && !coincide[n.id];
+      return '<tr class="t-row-click' + (off ? ' t-row-off' : '') + (ghost ? ' t-row-ghost' : '') + '" data-nivel="' + n.id + '" tabindex="0" role="row" aria-level="' + x.d + '"' + (hijos.length ? ' aria-expanded="' + abierto + '"' : '') + ' title="Abrir el detalle del nivel">' +
+        '<td data-label="Nivel"><div class="t-tree-cell" style="--lvl:' + x.d + '">' +
+          (hijos.length ? '<button type="button" class="t-tree-tg" data-tg="' + n.id + '" aria-expanded="' + abierto + '" aria-label="' + (abierto ? 'Contraer' : 'Expandir') + ' ' + esc(n.nombre) + '">' + CHEV_R + '</button>' : '<span class="t-tree-sp"></span>') +
+          '<span class="t-tree-cod">' + esc(n.codigo || '') + '</span><span class="t-cname" title="' + esc(n.nombre) + '">' + esc(n.nombre) + '</span>' +
+          (hijos.length ? ' <span class="t-lvl-count" style="font-size:11.5px;color:var(--t-text-2)">· ' + hijos.length + '</span>' : '') +
+        '</div></td>' +
+        '<td data-label="Tipo"><span class="t-lvl-tag">' + esc(tipoN) + '</span></td>' +
+        '<td data-label="Valor">' + valorTag(n, r) + '</td>' +
+        '<td data-label="Ítems">' + (n.admiteItems ? its + ' <span style="font-size:11.5px;color:var(--t-text-2);white-space:nowrap">· ' + camposDe(n).length + ' campos</span>' : '—') + '</td>' +
         '<td data-label="Estado">' + (n.activo
-          ? '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Activo</span>'
+          ? (off ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small" title="Su nivel superior está inactivo">Inactivo (heredado)</span>' : '<span class="naowee-badge naowee-badge--positive naowee-badge--quiet naowee-badge--small">Activo</span>')
           : '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small" title="' + esc(n.motivoBaja || '') + '">Inactivo</span>') + '</td>' +
         '<td data-label="Creado">' + fdate(n.creado) + '</td>' +
-        '<td data-label="Total" class="tnum">' + D.fmtCOP(nivelTotal(n)) + '</td>' +
+        '<td data-label="Total" class="tnum">' + D.fmtCOP(r.nodo[n.id] || 0) + '</td>' +
         '<td data-label="Acciones">' + kebab('nivel', n.id, 'Acciones del nivel') + '</td>' +
         '</tr>';
     }).join('');
-    var empty = ns.length === 0;
-    document.getElementById('nivelEmptyT').textContent = todos.length ? 'Sin niveles con ese estado' : 'Aún no hay niveles';
-    document.getElementById('nivelEmptyM').innerHTML = todos.length ? 'Cambia el filtro de estado para ver los demás niveles.' : 'Crea el primero con <b>+ Crear nivel</b> para estructurar el catálogo.';
+    var empty = !filas.length;
+    document.getElementById('nivelEmptyT').textContent = arbol.length ? 'Sin niveles con ese estado' : 'Aún no hay niveles';
+    document.getElementById('nivelEmptyM').innerHTML = arbol.length ? 'Cambia el filtro de estado para ver los demás niveles.' : 'Crea el primer <b>' + esc((cat.esquema[0] || {}).nombre || 'nivel') + '</b> con <b>+ Crear nivel</b> para estructurar el catálogo.';
     document.getElementById('nivelEmpty').classList.toggle('show', empty);
     document.getElementById('nivelList').style.display = empty ? 'none' : '';
-    // PPTO-07.3: la fila abre el detalle del nivel (el menú ⋮ conserva las demás acciones).
     document.querySelectorAll('#nivelBody tr[data-nivel]').forEach(function (tr) {
-      tr.onclick = function (e) { if (!e.target.closest('.t-kebab')) openNivel(tr.dataset.nivel); };
-      tr.onkeydown = function (e) { if (e.key === 'Enter' && e.target === tr) openNivel(tr.dataset.nivel); };
+      tr.onclick = function (e) {
+        var tg = e.target.closest('[data-tg]');
+        if (tg) { e.stopPropagation(); abiertos[tg.dataset.tg] = !abiertos[tg.dataset.tg]; renderNiveles(); return; }
+        if (!e.target.closest('.t-kebab')) openNivel(tr.dataset.nivel);
+      };
+      tr.onkeydown = function (e) {
+        if (e.target !== tr) return;
+        var id = tr.dataset.nivel;
+        if (e.key === 'Enter') openNivel(id);
+        else if (e.key === 'ArrowRight' && D.hijosDe(cat, id).length && !abiertos[id]) { abiertos[id] = true; renderNiveles(); focusFila(id); }
+        else if (e.key === 'ArrowLeft' && abiertos[id]) { abiertos[id] = false; renderNiveles(); focusFila(id); }
+      };
     });
   }
+  function focusFila(id) { var tr = document.querySelector('#nivelBody tr[data-nivel="' + id + '"]'); if (tr) tr.focus(); }
+  function expandirTodo(on) { abiertos = {}; if (on) D.arbol(cat).forEach(function (x) { abiertos[x.n.id] = true; }); renderNiveles(); }
+  // Para el recorrido guiado: abrir un nodo de la estructura y filtrar ítems por nivel.
+  window.estructuraAbrir = function (id) { abiertos = abiertos || {}; D.rutaDe(cat, id).forEach(function (n) { abiertos[n.id] = true; }); renderNiveles(); };
+  window.itemsFiltrarNivel = function (id) { var n = nivelById(id); if (!n) return; UI.setDD('itFiltroNivel', id, (n.codigo ? n.codigo + ' · ' : '') + n.nombre); renderItems(); };
   function valorTag(n, r) {
     if (r.errores[n.id]) return '<span class="t-fx-tag t-fx-err" title="' + esc(r.errores[n.id]) + '">ƒ Error de fórmula</span>';
     if (n.valorTipo === 'formula') return '<span class="t-fx-tag" title="' + esc(n.formula) + '">ƒ <code>' + esc(n.formula) + '</code></span>';
-    if (n.valorTipo === 'fijo') return '<span class="t-fx-tag" title="Reemplaza la suma de sus ítems">Fijo ' + D.fmtCOP(n.valorFijo) + '</span>';
+    if (n.valorTipo === 'fijo') return '<span class="t-fx-tag" title="Reemplaza la suma de lo que contiene">Fijo ' + D.fmtCOP(n.valorFijo) + '</span>';
     if (n.valorTipo === 'ninguno') return '<span class="t-fx-tag" title="Se muestra la suma pero no cuenta en el total del catálogo">Sin valor · no suma</span>';
     return '<span class="t-fx-tag">Σ Suma automática</span>';
   }
@@ -174,7 +262,7 @@
     n.activo = true; delete n.motivoBaja;
     D.saveCatalogo(cat); D.logAudit(cat, 'Reactivar nivel', 'Nivel · ' + n.nombre, null, { items: itemsDe(id).length });
     tocado(); renderNiveles(); renderItems(); renderHead(); renderAuditoria();
-    UI.toast('Nivel «' + esc(n.nombre) + '» reactivado: sus ítems vuelven a sumar en el catálogo.');
+    UI.toast('Nivel «' + esc(n.nombre) + '» reactivado: lo que contiene vuelve a sumar en el catálogo.');
   }
 
   function setSwitch(id, on) { var s = document.getElementById(id); s.classList.toggle('naowee-switch--on', on); s.setAttribute('aria-checked', on ? 'true' : 'false'); }
@@ -184,15 +272,15 @@
     document.getElementById('nvFormulaWrap').style.display = tipo === 'formula' ? '' : 'none';
     var hint = document.getElementById('nvValorHint'), n = nivelEditId ? nivelById(nivelEditId) : null;
     var suma = n ? (calc().suma[n.id] || 0) : 0;
-    hint.innerHTML = tipo === 'auto' ? 'El total del nivel es la <b>suma de sus ítems</b>' + (n ? ' (hoy ' + D.fmtCOP(suma) + ').' : '.')
-      : tipo === 'fijo' ? 'El valor fijo <b>reemplaza</b> la suma de los ítems' + (n ? ' (hoy suman ' + D.fmtCOP(suma) + ').' : '.')
-      : tipo === 'ninguno' ? 'El nivel muestra la suma de sus ítems, pero <b>no cuenta</b> en el total del catálogo.' : '';
+    hint.innerHTML = tipo === 'auto' ? 'El total del nivel es la <b>suma de sus ítems y subniveles</b>' + (n ? ' (hoy ' + D.fmtCOP(suma) + ').' : '.')
+      : tipo === 'fijo' ? 'El valor fijo <b>reemplaza</b> esa suma' + (n ? ' (hoy da ' + D.fmtCOP(suma) + ').' : '.')
+      : tipo === 'ninguno' ? 'El nivel muestra su suma, pero <b>no sube</b> a su nivel superior ni al total del catálogo.' : '';
     hint.style.display = hint.innerHTML ? '' : 'none';
     if (tipo === 'formula') validarFormulaNivel();
   }
   function specNivel() {
     var tmp = { campos: getSwitch('nvAdmiteItems') ? camposDraft : [] };
-    return { nivel: true, itemCampos: D.specCampos(tmp), admiteItems: getSwitch('nvAdmiteItems'), tieneHijos: false };
+    return { nivel: true, itemCampos: D.specCampos(tmp), admiteItems: getSwitch('nvAdmiteItems'), tieneHijos: !!(nivelEditId && D.hijosDe(cat, nivelEditId).length) };
   }
   // PPTO-08.4: la fórmula se valida mientras se escribe y muestra el valor que daría hoy.
   function validarFormulaNivel() {
@@ -203,17 +291,19 @@
     w.classList.remove('t-invalid');
     var n = nivelEditId ? nivelById(nivelEditId) : null, prev = '';
     if (n) {
-      var its = itemsDe(n.id), suma = calc().suma[n.id] || 0;
+      var its = itemsDe(n.id), R = calc(), act = D.activos(cat);
+      var sItems = its.reduce(function (s, it) { return s + (R.item[it.id] || 0); }, 0);
+      var sHijos = D.hijosDe(cat, n.id).filter(function (h) { return act[h.id] && h.valorTipo !== 'ninguno'; }).reduce(function (s, h) { return s + (R.nodo[h.id] || 0); }, 0);
       try {
         prev = D.fmtCOP(Math.round(window.OBRAS_FX.calcular(el.value, specNivel(), { ref: function () { return 0; }, agg: function (t, c) {
-          if (t === 'hijos') return 0;
-          if (!c) return suma;
+          if (t === 'hijos') return sHijos;
+          if (!c) return sItems;
           return its.reduce(function (s, it) { var x = c === 'cantidad' ? it.cantidad : c === 'valorunit' ? it.valorUnit : (it.extra || {})[c]; return s + (+x || 0); }, 0);
         } })));
       } catch (e) { msg.className = 'naowee-helper naowee-helper--negative'; msg.textContent = e.message; return false; }
     }
     msg.className = 'naowee-helper naowee-helper--' + (r.avisos.length ? 'caution' : 'positive');
-    msg.textContent = 'Fórmula válida' + (prev ? ' · con los ítems actuales da ' + prev : '') + (r.avisos.length ? ' · ' + r.avisos.join(' ') : '') + '.';
+    msg.textContent = ('Fórmula válida' + (prev ? ' · con los datos actuales da ' + prev : '') + (r.avisos.length ? ' · ' + r.avisos.join(' ') : '')).replace(/\.?$/, '.');
     return true;
   }
   // Chips que insertan un término en la posición del cursor.
@@ -288,20 +378,50 @@
     inp.value = ''; renderCampos(); inp.focus();
   }
 
-  function openNivel(id) {
+  // Opciones de "Nivel superior": nodos cuyo nivel del esquema tiene uno debajo, sin el propio
+  // nodo ni sus descendientes (no se puede colgar un nivel de sí mismo).
+  function padresPosibles(id) {
+    var prohibidos = {}; if (id) { prohibidos[id] = 1; D.descendientesDe(cat, id).forEach(function (d) { prohibidos[d.id] = 1; }); }
+    return D.arbol(cat).filter(function (x) { return x.d < (cat.esquema || []).length && !prohibidos[x.n.id]; });
+  }
+  function fillPadre(id, padreId) {
+    var raiz = (cat.esquema[0] || {}).nombre || 'nivel raíz';
+    var opts = [{ value: '', label: 'Ninguno · será un ' + raiz }].concat(padresPosibles(id).map(function (x) {
+      return { value: x.n.id, label: ' '.repeat((x.d - 1) * 3) + (x.n.codigo ? x.n.codigo + ' · ' : '') + x.n.nombre };
+    }));
+    UI.fillDD('nvPadre', opts, null);
+    var p = padreId ? nivelById(padreId) : null;
+    UI.setDD('nvPadre', p ? p.id : '', p ? (p.codigo ? p.codigo + ' · ' : '') + p.nombre : opts[0].label);
+    tipoHint();
+  }
+  // Qué nivel del esquema será, según el nivel superior elegido.
+  function tipoHint() {
+    var pid = UI.getDD('nvPadre'), d = pid ? D.profundidadDe(cat, pid) + 1 : 1, e = cat.esquema[d - 1];
+    var h = document.getElementById('nvTipoHint');
+    h.innerHTML = e ? 'Será un <b>' + esc(e.nombre) + '</b> (nivel ' + d + ' de ' + cat.esquema.length + ' del esquema).' : 'El esquema no tiene un nivel ' + d + '.';
+    return d;
+  }
+  function openNivel(id, padrePreset) {
     nivelEditId = id || null;
     var n = id ? nivelById(id) : null;
-    document.getElementById('mNivelTitle').textContent = n ? 'Editar nivel' : 'Nuevo nivel';
+    var padreId = n ? n.padreId : (padrePreset || null);
+    fillPadre(id, padreId);
+    var d = padreId ? D.profundidadDe(cat, padreId) + 1 : 1;
+    var nombreTipo = (cat.esquema[d - 1] || {}).nombre || 'nivel';
+    document.getElementById('mNivelTitle').textContent = n ? 'Editar ' + (D.tipoNivelDe(cat, n.id).nombre || 'nivel') : 'Nuevo ' + nombreTipo;
     document.getElementById('nvNombre').value = n ? n.nombre : '';
-    document.getElementById('nvOrden').value = n ? n.orden : (cat.niveles.length + 1);
+    document.getElementById('nvOrden').value = n ? n.orden : (D.hijosDe(cat, padreId).length + 1);
     document.getElementById('nvDesc').value = n && n.descripcion ? n.descripcion : '';
     document.getElementById('nvValorFijo').value = n && n.valorFijo != null ? n.valorFijo : '';
     document.getElementById('nvFormula').value = n && n.formula ? n.formula : 'SUMA(items)';
     var tipo = (n && n.valorTipo) || 'auto';
     UI.setDD('nvValorTipo', tipo, VALOR_LBL[tipo]);
     document.getElementById('nvFxChips').dataset.k = '';
-    setSwitch('nvAdmiteItems', n ? !!n.admiteItems : true);
-    camposDraft = camposDe(n).map(function (c) { return Object.assign({}, c); });
+    // Un nivel nuevo del último nivel del esquema admite ítems por defecto (como el APU) y
+    // copia los campos de un hermano, para no configurar lo mismo en cada APU.
+    var hermano = n ? null : D.hijosDe(cat, padreId).filter(function (h) { return h.admiteItems; })[0];
+    setSwitch('nvAdmiteItems', n ? !!n.admiteItems : (hermano ? true : d >= cat.esquema.length));
+    camposDraft = camposDe(n || hermano).map(function (c) { return Object.assign({}, c); });
     renderCampos(); toggleCamposWrap(); valorCfg(tipo);
     document.getElementById('nvAddForm').classList.remove('open');
     clearInvalid('#mNivel'); nombreErr('');
@@ -309,6 +429,8 @@
   }
   var VALOR_LBL = { auto: 'Suma automática', formula: 'Fórmula', fijo: 'Valor fijo', ninguno: 'Sin valor (no suma al catálogo)' };
   var CAMPOS_NIVEL = [
+    { key: 'padreId', label: 'Nivel superior', fmt: function (v) { var p = v ? nivelById(v) : null; return p ? (p.codigo ? p.codigo + ' · ' : '') + p.nombre : 'Ninguno'; } },
+    { key: 'codigo', label: 'Código' },
     { key: 'nombre', label: 'Nombre' },
     { key: 'orden', label: 'Posición' },
     { key: 'descripcion', label: 'Descripción' },
@@ -333,7 +455,10 @@
     var tipo = UI.getDD('nvValorTipo') || 'auto';
     var admite = getSwitch('nvAdmiteItems');
     if (tipo === 'formula' && !validarFormulaNivel()) { document.getElementById('nvFormula').focus(); return; }
+    var padreId = UI.getDD('nvPadre') || null, prof = padreId ? D.profundidadDe(cat, padreId) + 1 : 1;
+    if (prof > (cat.esquema || []).length) { UI.toast('El esquema no tiene un nivel ' + prof + '. Agrégalo en «Esquema de niveles» primero.', 'caution', 5000); return; }
     var data = {
+      padreId: padreId,
       nombre: nombre, orden: parseInt(document.getElementById('nvOrden').value, 10) || 1,
       descripcion: document.getElementById('nvDesc').value.trim(), valorTipo: tipo,
       valorFijo: tipo === 'fijo' ? (num(document.getElementById('nvValorFijo').value) || 0) : null,
@@ -344,17 +469,30 @@
       // PPTO-05: resumen antes de confirmar; si cambia la posición de un nivel con ítems,
       // se advierte el impacto. Editar no toca `activo` (reactivar es otra acción).
       var n = nivelById(nivelEditId);
+      var desc = D.descendientesDe(cat, n.id), mueve = (n.padreId || null) !== padreId;
+      if (mueve && prof + (D.arbol(cat).filter(function (x) { return desc.indexOf(x.n) >= 0; }).reduce(function (m, x) { return Math.max(m, x.d - D.profundidadDe(cat, n.id)); }, 0)) > cat.esquema.length) {
+        UI.toast('No cabe ahí: sus subniveles quedarían por debajo del último nivel del esquema.', 'caution', 5000); return;
+      }
+      data.codigo = mueve ? siguienteCodigo(padreId) : n.codigo;
       var cambios = D.diff(n, data, CAMPOS_NIVEL);
       var its = itemsDe(n.id), impacto = '';
-      if (data.orden !== n.orden && its.length) {
+      var itsSub = its.length + desc.reduce(function (s, d) { return s + itemsDe(d.id).length; }, 0);
+      if ((data.orden !== n.orden || mueve) && (itsSub || desc.length)) {
+        var p0 = n.padreId ? nivelById(n.padreId) : null, p1 = padreId ? nivelById(padreId) : null;
         impacto += '<div class="naowee-message naowee-message--caution" style="margin-top:14px"><div class="naowee-message__header"><span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M12 3l9 17H3z"/><path d="M12 9v4M12 17h.01"/></svg></span>' +
-          '<div class="naowee-message__body"><b>Cambia la posición de un nivel con ítems.</b> «' + esc(n.nombre) + '» pasa de la posición ' + n.orden + ' a la ' + data.orden + ' y arrastra sus <b>' + its.length + ' ítems</b> (' + D.fmtCOP(nivelTotal(n)) + '). Cambia el orden en que se muestran la estructura, la consulta y la plantilla de carga.</div></div></div>';
+          '<div class="naowee-message__body"><b>Cambia la posición jerárquica de un nivel con contenido.</b> «' + esc(n.nombre) + '» ' +
+          (mueve ? 'pasa de <b>' + esc(p0 ? p0.nombre : 'la raíz') + '</b> a <b>' + esc(p1 ? p1.nombre : 'la raíz') + '</b>' : 'pasa de la posición ' + n.orden + ' a la ' + data.orden) +
+          ' y arrastra ' + (desc.length ? '<b>' + desc.length + ' subniveles</b> y ' : '') + '<b>' + itsSub + ' ítems</b> (' + D.fmtCOP(nivelTotal(n)) + ').' +
+          (mueve ? ' El total de «' + esc(p0 ? p0.nombre : 'la raíz') + '» baja y el de «' + esc(p1 ? p1.nombre : 'la raíz') + '» sube en ese valor; su código pasa a ' + esc(data.codigo) + '.' : ' Cambia el orden de la estructura, la consulta y la plantilla de carga.') + '</div></div></div>';
       }
-      var ids = its.map(function (x) { return x.id; });
-      impacto += UI.avisoPresupuestos(D.presupuestosDe(cat.id).filter(function (p) { return p.itemsUsados.some(function (i) { return ids.indexOf(i) >= 0; }); }), 'Editar este nivel');
+      var ids = [n.id].concat(desc.map(function (d) { return d.id; }));
+      impacto += UI.avisoPresupuestos(D.presupuestosConNodos(cat.id, ids), 'Editar este nivel');
       UI.confirmarCambios({ titulo: 'Revisa los cambios del nivel', desde: 'mNivel', cambios: cambios, impacto: impacto }).then(function (ok) {
         if (!ok) return;
+        var codViejo = n.codigo;
         Object.keys(data).forEach(function (k) { n[k] = data[k]; });
+        // Al moverlo, sus subniveles heredan el nuevo prefijo de código (3.4 → 5.7, 3.4.1 → 5.7.1).
+        if (mueve && codViejo) desc.forEach(function (d) { if (d.codigo && d.codigo.indexOf(codViejo + '.') === 0) d.codigo = data.codigo + d.codigo.slice(codViejo.length); });
         D.logAudit(cat, 'Editar nivel', 'Nivel · ' + nombre, null, { cambios: cambios });
         D.saveCatalogo(cat); tocado();
         renderNiveles(); renderItems(); renderHead(); renderAuditoria(); renderCarga();
@@ -362,25 +500,31 @@
       });
       return;
     } else {
-      // Código = siguiente número libre (el orden puede chocar con un capítulo existente,
-      // p. ej. '8' de Instalaciones); id único aunque se repitan nombres.
-      var usados = cat.niveles.map(function (x) { return parseInt(x.codigo, 10) || 0; });
+      // Código por ruta: siguiente número libre bajo su nivel superior (1, 2… o 3.1, 3.2…).
       data.id = 'nv-' + slugKey(nombre) + '-' + Date.now().toString(36);
-      data.codigo = String(Math.max.apply(null, [0].concat(usados)) + 1);
+      data.codigo = siguienteCodigo(padreId);
       data.activo = true;
       data.creado = D.hoy();
       data.creadoPor = D.usuarioActual();
       cat.niveles.push(data);
-      D.logAudit(cat, 'Crear nivel', 'Nivel · ' + nombre);
+      if (padreId) abiertos[padreId] = true;
+      D.logAudit(cat, 'Crear nivel', 'Nivel · ' + nombre, null, { cambios: [{ etiqueta: 'Nivel superior', antes: '—', despues: padreId ? nivelById(padreId).nombre : 'Ninguno (' + cat.esquema[0].nombre + ')' }, { etiqueta: 'Código', antes: '—', despues: data.codigo }] });
     }
     D.saveCatalogo(cat); closeModal('mNivel'); tocado();
     renderNiveles(); renderItems(); renderHead(); renderAuditoria(); renderCarga();
   }
+  function siguienteCodigo(padreId) {
+    var p = padreId ? nivelById(padreId) : null, pref = p && p.codigo ? p.codigo + '.' : '';
+    var usados = D.hijosDe(cat, padreId).map(function (h) { var m = String(h.codigo || '').slice(pref.length); return /^\d+$/.test(m) ? +m : 0; });
+    return pref + (Math.max.apply(null, [0].concat(usados)) + 1);
+  }
   function openDesactivar(id) {
     nivelDesId = id;
-    var n = nivelById(id), cnt = itemsDe(id).length;
-    document.getElementById('motivoWarn').innerHTML = cnt
-      ? 'El nivel <b>' + esc(n.nombre) + '</b> tiene <b>' + cnt + ' ítems</b> asociados. Se retira de la estructura pero se conserva la trazabilidad.'
+    var n = nivelById(id), desc = D.descendientesDe(cat, id);
+    var cnt = itemsDe(id).length + desc.reduce(function (s, d) { return s + itemsDe(d.id).length; }, 0);
+    // D12: desactivar en cascada — lo que cuelga del nivel sale de los totales con él.
+    document.getElementById('motivoWarn').innerHTML = (cnt || desc.length)
+      ? 'El nivel <b>' + esc(n.nombre) + '</b> tiene ' + (desc.length ? '<b>' + desc.length + ' subniveles</b> y ' : '') + '<b>' + cnt + ' ítems</b> asociados (' + D.fmtCOP(nivelTotal(n)) + '). Todo eso sale de los totales del catálogo, pero se conserva y queda en la traza.'
       : 'El nivel <b>' + esc(n.nombre) + '</b> se retira de la estructura. Se conserva la trazabilidad.';
     document.getElementById('motivoTxt').value = '';
     clearInvalid('#mMotivo');
@@ -391,7 +535,7 @@
     if (!motivo) { markInvalid(el); el.focus(); return; }
     var n = nivelById(nivelDesId);
     n.activo = false; n.motivoBaja = motivo;
-    D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre, null, { motivo: motivo, items: itemsDe(n.id).length });
+    D.saveCatalogo(cat); D.logAudit(cat, 'Desactivar nivel', 'Nivel · ' + n.nombre, null, { motivo: motivo, items: itemsDe(n.id).length + D.descendientesDe(cat, n.id).reduce(function (s, d) { return s + itemsDe(d.id).length; }, 0) });
     closeModal('mMotivo'); tocado();
     renderNiveles(); renderItems(); renderHead(); renderAuditoria();
   }
@@ -414,7 +558,8 @@
   // ── ÍTEMS ──
   function tableCampos() {
     var seen = {}, out = [];
-    cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).forEach(function (n) {
+    var act = D.activos(cat);
+    cat.niveles.filter(function (n) { return act[n.id] && n.admiteItems; }).forEach(function (n) {
       camposDe(n).forEach(function (c) {
         if (c.key === 'cod' || c.key === 'nombre') return;
         if (!seen[c.key]) { seen[c.key] = 1; out.push(c); }
@@ -434,7 +579,7 @@
     var ft = UI.getDD('itFiltroTipo'), fn = UI.getDD('itFiltroNivel');
     var base = D.itemsActivos(cat);
     var rows = base.filter(function (it) {
-      if (ft && (it.tipo || 'Producto') !== ft) return false;
+      if (ft && (it.tipo || '') !== ft) return false;
       if (fn && it.nivelId !== fn) return false;
       return !q || norm(it.nombre).indexOf(q) >= 0 || norm(it.cod).indexOf(q) >= 0;
     });
@@ -445,7 +590,7 @@
       return '<tr' + (it.nuevo ? ' class="t-row-new"' : '') + '>' +
         '<td data-label="Código">' + esc(it.cod) + '</td>' +
         '<td data-label="Ítem"><span class="t-cname" title="' + esc(it.nombre) + '">' + esc(it.nombre) + '</span></td>' +
-        '<td data-label="Nivel">' + esc(n ? n.nombre : '—') + '</td>' +
+        '<td data-label="Nivel"><span class="t-cname" title="' + esc(D.rutaDe(cat, it.nivelId).map(function (x) { return x.nombre; }).join(' › ')) + '">' + esc(n ? (n.codigo ? n.codigo + ' · ' : '') + n.nombre : '—') + '</span></td>' +
         cols.map(function (c) {
           var v = itemVal(it, c.key);
           return '<td data-label="' + esc(c.label) + '"' + (NUMERICO[c.tipo] ? ' class="tnum"' : '') + '>' + fmtCampo(c, v) + '</td>';
@@ -461,14 +606,17 @@
 
   function fillFiltroNivel() {
     var sel = UI.getDD('itFiltroNivel');
-    var opts = cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).sort(function (a, b) { return a.orden - b.orden; })
-      .map(function (n) { return { value: n.id, label: n.nombre }; });
+    var act = D.activos(cat);
+    var opts = D.arbol(cat).filter(function (x) { return act[x.n.id] && x.n.admiteItems; })
+      .map(function (x) { return { value: x.n.id, label: (x.n.codigo ? x.n.codigo + ' · ' : '') + x.n.nombre }; });
     UI.fillDD('itFiltroNivel', [{ value: '', label: 'Todo nivel' }].concat(opts), null);
     var still = opts.filter(function (o) { return o.value === sel; })[0];
     UI.setDD('itFiltroNivel', still ? sel : '', still ? still.label : 'Todo nivel');
   }
   function fillNivelDD() {
-    var activos = cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).map(function (n) { return { value: n.id, label: n.nombre }; });
+    var act = D.activos(cat);
+    var activos = D.arbol(cat).filter(function (x) { return act[x.n.id] && x.n.admiteItems; })
+      .map(function (x) { return { value: x.n.id, label: (x.n.codigo ? x.n.codigo + ' · ' : '') + x.n.nombre }; });
     UI.fillDD('itNivel', activos, 'Seleccione una opción');
   }
 
@@ -495,7 +643,7 @@
         div.innerHTML = lbl + '<div class="naowee-dropdown" id="itf-' + c.key + '"' + (c.tipo === 'unidad' ? ' data-search' : '') + ' style="width:100%">' + DD_TRIGGER + '</div>';
         grid.appendChild(div);
         UI.fillDD('itf-' + c.key, c.tipo === 'unidad' ? D.UNIDADES : (c.opciones || []), c.tipo === 'unidad' ? 'Selecciona unidad' : 'Seleccione una opción');
-        if (!v && c.key === 'tipo') v = 'Producto';
+        if (!v && c.key === 'tipo') v = (c.opciones || [])[0];
         if (v) UI.setDD('itf-' + c.key, v, v);
       } else if (c.tipo === 'booleano') {
         var on = v === true || v === 'Sí';
@@ -544,7 +692,8 @@
       '<div class="naowee-helper naowee-helper--informative" id="itFormulaPreview" style="margin-top:6px"></div>';
     grid.appendChild(f);
     var nums = D.specCampos(n);
-    renderFxChips('itFxChips', Object.keys(nums).concat(['*', '(1 + desperdicio%)'].filter(function (t) { return t.indexOf('desperdicio') < 0 || nums.desperdicio; })), 'itFormula', previewFormulaItem);
+    var tiposN = D.specTipos(n);
+    renderFxChips('itFxChips', Object.keys(nums).concat(['*']).concat(Object.keys(tiposN).map(function (t) { return 'SUMA(tipo.' + tiposN[t] + ')'; })).concat(['5%']), 'itFormula', previewFormulaItem);
     document.getElementById('itFormula').addEventListener('input', previewFormulaItem);
     ['itf-cantidad', 'itf-valorUnit'].concat(Object.keys(it && it.extra || {}).map(function (k) { return 'itf-' + k; })).forEach(function (id) {
       var e = document.getElementById(id); if (e) e.addEventListener('input', previewFormulaItem);
@@ -561,15 +710,16 @@
     var n = nivelById(UI.getDD('itNivel')), total = document.getElementById('itf-total'), w = fe.closest('.naowee-textfield__input-wrap');
     var src = fe.value.trim();
     if (total) { total.readOnly = !!src; total.closest('.naowee-textfield__input-wrap').classList.toggle('t-readonly', !!src); }
-    if (!src) { w.classList.remove('t-invalid'); msg.className = 'naowee-helper naowee-helper--informative'; msg.textContent = 'Sin fórmula: el V. total es cantidad × V. unitario.'; return true; }
-    var r = window.OBRAS_FX.validar(src, { campos: D.specCampos(n) });
+    if (!src) { w.classList.remove('t-invalid'); msg.className = 'naowee-helper naowee-helper--informative'; msg.textContent = 'Sin fórmula: el V. total es cantidad × V. unitario. Con SUMA(tipo.MO) el ítem suma sus hermanos de ese tipo (p. ej. herramienta menor = 5% * SUMA(tipo.MO)).'; return true; }
+    var r = window.OBRAS_FX.validar(src, { campos: D.specCampos(n), tipos: D.specTipos(n) });
     if (!r.ok) { w.classList.add('t-invalid'); msg.className = 'naowee-helper naowee-helper--negative'; msg.textContent = r.error; return false; }
     w.classList.remove('t-invalid');
     var tmp = leerItemForm(); tmp.formula = src;
     ['cantidad', 'valorUnit'].forEach(function (k) { if (tmp[k] != null) tmp[k] = num(tmp[k]); });
     Object.keys(tmp.extra).forEach(function (k) { var x = num(tmp.extra[k]); if (x != null) tmp.extra[k] = x; });
     try {
-      var v = D.valorItem(tmp, n);
+      var herm = itemsDe(n.id).filter(function (h) { return h.id !== itemEditId && !D.usaHermanos(h); });
+      var v = D.valorItem(tmp, n, herm);
       if (total) total.value = v;
       msg.className = 'naowee-helper naowee-helper--positive'; msg.textContent = 'Fórmula válida · V. total = ' + D.fmtCOP(v) + ' con los valores escritos.';
       return true;
@@ -671,13 +821,14 @@
     });
 
     if (!previewFormulaItem()) { msg.textContent = 'Corrige la fórmula del ítem: ' + document.getElementById('itFormulaPreview').textContent; err.style.display = ''; return; }
-    // D13: el código del ítem es único en todo el catálogo.
-    var dupCod = vals.cod && cat.items.filter(function (x) { return x.id !== itemEditId && norm(x.cod) === norm(vals.cod); })[0];
+    // D13: el código del ítem es único dentro de su nivel. En la matriz real un mismo insumo
+    // (p. ej. la cuadrilla) aparece en muchos APU con el mismo código.
+    var dupCod = vals.cod && cat.items.filter(function (x) { return x.id !== itemEditId && x.nivelId === nivelId && norm(x.cod) === norm(vals.cod); })[0];
 
     if (faltan.length || malos.length || dupCod) {
       msg.textContent = (faltan.length ? 'Campos obligatorios sin diligenciar: ' + faltan.join(', ') + '. ' : '') +
                         (malos.length ? 'Valores no válidos en: ' + malos.join(', ') + '. ' : '') +
-                        (dupCod ? 'El código ' + vals.cod + ' ya lo usa «' + dupCod.nombre + '».' : '');
+                        (dupCod ? 'El código ' + vals.cod + ' ya lo usa «' + dupCod.nombre + '» en este mismo nivel.' : '');
       if (dupCod) markInvalid(document.getElementById('itf-cod'));
       err.style.display = ''; return;
     }
@@ -691,12 +842,12 @@
 
     var data = {
       nivelId: nivelId, cod: vals.cod || '', nombre: vals.nombre || '', uni: vals.uni || '',
-      tipo: vals.tipo || (itemEditId ? (cat.items.filter(function (x) { return x.id === itemEditId; })[0].tipo || 'Producto') : 'Producto'),
+      tipo: vals.tipo || (itemEditId ? (cat.items.filter(function (x) { return x.id === itemEditId; })[0].tipo || '') : ''),
       cantidad: cant, valorUnit: vu, extra: extra,
       formula: (document.getElementById('itFormula') || {}).value ? document.getElementById('itFormula').value.trim() : null,
       valorTotal: totalManual != null ? Math.round(totalManual) : Math.round(vu * cant)
     };
-    if (data.formula) data.valorTotal = D.valorItem(data, n);
+    if (data.formula) data.valorTotal = D.valorItem(data, n, itemsDe(nivelId).filter(function (h) { return h.id !== itemEditId && !D.usaHermanos(h); }));
 
     if (itemEditId) {
       // PPTO-11: el resumen incluye el recálculo (V. total del ítem y total de su nivel)
@@ -745,13 +896,14 @@
   // se acepta y se procesa el ejemplo vigente, avisándolo en pantalla.
   var carga = null;   // { tipo, nivelId, archivo, filas:[{fila, ref, ok, motivo, dato}] }
   var ESTRUCTURA_COLS = [
-    { key: 'codigo', label: 'Código', req: true }, { key: 'nombre', label: 'Nombre', req: true },
+    { key: 'codigo', label: 'Código', req: true }, { key: 'codigo_padre', label: 'Código del nivel superior' }, { key: 'nombre', label: 'Nombre', req: true },
     { key: 'orden', label: 'Posición', tipo: 'numero' }, { key: 'descripcion', label: 'Descripción' },
     { key: 'admite_items', label: 'Admite ítems (si/no)', tipo: 'booleano' },
     { key: 'tipo_valor', label: 'Valor (auto/formula/fijo/ninguno)' }, { key: 'valor_fijo', label: 'Valor fijo', tipo: 'moneda' }
   ];
   function cargaTipo() { return UI.getDD('cargaTipo') || 'items'; }
-  function nivelesConItems() { return cat.niveles.filter(function (n) { return n.activo && n.admiteItems; }).sort(function (a, b) { return a.orden - b.orden; }); }
+  function nivelesConItems() { var act = D.activos(cat); return D.arbol(cat).filter(function (x) { return act[x.n.id] && x.n.admiteItems; }).map(function (x) { return x.n; }); }
+  function etiquetaNivel(n) { return n ? (n.codigo ? n.codigo + ' · ' : '') + n.nombre : ''; }
   function cargaNivel() { return UI.getDD('cargaNivel'); }
   function colsPlantilla() {
     if (cargaTipo() === 'niveles') return ESTRUCTURA_COLS;
@@ -764,13 +916,13 @@
   function csvDe(filas) {
     return '﻿' + filas.map(function (r) { return r.map(function (v) { v = v == null ? '' : String(v); return /[",;\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(','); }).join('\r\n') + '\r\n';
   }
-  function nombreArchivo(pref, v) { return pref + '-' + cargaTipo() + '-' + slug(cat.nombre) + (cargaTipo() === 'items' ? '-' + slug((nivelById(cargaNivel()) || {}).nombre) : '') + '-' + v + '.csv'; }
+  function nombreArchivo(pref, v) { return pref + '-' + cargaTipo() + '-' + slug(cat.nombre) + (cargaTipo() === 'items' ? '-nivel-' + slug((nivelById(cargaNivel()) || {}).codigo || 'x') : '') + '-' + v + '.csv'; }
 
   function fillCargaNivel() {
     var sel = cargaNivel(), ns = nivelesConItems();
-    UI.fillDD('cargaNivel', ns.map(function (n) { return { value: n.id, label: n.nombre }; }), null);
+    UI.fillDD('cargaNivel', ns.map(function (n) { return { value: n.id, label: etiquetaNivel(n) }; }), null);
     var keep = ns.filter(function (n) { return n.id === sel; })[0] || ns[0];
-    if (keep) UI.setDD('cargaNivel', keep.id, keep.nombre);
+    if (keep) UI.setDD('cargaNivel', keep.id, etiquetaNivel(keep));
   }
   function renderCarga() {
     if (!document.getElementById('cargaTipo')) return;
@@ -808,15 +960,18 @@
   function ejemploFilas() {
     var cols = colsPlantilla();
     if (cargaTipo() === 'niveles') {
-      return [['90', 'Obras exteriores', '8', 'Andenes y cerramientos', 'si', 'auto', ''], ['91', 'Carpintería metálica', '9', '', 'si', 'auto', ''],
-              ['92', 'Aseo final de obra', '10', '', 'no', 'fijo', '850000'], ['93', 'Señalización', '11', '', 'si', 'auto', ''],
-              ['94', 'Preliminares', '12', 'Nombre repetido', 'si', 'auto', ''], ['95', '', '13', 'Sin nombre', 'si', 'auto', '']]
+      // Un capítulo nuevo con dos APU, un APU colgado de un capítulo existente y 3 errores.
+      var libre = siguienteCodigo(null);
+      return [[libre, '', 'Obras exteriores', '', 'Andenes y cerramientos', 'no', 'auto', ''], [libre + '.1', libre, 'Andén en concreto e=10 cm', '1', '', 'si', 'auto', ''],
+              [libre + '.2', libre, 'Cerramiento en malla eslabonada', '2', '', 'si', 'auto', ''], [siguienteCodigo('nv-1'), '1', 'Aseo final de obra', '', '', 'no', 'fijo', '850000'],
+              [libre + '.3', libre, 'Preliminares', '', 'Nombre repetido', 'si', 'auto', ''], [libre + '.4', libre, '', '', 'Sin nombre', 'si', 'auto', ''],
+              [libre + '.5', '99', 'Señalización', '', 'Nivel superior inexistente', 'si', 'auto', '']]
         .map(function (r) { return ESTRUCTURA_COLS.map(function (c, i) { return r[i]; }); });
     }
-    var n = nivelById(cargaNivel()), base = (n && n.codigo) || '9', filas = [];
-    // Códigos libres: el ejemplo se puede cargar varias veces sin chocar con lo ya cargado.
-    var desde = 90 + cat.items.reduce(function (mx, it) {
-      var m = new RegExp('^' + base.replace('.', '\\.') + '\\.(\\d+)$').exec(it.cod || '');
+    var n = nivelById(cargaNivel()), filas = [];
+    // Códigos libres dentro del nivel destino: el ejemplo se puede cargar varias veces.
+    var desde = 90 + itemsDe(n ? n.id : '').reduce(function (mx, it) {
+      var m = /^IN-(\d+)$/.exec(it.cod || '');
       return m ? Math.max(mx, +m[1] - 89) : mx;
     }, 0);
     var NOMBRES = ['Suministro e instalación de malla electrosoldada', 'Mortero de nivelación e=3 cm', 'Sello de juntas con masilla elástica', 'Retiro de sobrantes a botadero',
@@ -824,8 +979,8 @@
                    'Imprimante asfáltico'];
     for (var i = 0; i < 12; i++) {
       var r = {}; cols.forEach(function (c) { r[c.key] = ''; });
-      r.cod = base + '.' + (desde + i); r.nombre = NOMBRES[i % NOMBRES.length];
-      r.tipo = i === 7 ? 'Servicio' : 'Producto'; r.uni = ['m2', 'm2', 'm', 'm3', 'm2', 'm2', 'un', 'mes', 'm', 'lt'][i % 10];
+      r.cod = 'IN-' + (desde + i); r.nombre = NOMBRES[i % NOMBRES.length];
+      r.tipo = i === 7 ? 'Equipo' : i === 3 ? 'Transporte' : 'Material'; r.uni = ['m2', 'm2', 'm', 'm3', 'm2', 'm2', 'un', 'mes', 'm', 'lt'][i % 10];
       r.cantidad = 1; r.valorUnit = 12000 + i * 3750;
       cols.forEach(function (c) {
         if (STD[c.key]) return;
@@ -884,7 +1039,11 @@
       if (c.tipo === 'porcentaje' && (n < 0 || n > 100)) return { err: c.label + ' debe estar entre 0 y 100' };
       return { v: n };
     }
-    if (c.tipo === 'unidad') { return D.UNIDADES.indexOf(raw) >= 0 ? { v: raw } : { err: 'Unidad «' + raw + '» no reconocida' }; }
+    if (c.tipo === 'unidad') {
+      // Alias vistos en la matriz real: "lm" por ml y "libra" por lb.
+      var alias = { lm: 'ml', libra: 'lb', libras: 'lb' }, u = alias[norm(raw)] || raw;
+      return D.UNIDADES.indexOf(u) >= 0 ? { v: u } : { err: 'Unidad «' + raw + '» no reconocida' };
+    }
     if (c.tipo === 'lista') {
       var op = (c.opciones || []).filter(function (o) { return norm(o) === norm(raw); })[0];
       return op ? { v: op } : { err: c.label + ' debe ser una de: ' + (c.opciones || []).join(', ') };
@@ -918,14 +1077,14 @@
     if (head.join('|') !== esperado.join('|')) { rechazar('<b>Los encabezados no coinciden con la plantilla ' + pv.v + '.</b> Se esperaban: <code>' + esperado.join(', ') + '</code>. No modifiques ni reordenes las columnas.'); return; }
     if (!rows.length) { rechazar('<b>El archivo no trae registros</b> debajo de los encabezados.'); return; }
 
-    var vistos = {}, filas = rows.map(function (r, i) {
+    var vistos = {}, vistosCod = {}, filas = rows.map(function (r, i) {
       var dato = {}, errs = [];
       cols.forEach(function (c, j) { var x = valida(c, r[j]); if (x.err) errs.push(x.err); else dato[c.key] = x.v; });
       var ref, dup;
       if (cargaTipo() === 'items') {
         ref = dato.cod || (r[0] || '').trim();
-        dup = dato.cod && (vistos[norm(dato.cod)] || cat.items.some(function (it) { return norm(it.cod) === norm(dato.cod); }));
-        if (dup) errs.push('Código ' + dato.cod + ' repetido');
+        dup = dato.cod && (vistos[norm(dato.cod)] || cat.items.some(function (it) { return it.nivelId === cargaNivel() && norm(it.cod) === norm(dato.cod); }));
+        if (dup) errs.push('Código ' + dato.cod + ' repetido en el nivel');
         if (dato.cod) vistos[norm(dato.cod)] = 1;
       } else {
         ref = dato.nombre || '(sin nombre)';
@@ -933,13 +1092,22 @@
         dup = dato.nombre && (vistos[norm(dato.nombre)] || cat.niveles.some(function (n) { return norm(n.nombre) === norm(dato.nombre); }));
         if (dup) errs.push('Ya existe un nivel «' + dato.nombre + '»');
         if (dato.nombre) vistos[norm(dato.nombre)] = 1;
+        // Nivel superior: debe existir (en el catálogo o antes en el archivo) y dejar al nuevo dentro del esquema.
+        var codP = (dato.codigo_padre || '').trim();
+        if (codP) {
+          var pad = cat.niveles.filter(function (n) { return n.codigo === codP; })[0], profP = pad ? D.profundidadDe(cat, pad.id) : vistosCod[codP];
+          if (!profP) errs.push('Nivel superior ' + codP + ' inexistente');
+          else if (profP + 1 > cat.esquema.length) errs.push('El esquema no tiene un nivel debajo de ' + codP);
+          else if (dato.codigo) vistosCod[dato.codigo] = profP + 1;
+        } else if (dato.codigo) vistosCod[dato.codigo] = 1;
+        if (dato.codigo && cat.niveles.some(function (n) { return n.codigo === dato.codigo; })) errs.push('Código ' + dato.codigo + ' ya existe');
       }
       return { fila: i + 3, ref: ref, ok: !errs.length, motivo: errs.join(' · '), dato: dato };
     });
     carga = { tipo: cargaTipo(), nivelId: cargaNivel(), archivo: archivo, plantilla: pv.v, filas: filas };
     var ok = filas.filter(function (f) { return f.ok; }).length, fail = filas.length - ok;
     document.getElementById('cargaPrev').innerHTML = (aviso ? mensaje('caution', aviso) : '') + mensaje(fail ? 'caution' : 'informative',
-      'Vista previa de <b>' + esc(archivo) + '</b> · plantilla <b>' + pv.v + '</b> · destino <b>' + (carga.tipo === 'items' ? esc((nivelById(carga.nivelId) || {}).nombre) : 'estructura del catálogo') + '</b>: ' +
+      'Vista previa de <b>' + esc(archivo) + '</b> · plantilla <b>' + pv.v + '</b> · destino <b>' + (carga.tipo === 'items' ? esc(etiquetaNivel(nivelById(carga.nivelId))) : 'estructura del catálogo') + '</b>: ' +
       '<b>' + filas.length + '</b> registros detectados, <b>' + ok + '</b> válidos' + (fail ? ' y <b>' + fail + '</b> con error (marcados en rojo). Los que tienen error no se cargan.' : '. Nada se guarda hasta que confirmes.'));
     var vis = cols.slice(0, 6);
     document.getElementById('cargaPreviewHead').innerHTML = '<tr><th>Fila</th><th>Estado</th>' + vis.map(function (c) { return '<th>' + esc(c.label || c.key) + '</th>'; }).join('') + '<th>Motivo</th></tr>';
@@ -965,21 +1133,22 @@
         var d = f.dato, extra = {};
         campos.forEach(function (c) { if (!STD[c.key]) extra[c.key] = d[c.key]; });
         var cant = d.cantidad == null ? 1 : d.cantidad, vu = d.valorUnit || 0;
-        cat.items.unshift({ id: 'it-' + slugKey(d.cod) + '-' + Date.now().toString(36) + i, nivelId: n.id, cod: d.cod, nombre: d.nombre, tipo: d.tipo || 'Producto',
+        cat.items.unshift({ id: 'it-' + slugKey(d.cod) + '-' + Date.now().toString(36) + i, nivelId: n.id, cod: d.cod, nombre: d.nombre, tipo: d.tipo || '',
           uni: d.uni || '', cantidad: cant, valorUnit: vu, extra: extra, formula: null, valorTotal: Math.round(vu * cant), nuevo: true });
       });
     } else {
-      var maxOrden = Math.max.apply(null, [0].concat(cat.niveles.map(function (x) { return x.orden; })));
       ok.forEach(function (f, i) {
         var d = f.dato, tv = norm(d.tipo_valor) || 'auto';
-        cat.niveles.push({ id: 'nv-' + slugKey(d.nombre) + '-' + Date.now().toString(36) + i, codigo: d.codigo, nombre: d.nombre, orden: d.orden || (maxOrden + i + 1),
+        var pad = d.codigo_padre ? cat.niveles.filter(function (n) { return n.codigo === String(d.codigo_padre).trim(); })[0] : null;
+        cat.niveles.push({ id: 'nv-' + slugKey(d.nombre) + '-' + Date.now().toString(36) + i, padreId: pad ? pad.id : null, codigo: d.codigo, nombre: d.nombre,
+          orden: d.orden || (D.hijosDe(cat, pad ? pad.id : null).length + 1),
           descripcion: d.descripcion || '', admiteItems: d.admite_items !== 'No', valorTipo: tv, valorFijo: tv === 'fijo' ? (d.valor_fijo || 0) : null,
           formula: tv === 'formula' ? 'SUMA(items)' : null, campos: D.camposDefault(), activo: true, creado: D.hoy(), creadoPor: D.usuarioActual() });
       });
     }
     var ahora = new Date();
     var reg = { id: 'cg-' + ahora.getTime().toString(36), fecha: D.hoy(), hora: ahora.toTimeString().slice(0, 5), usuario: D.usuarioActual(), archivo: carga.archivo,
-      tipo: carga.tipo, destino: carga.tipo === 'items' ? (nivelById(carga.nivelId) || {}).nombre : 'Estructura', plantilla: carga.plantilla,
+      tipo: carga.tipo, destino: carga.tipo === 'items' ? etiquetaNivel(nivelById(carga.nivelId)) : 'Estructura', plantilla: carga.plantilla,
       detectados: carga.filas.length, ok: ok.length, fail: carga.filas.length - ok.length,
       filas: carga.filas.map(function (f) { return { fila: f.fila, ref: f.ref, ok: f.ok, motivo: f.motivo }; }) };
     cat.cargas = cat.cargas || []; cat.cargas.unshift(reg);
@@ -1091,15 +1260,20 @@
     var s = v.snapshot;
     var tot = s.items.reduce(function (a, it) { return a + (it.valorTotal || 0); }, 0);
     document.getElementById('snapTitle').textContent = 'Contenido congelado · ' + v.v;
-    document.getElementById('snapMeta').innerHTML = 'Solo lectura · <b>' + s.niveles.length + ' niveles</b> y <b>' + s.items.length + ' ítems</b> · total ' + D.fmtCOP(tot) + ' · congelado el ' + fdate(v.fecha) + '.';
-    document.getElementById('snapNiveles').innerHTML = s.niveles.map(function (n, i) {
-      var its = s.items.filter(function (it) { return it.nivelId === n.id; });
-      var t = its.reduce(function (a, it) { return a + (it.valorTotal || 0); }, 0);
-      return '<tr><td>' + (n.codigo || i + 1) + '</td><td>' + esc(n.nombre) + '</td><td>' + its.length + '</td><td class="tnum">' + D.fmtCOP(t) + '</td></tr>';
+
+    // El contenido congelado se recalcula con su propia estructura (árbol, fórmulas, fijos).
+    var snap = D.normalizar({ esquema: s.esquema, niveles: JSON.parse(JSON.stringify(s.niveles)), items: JSON.parse(JSON.stringify(s.items)) });
+    var R = D.calcular(snap);
+    tot = R.total;
+    document.getElementById('snapNiveles').innerHTML = D.arbol(snap).map(function (x) {
+      var its = snap.items.filter(function (it) { return it.nivelId === x.n.id; });
+      return '<tr><td><div class="t-tree-cell" style="--lvl:' + x.d + '"><span class="t-tree-cod">' + esc(x.n.codigo || '') + '</span></div></td><td>' + esc(x.n.nombre) +
+        ' <span class="t-lvl-tag">' + esc(((snap.esquema || [])[x.d - 1] || {}).nombre || '') + '</span></td><td>' + (its.length || '—') + '</td><td class="tnum">' + D.fmtCOP(R.nodo[x.n.id] || 0) + '</td></tr>';
     }).join('');
     document.getElementById('snapItems').innerHTML = s.items.map(function (it) {
       return '<tr><td>' + esc(it.cod) + '</td><td>' + esc(it.nombre) + '</td><td>' + esc(it.uni) + '</td><td class="tnum">' + D.fmtCOP(it.valorUnit) + '</td><td class="tnum">' + D.fmtCOP(it.valorTotal) + '</td></tr>';
     }).join('');
+    document.getElementById('snapMeta').innerHTML = 'Solo lectura · <b>' + s.niveles.length + ' niveles</b> y <b>' + s.items.length + ' ítems</b> · total ' + D.fmtCOP(tot) + ' · congelado el ' + fdate(v.fecha) + '.';
     openModal('mSnapshot');
   };
   function createVersion() {
@@ -1269,6 +1443,16 @@
     document.getElementById('btnExport').onclick = function (e) { openRowMenu(e, 'exportar', null); };
 
     document.getElementById('nvFiltroEstado').addEventListener('dd:change', renderNiveles);
+    document.getElementById('btnExpandAll').onclick = function () { expandirTodo(true); };
+    document.getElementById('btnCollapseAll').onclick = function () { expandirTodo(false); };
+    document.getElementById('btnEsqAdd').onclick = function () { openEsquema(null); };
+    document.getElementById('esqGuardar').onclick = saveEsquema;
+    document.getElementById('esqNombre').addEventListener('keydown', function (e) { if (e.key === 'Enter') saveEsquema(); });
+    document.getElementById('nvPadre').addEventListener('dd:change', function () {
+      var d = tipoHint();
+      // Al cambiar de nivel superior en un nivel nuevo, "admite ítems" sigue al esquema.
+      if (!nivelEditId) { setSwitch('nvAdmiteItems', d >= cat.esquema.length); toggleCamposWrap(); document.getElementById('nvOrden').value = D.hijosDe(cat, UI.getDD('nvPadre') || null).length + 1; }
+    });
     document.getElementById('itFiltroTipo').addEventListener('dd:change', renderItems);
     document.getElementById('itFiltroNivel').addEventListener('dd:change', renderItems);
     document.getElementById('itGuardarOtro').onclick = function () { saveItem(true); };

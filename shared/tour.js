@@ -52,21 +52,24 @@
       title: 'Crear nivel de agrupación', purpose: 'Definir cómo se organiza jerárquicamente el catálogo (capítulos, actividades…).',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Este catálogo está <b>en blanco</b>: se creó sin estructura base, así que arrancas desde cero. Entra a la pestaña <b>Estructura</b>.', click: true },
-        { sel: '#btnNivel', body: 'Clic en <b>Crear nivel</b> para agregar un nivel de agrupación.', click: true },
-        { sel: '#nvNombre', body: 'Nombre del nivel, <b>posición</b> y descripción opcional. Si el nombre está vacío o <b>ya existe</b> en la estructura, no guarda y lo señala debajo del campo.' },
-        { sel: '#mNivel .naowee-modal__footer .naowee-btn--loud', body: 'Guarda: el nivel se suma a la estructura del catálogo.' }
+        { sel: '#esqPanel', body: 'El <b>esquema de niveles</b> define cómo se organiza el catálogo. Viene con <b>Capítulo › APU</b> (como la matriz de EnTerritorio), y cada proyecto puede renombrarlos o agregar niveles.' },
+        { sel: '#btnNivel', body: 'Clic en <b>Crear nivel</b> para agregar el primer capítulo.', click: true },
+        { sel: '#nvPadre', body: 'La <b>posición jerárquica</b> se da con el <b>nivel superior</b>: sin nivel superior es un Capítulo; dentro de un capítulo, un APU.' },
+        { sel: '#nvNombre', body: 'Nombre, <b>posición</b> entre sus hermanos y descripción opcional. Si el nombre está vacío o <b>ya existe</b> en la estructura, no guarda y lo señala debajo del campo.', fill: { sel: '#nvNombre', value: 'Preliminares' } },
+        { sel: '#nvGuardar', body: 'Guarda: el nivel se suma a la estructura, queda disponible para valor, fórmula o ítems, y la auditoría registra quién lo creó y cuándo.' }
       ] },
     'PPTO-05': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Editar nivel de agrupación', purpose: 'Ajustar nombre, descripción o posición jerárquica de un nivel.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
         { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) de un nivel.', click: true },
-        { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>: se pueden cambiar nombre, descripción y posición.', click: true },
-        { sel: '#nvOrden', body: 'Para el recorrido movemos <b>Preliminares</b> de posición.',
+        { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>: se pueden cambiar nombre, descripción, <b>nivel superior</b> y posición.', click: true },
+        { sel: '#nvPadre', body: 'Cambiar el <b>nivel superior</b> mueve el nivel a otra rama del árbol, con todo lo que contiene.' },
+        { sel: '#nvOrden', body: 'Para el recorrido movemos <b>Preliminares</b> de posición entre los capítulos.',
           fill: { sel: '#nvOrden', value: function (v) { return v === '1' ? '9' : '1'; } } },
         { sel: '#nvGuardar', body: 'Clic en <b>Guardar nivel</b>.', click: true },
         { sel: '#mCambiosTable, #mNivel .naowee-modal', body: '<b>Resumen de cambios</b> antes de confirmar: campo, valor anterior y nuevo.' },
-        { sel: '#mCambiosImpacto .naowee-message, #mCambiosTable', body: 'Como el nivel <b>tiene ítems</b>, el sistema advierte el impacto de moverlo, y lista los <b>presupuestos</b> que usan sus ítems.' },
+        { sel: '#mCambiosImpacto .naowee-message, #mCambiosTable', body: 'Como el nivel <b>tiene contenido</b> (sus APU y sus ítems), el sistema advierte el impacto de moverlo y lista los <b>presupuestos</b> que usan sus APU.' },
         { sel: '#mCambiosOk', body: '<b>Confirma</b>: el cambio queda en el historial con qué cambió, quién y cuándo.', click: true },
         { center: true, body: 'Listo. La entrada <b>Editar nivel</b> de la pestaña Auditoría se despliega para ver el detalle.' }
       ] },
@@ -75,15 +78,17 @@
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
         { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del nivel.', click: true },
-        { sel: '#rmNivelOff', body: 'Elige <b>Desactivar nivel</b>. Si tiene ítems o valores, el sistema advierte antes.', click: true },
+        { sel: '#rmNivelOff', body: 'Elige <b>Desactivar nivel</b>. Si tiene subniveles o ítems, el sistema advierte antes cuántos y cuánto valen.', click: true },
         { sel: '#motivoTxt, #mMotivo .naowee-modal', body: 'La desactivación exige un <b>motivo obligatorio</b>. El nivel deja de ser opción para ítems nuevos y sus ítems salen de los totales, pero todo queda en la traza con el motivo. Desde su menú ⋮ se puede <b>reactivar</b>.' }
       ] },
     'PPTO-07': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Consultar niveles configurados', purpose: 'Revisar la organización jerárquica de la estructura y su estado.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
-        { sel: '#nivelList', body: 'Los niveles se listan en su <b>posición</b>, con valor, campos, ítems, <b>estado</b> y <b>fecha de creación</b>.' },
-        { sel: '#nvFiltroEstado', body: '<b>Filtra</b> por estado: activos o inactivos. Al lado se indica cuántos se muestran.' },
+        { sel: '#nivelList', body: 'La estructura se ve como un <b>árbol</b>: código, nombre, tipo de nivel, valor, ítems, <b>estado</b>, <b>fecha de creación</b> y total.' },
+        { sel: '#nivelBody tr[data-nivel="nv-3"] [data-tg], #nivelBody tr', body: 'Cada capítulo se <b>despliega</b> para ver sus APU (también con las flechas del teclado).', click: true },
+        { sel: '#btnExpandAll', body: '<b>Expandir todo</b> o contraer todo de una vez.' },
+        { sel: '#nvFiltroEstado', body: '<b>Filtra</b> por estado: activos o inactivos. Los niveles superiores de lo que coincide se muestran atenuados para no perder la jerarquía, y al lado se indica cuántos coinciden.' },
         { sel: '#nivelBody tr', body: 'Clic en una fila para abrir el <b>detalle del nivel</b>.' }
       ] },
     // 3 · Valor y Ítems
@@ -91,23 +96,24 @@
       title: 'Configurar valor o fórmula en un nivel', purpose: 'Definir si un nivel lleva valor fijo o una fórmula de cálculo (ej. suma de ítems).',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
-        { sel: '#nivelBody tr[data-nivel="nv-16"] .t-kebab, #panel-estructura .t-kebab', body: 'Abre el menú (⋮) de <b>Pinturas</b>, que ya lleva una fórmula.', click: true },
+        { sel: '#nivelBody tr[data-nivel="nv-16"] .t-kebab, #panel-estructura .t-kebab', body: 'Abre el menú (⋮) del capítulo <b>Pinturas</b>, que ya lleva una fórmula: sus APU más 5 % de imprevistos.', click: true },
         { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>.', click: true },
-        { sel: '#nvValorTipo', body: 'El valor del nivel puede ser <b>suma automática</b> de sus ítems, una <b>fórmula</b>, un <b>valor fijo</b> (reemplaza la suma) o <b>sin valor</b> (no suma al catálogo).' },
-        { sel: '#nvFormula', body: 'La fórmula usa <b>SUMA(items)</b>, <b>SUMA(items.campo)</b>, números y + − × ÷. Probemos una mal escrita…', fill: { sel: '#nvFormula', value: 'SUMA(items) * (1,05' } },
+        { sel: '#nvValorTipo', body: 'El valor del nivel puede ser <b>suma automática</b> (de sus ítems y subniveles), una <b>fórmula</b>, un <b>valor fijo</b> (reemplaza la suma) o <b>sin valor</b> (no sube al total).' },
+        { sel: '#nvFormula', body: 'La fórmula usa <b>SUMA(hijos)</b>, <b>SUMA(items)</b>, <b>SUMA(items.campo)</b>, números, porcentajes y + − × ÷. Probemos una mal escrita…', fill: { sel: '#nvFormula', value: 'SUMA(hijos) * (1,05' } },
         { sel: '#nvFormulaMsg', body: 'El sistema la <b>valida mientras se escribe</b> y explica el error. Con la fórmula inválida no deja guardar.' },
-        { sel: '#nvFormula', body: 'Corregida…', fill: { sel: '#nvFormula', value: 'SUMA(items) * 1,05' } },
-        { sel: '#nvFormulaMsg', body: '…es válida y muestra <b>cuánto da con los ítems actuales</b>. Al guardar se aplica sola al total del nivel, del catálogo y de la consulta.' },
+        { sel: '#nvFormula', body: 'Corregida…', fill: { sel: '#nvFormula', value: 'SUMA(hijos) * 1,05' } },
+        { sel: '#nvFormulaMsg', body: '…es válida y muestra <b>cuánto da con los datos actuales</b>. Al guardar se aplica sola al total del nivel, del catálogo y de la consulta.' },
         { sel: '#nvFxChips', body: 'Los chips insertan términos sin tener que escribirlos.' }
       ] },
     'PPTO-09': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Definir que un nivel admite ítems', purpose: 'Habilitar qué niveles pueden tener ítems (productos/servicios) asociados.',
       steps: [
-        { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
-        { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del nivel.', click: true },
+        { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true, },
+        { sel: '#nivelBody tr[data-nivel="nv-1"]', body: 'En la matriz de EnTerritorio el nivel que admite ítems es el <b>APU</b>: sus ítems son los insumos (material, mano de obra, equipo, transporte). Abrimos el capítulo 1.', act: function () { window.estructuraAbrir && window.estructuraAbrir('nv-1.1'); } },
+        { sel: '#nivelBody tr[data-nivel="nv-1.1"] .t-kebab, #panel-estructura .t-kebab', body: 'Abre el menú (⋮) del APU <b>1.1</b>.', click: true },
         { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>.', click: true },
-        { sel: '#nvAdmiteItems', body: 'Activa <b>Admite ítems</b>. Varios niveles pueden admitirlos a la vez.' },
-        { sel: '#nvCampos', body: 'Al habilitarlo se configuran los <b>campos (columnas)</b> que tendrá cada ítem de este nivel: código, ítem, unidad, cantidad, valor unitario…' },
+        { sel: '#nvAdmiteItems', body: '<b>Admite ítems</b> está activo. Varios niveles pueden admitirlos a la vez, aunque lo usual es el más bajo.' },
+        { sel: '#nvCampos', body: 'Los <b>campos</b> que tendrá cada ítem: código, ítem, <b>tipo</b> (Material · MO · Equipo · Transporte), unidad, cantidad y valor unitario.' },
         { sel: '#nvAddBtn', body: 'Con <b>Agregar campo</b> se añaden columnas propias del nivel: texto, número, moneda, porcentaje, unidad, fecha, sí/no o lista de opciones, y se marcan como obligatorias. La tabla de ítems y la plantilla de carga se ajustan solas.' }
       ] },
     'PPTO-10': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -117,21 +123,21 @@
         { sel: '#btnItem', body: 'Clic en <b>Crear ítem</b>.', click: true },
         { sel: '#itNivel', body: 'Primero elige el <b>nivel</b> del ítem: el formulario se arma con los campos que ese nivel tiene configurados.',
           act: function () { var U = window.OBRAS_UI; if (U && !U.getDD('itNivel')) { var o = document.querySelector('#itNivel .naowee-dropdown__option'); if (o) o.click(); } } },
-        { sel: '#itf-nombre, #itNivel', body: 'Diligencia código, nombre, <b>tipo</b> (producto o servicio), unidad y valor. El <b>V. total</b> se calcula solo y puedes asignarle o no una <b>fórmula</b>.' },
-        { sel: '#itFormula', body: 'La <b>fórmula</b> es opcional. Sin fórmula, V. total = cantidad × V. unitario. Con fórmula, el total lo da ella (aquí, 10 % más).', fill: { sel: '#itFormula', value: 'cantidad * valorUnit * 1,1' } },
-        { sel: '#itFormulaPreview', body: 'Se valida en vivo y muestra el <b>V. total calculado</b>, que queda en solo lectura. Si la fórmula usa un campo que no existe, lo dice.' },
+        { sel: '#itf-nombre, #itNivel', body: 'Diligencia código, nombre, <b>tipo</b> (material, mano de obra, equipo o transporte), unidad y valor. El <b>V. total</b> se calcula solo y puedes asignarle o no una <b>fórmula</b>.' },
+        { sel: '#itFormula', body: 'La <b>fórmula</b> es opcional y puede tener <b>relación con el nivel</b>: la herramienta menor vale el 5 % de la mano de obra de su APU.', fill: { sel: '#itFormula', value: '5% * SUMA(tipo.MO)' } },
+        { sel: '#itFormulaPreview', body: 'Se valida en vivo y muestra el <b>V. total calculado</b>, que queda en solo lectura. Si usa un campo o un tipo que no existe, lo dice.' },
         { sel: '#itGuardarOtro', body: '<b>Guardar y agregar otro</b> deja el formulario listo para el siguiente ítem del mismo nivel.' },
-        { sel: '#itGuardar', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan obligatorios o si el <b>código</b> ya existe en el catálogo.' }
+        { sel: '#itGuardar', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan obligatorios o si el <b>código</b> ya existe en ese nivel.' }
       ] },
     'PPTO-11': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Editar ítem', purpose: 'Actualizar precios, unidades u otros campos; el sistema recalcula lo impactado.',
       steps: [
         { sel: '[data-tab="items"]', body: 'Pestaña <b>Ítems</b>.', click: true },
-        { sel: '#itSearch', body: 'Buscamos el ítem <b>3.4 · Concreto ciclópeo</b>.', fill: { sel: '#itSearch', value: '3.4' } },
+        { sel: '#itFiltroNivel', body: 'Filtramos los ítems del APU <b>3.4 · Concreto ciclópeo</b>, que usan tres presupuestos.', act: function () { window.itemsFiltrarNivel && window.itemsFiltrarNivel('nv-3.4'); } },
         { sel: '#panel-items .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del ítem.', click: true },
         { sel: '#rmItemEdit', body: 'Elige <b>Editar ítem</b>.', click: true },
         { sel: '#itf-valorUnit, #mItem .naowee-modal', body: 'Actualizamos el <b>valor unitario</b>: el <b>V. total</b> se recalcula solo.',
-          fill: { sel: '#itf-valorUnit', value: function (v) { return v === '690000' ? '672480' : '690000'; } } },
+          fill: { sel: '#itf-valorUnit', value: function (v) { return v === '195000' ? '185000' : '195000'; } } },
         { sel: '#itGuardar', body: 'Clic en <b>Guardar</b>.', click: true },
         { sel: '#mCambiosTable, #mItem .naowee-modal', body: 'El resumen incluye el <b>recálculo</b>: el V. total del ítem y el total de su nivel, antes y después.' },
         { sel: '#mCambiosImpacto .naowee-message, #mCambiosTable', body: 'El ítem está en <b>presupuestos activos</b>: el sistema muestra en cuáles antes de confirmar.' },
@@ -188,7 +194,10 @@
     'PPTO-17': { ph: '6 · Consulta (lectura)', page: 'consulta.html', role: 'USUARIO',
       title: 'Consultar catálogo (usuario autorizado)', purpose: 'Ver el catálogo vigente organizado por su jerarquía, en solo lectura.',
       steps: [
-        { sel: '#catTree', body: 'El catálogo se muestra por su <b>estructura jerárquica</b>. Cada nivel se <b>expande/colapsa</b> y muestra su total calculado.' }
+        { sel: '#catTree', body: 'El catálogo se muestra por su <b>estructura jerárquica</b>: capítulos, y dentro sus APU con sus insumos. Solo lectura.' },
+        { sel: '#catTree [data-nivel="nv-3"] > .naowee-accordion__header', body: 'Cada nivel se <b>expande o colapsa</b> y muestra su <b>total calculado</b> (suma, fórmula o valor fijo).', click: true },
+        { sel: '#catTree [data-nivel="nv-3.4"] > .naowee-accordion__header', body: 'Un APU muestra sus <b>ítems</b> con tipo, unidad, cantidad y valores.', click: true },
+        { sel: '#btnAbrirTodo', body: '<b>Expandir todo</b> o contraer todo de una vez.' }
       ] },
     'PPTO-18': { ph: '6 · Consulta (lectura)', page: 'consulta.html', role: 'USUARIO',
       title: 'Buscar y filtrar ítems dentro del catálogo', purpose: 'Encontrar rápidamente un producto/servicio sin recorrer toda la estructura.',
@@ -349,6 +358,11 @@
     var match = list.filter(function (c) {
       return modo === 'vacio' ? !(c.niveles || []).length : (c.niveles || []).length > 0;
     })[0];
+    // Si el catálogo en blanco ya se usó (se le crearon niveles), se crea otro para que
+    // PPTO-04 siempre arranque desde cero.
+    if (!match && modo === 'vacio' && D.newCatalogo) {
+      match = D.newCatalogo({ nombre: 'Catálogo en blanco — recorrido ' + new Date().toTimeString().slice(0, 5), region: 'Cundinamarca', estado: 'Borrador', vigenciaIni: D.hoy(), vigenciaFin: D.hoy().slice(0, 4) + '-12-31', conEstructura: false });
+    }
     return match ? match.id : null;
   }
   function start(hab) {

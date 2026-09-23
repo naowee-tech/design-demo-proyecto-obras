@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.4">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.4">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.6.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.6.0">
 <style>
   /* Sin overflow:visible aquí: el DS hace que el body scrollee entre el header y el
      footer fijos, y forzarlo rompía ese scroll (el contenido crecía por debajo del footer). */
@@ -75,17 +75,27 @@
 
       <!-- ══ ESTRUCTURA ══ -->
       <section class="t-panel active" id="panel-estructura" role="tabpanel" aria-labelledby="tab-estructura">
+        <!-- D4: esquema de niveles del catálogo (nombres y cantidad configurables) -->
+        <section class="t-esq-panel" id="esqPanel" style="margin-bottom:14px;padding:12px 14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div><b style="font-size:13px">Esquema de niveles</b> <span style="font-size:12px;color:var(--t-text-2)">· cómo se organiza este catálogo, del nivel más alto al más bajo</span></div>
+            <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnEsqAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Agregar nivel al esquema</button>
+          </div>
+          <div class="t-esq-chips" id="esqChips" style="margin:8px 0 0"></div>
+        </section>
         <div class="t-sechead">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
             <div class="t-sec-title">Niveles de agrupación</div>
             <div class="naowee-dropdown naowee-dropdown--small" id="nvFiltroEstado" style="width:150px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo estado</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo estado</div><div class="naowee-dropdown__option" data-value="activo">Activos</div><div class="naowee-dropdown__option" data-value="inactivo">Inactivos</div></div></div>
             <span class="t-count" id="nvCount"></span>
+            <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnExpandAll">Expandir todo</button>
+            <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnCollapseAll">Contraer todo</button>
           </div>
           <button class="naowee-btn naowee-btn--loud naowee-btn--small" id="btnNivel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear nivel</button>
         </div>
         <div class="naowee-table-wrap" id="nivelList">
-          <table class="naowee-table naowee-table--sticky-header" id="nivelTable">
-            <thead><tr><th>#</th><th>Nivel</th><th>Valor</th><th>Campos</th><th>Ítems</th><th>Estado</th><th>Creado</th><th>Total</th><th>Acciones</th></tr></thead>
+          <table class="naowee-table naowee-table--sticky-header" id="nivelTable" role="treegrid" aria-label="Estructura del catálogo">
+            <thead><tr><th>Código · Nivel</th><th>Tipo</th><th>Valor</th><th>Ítems</th><th>Estado</th><th>Creado</th><th>Total</th><th>Acciones</th></tr></thead>
             <tbody id="nivelBody"></tbody>
           </table>
         </div>
@@ -104,7 +114,7 @@
               <input class="naowee-searchbox__input" id="itSearch" placeholder="Buscar ítem…" aria-label="Buscar ítem">
             </div>
           </div>
-          <div class="naowee-dropdown naowee-dropdown--small" id="itFiltroTipo" style="width:140px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo tipo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo tipo</div><div class="naowee-dropdown__option" data-value="Producto">Producto</div><div class="naowee-dropdown__option" data-value="Servicio">Servicio</div></div></div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="itFiltroTipo" style="width:140px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo tipo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo tipo</div><div class="naowee-dropdown__option" data-value="Material">Material</div><div class="naowee-dropdown__option" data-value="MO">Mano de obra (MO)</div><div class="naowee-dropdown__option" data-value="Equipo">Equipo</div><div class="naowee-dropdown__option" data-value="Transporte">Transporte</div></div></div>
           <div class="naowee-dropdown naowee-dropdown--small" id="itFiltroNivel" data-search style="width:200px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo nivel</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
           <span class="t-count" id="itCount" style="margin-right:auto"></span>
           <button class="naowee-btn naowee-btn--loud naowee-btn--small" id="btnItem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear ítem</button>
@@ -267,6 +277,11 @@
     <div class="naowee-modal__header"><div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="mNivelTitle">Nuevo nivel</h2></div><button class="naowee-modal__dismiss" aria-label="Cerrar" onclick="closeModal('mNivel')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="naowee-modal__body">
       <div class="t-cform-grid">
+        <div class="t-col-full">
+          <label class="naowee-textfield__label" style="display:block">Nivel superior</label>
+          <div class="naowee-dropdown" id="nvPadre" data-search style="width:100%"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Ninguno</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
+          <div class="naowee-helper naowee-helper--informative" id="nvTipoHint" style="margin-top:5px"></div>
+        </div>
         <div class="naowee-textfield t-col-full"><label class="naowee-textfield__label naowee-textfield__label--required">Nombre del nivel</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvNombre" placeholder="Ej. Cimentación"></div></div>
         <div class="naowee-textfield"><label class="naowee-textfield__label">Posición (orden)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="nvOrden" type="text" inputmode="numeric" value="1"></div></div>
         <div>
@@ -321,6 +336,18 @@
       </div>
     </div>
     <div class="naowee-modal__footer naowee-modal__footer--end"><button class="naowee-btn naowee-btn--mute" style="margin-right:8px" onclick="closeModal('mNivel')">Cancelar</button><button class="naowee-btn naowee-btn--loud" id="nvGuardar">Guardar nivel</button></div>
+  </div>
+</div>
+
+<!-- ════ MODAL nivel del esquema (D4) ════ -->
+<div class="naowee-modal-overlay" id="mEsquema">
+  <div class="naowee-modal naowee-modal--fixed-header naowee-modal--fixed-footer">
+    <div class="naowee-modal__header"><div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="mEsqTitle">Nivel del esquema</h2><p class="naowee-modal__subtitle" id="mEsqSub"></p></div><button class="naowee-modal__dismiss" aria-label="Cerrar" onclick="closeModal('mEsquema')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="naowee-modal__body">
+      <div class="naowee-textfield" style="margin-bottom:12px"><label class="naowee-textfield__label naowee-textfield__label--required">Nombre del nivel</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="esqNombre" placeholder="Ej. Actividad"></div><div class="naowee-helper naowee-helper--negative" id="esqErr" style="display:none;margin-top:5px"></div></div>
+      <div class="naowee-textfield"><label class="naowee-textfield__label">Descripción (opcional)</label><div class="naowee-textfield__input-wrap"><input class="naowee-textfield__input" id="esqDesc" placeholder="Qué agrupa este nivel"></div></div>
+    </div>
+    <div class="naowee-modal__footer naowee-modal__footer--end"><button class="naowee-btn naowee-btn--mute" style="margin-right:8px" onclick="closeModal('mEsquema')">Cancelar</button><button class="naowee-btn naowee-btn--loud" id="esqGuardar">Guardar</button></div>
   </div>
 </div>
 
@@ -382,11 +409,11 @@
   </div>
 </div>
 
-<script src="../shared/formula.js?v=0.5.4"></script>
-<script src="../shared/data-catalogo.js?v=0.5.4"></script>
-<script src="../shared/ui.js?v=0.5.4"></script>
-<script src="../shared/shell.js?v=0.5.4"></script>
-<script src="detalle.js?v=0.5.4"></script>
-<script src="../shared/tour.js?v=0.5.4"></script>
+<script src="../shared/formula.js?v=0.6.0"></script>
+<script src="../shared/data-catalogo.js?v=0.6.0"></script>
+<script src="../shared/ui.js?v=0.6.0"></script>
+<script src="../shared/shell.js?v=0.6.0"></script>
+<script src="detalle.js?v=0.6.0"></script>
+<script src="../shared/tour.js?v=0.6.0"></script>
 </body>
 </html>

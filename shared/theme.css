@@ -185,3 +185,20 @@
 .t-fx-err { color: #b42318; font-weight: 700; }
 .naowee-textfield__input-wrap.t-readonly { background: #f4f6f8; }
 .naowee-textfield__input-wrap.t-readonly input { color: var(--t-text-2); }
+/* ── Árbol de la estructura (PPTO-07) ────────────────────────────────────── */
+.t-tree-cell { display: flex; align-items: center; gap: 6px; padding-left: calc((var(--lvl, 1) - 1) * 22px); min-width: 0; }
+.t-tree-tg { width: 22px; height: 22px; flex-shrink: 0; display: grid; place-items: center; border: 0; background: none; border-radius: 6px; cursor: pointer; color: var(--t-text-2); }
+.t-tree-tg:hover { background: #eef2f5; }
+.t-tree-tg svg { transition: transform .18s; }
+.t-tree-tg[aria-expanded="true"] svg { transform: rotate(90deg); }
+.t-tree-sp { width: 22px; flex-shrink: 0; }
+.t-tree-cod { font-weight: 700; color: var(--t-text); font-variant-numeric: tabular-nums; margin-right: 2px; }
+.t-row-ghost td { opacity: .45; }
+.t-lvl-tag { font-size: 11px; font-weight: 600; color: var(--naowee-color-territorio-700, #0B7E96); background: #eaf6f8; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.t-esq-sep { color: var(--t-text-2); font-weight: 700; margin: 0 2px; }
+.t-esq-chip.clickable { cursor: pointer; }
+/* Consulta: acordeones anidados */
+.naowee-accordion .naowee-accordion { margin-left: 0; padding-left: 22px; border-top: 0; box-sizing: border-box; }
+#nivelTable td:first-child { min-width: 230px; max-width: 290px; }
+#nivelTable td { padding-left: 10px; padding-right: 10px; }
+#nivelTable .t-tree-cell .t-cname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

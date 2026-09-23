@@ -94,46 +94,63 @@
   var CAMPOS_DEFAULT = [
     { key: 'cod',       label: 'Código',      tipo: 'texto',  req: true,  core: true },
     { key: 'nombre',    label: 'Ítem',        tipo: 'texto',  req: true,  core: true },
-    { key: 'tipo',      label: 'Tipo',        tipo: 'lista',  req: true,  core: true, opciones: ['Producto', 'Servicio'] },
+    { key: 'tipo',      label: 'Tipo',        tipo: 'lista',  req: true,  core: true, opciones: ['Material', 'MO', 'Equipo', 'Transporte'] },
     { key: 'uni',       label: 'Unidad',      tipo: 'unidad', req: false, core: false },
     { key: 'cantidad',  label: 'Cantidad',    tipo: 'numero', req: false, core: false },
     { key: 'valorUnit', label: 'V. unitario', tipo: 'moneda', req: true,  core: true }
   ];
   function camposDefault() { return CAMPOS_DEFAULT.map(function (c) { return Object.assign({}, c); }); }
 
+  // D4: el esquema (nombres y cantidad de niveles) es de cada catálogo. Por defecto el de la
+  // matriz APU de EnTerritorio: el capítulo agrupa APU y el APU vale la suma de sus insumos.
+  var ESQUEMA_DEFAULT = [
+    { id: 'tn-1', nombre: 'Capítulo', profundidad: 1, descripcion: 'Agrupa los APU por frente de obra.' },
+    { id: 'tn-2', nombre: 'APU', profundidad: 2, descripcion: 'Análisis de precio unitario: vale la suma de sus insumos.' }
+  ];
+  function esquemaDefault() { return ESQUEMA_DEFAULT.map(function (e) { return Object.assign({}, e); }); }
+  var MAX_PROFUNDIDAD = 6;   // D7
+
+  // Composición sintética de un APU (valor V) con las proporciones típicas de la matriz:
+  // mano de obra, material principal, transporte en los capítulos que lo llevan y la
+  // herramienta menor = 5 % de la mano de obra (regla real en 262 de 265 APU).
+  var MATERIAL = { '1': ['Retiro y cargue de sobrantes', 'm3'], '2': ['Material de relleno seleccionado', 'm3'], '3': ['Concreto de obra 2500 PSI', 'm3'],
+    '4': ['Concreto premezclado 3000 PSI', 'm3'], '5': ['Bloque de arcilla No. 5', 'un'], '8': ['Tubería y accesorios PVC', 'glb'], '16': ['Pintura tipo 1 / estuco', 'gln'] };
+  var CON_TRANSPORTE = { '2': 1, '3': 1, '4': 1, '5': 1 };
+  function composicion(cap, apuCod, V) {
+    var its = [], k = 0;
+    function add(o) { k++; o.id = 'it-' + apuCod.replace('.', '_') + '-' + k; its.push(o); }
+    var mo = V * 0.32, herr = mo * 0.05, tr = CON_TRANSPORTE[cap] ? V * 0.06 : 0, mat = V - mo - herr - tr;
+    var vuMo = 185000, cMo = Math.round(mo / vuMo * 10000) / 10000;
+    add({ cod: 'MO-01', nombre: 'Cuadrilla (oficial + ayudante)', tipo: 'MO', uni: 'jr', cantidad: cMo, valorUnit: vuMo, formula: null, valorTotal: Math.round(cMo * vuMo) });
+    var m = MATERIAL[cap] || ['Material principal', 'un'], vuMat = Math.round(mat / 1.05);
+    add({ cod: 'MA-' + cap, nombre: m[0], tipo: 'Material', uni: m[1], cantidad: 1.05, valorUnit: vuMat, formula: null, valorTotal: Math.round(vuMat * 1.05) });
+    if (tr) { var vuTr = Math.round(tr / 0.1); add({ cod: 'TR-01', nombre: 'Transporte de materiales', tipo: 'Transporte', uni: 'vj', cantidad: 0.1, valorUnit: vuTr, formula: null, valorTotal: Math.round(vuTr * 0.1) }); }
+    add({ cod: 'EQ-01', nombre: 'Herramienta menor (5 % de la mano de obra)', tipo: 'Equipo', uni: 'glb', cantidad: 1, valorUnit: 0, formula: '5% * SUMA(tipo.MO)', valorTotal: Math.round(its[0].valorTotal * 0.05) });
+    return its;
+  }
+
   // Construye niveles + ítems de un catálogo a partir de la semilla, para su región.
   function buildEstructura(region) {
     var niveles = [], items = [];
     SEED.forEach(function (ch, i) {
-      var nid = 'nv-' + ch.cap;
+      var cid = 'nv-' + ch.cap;
       niveles.push({
-        id: nid, nombre: ch.nombre, orden: i + 1, codigo: ch.cap,
-        admiteItems: true, valorTipo: 'auto', valorFijo: null,
-        formula: null, activo: true, campos: camposDefault()
+        id: cid, padreId: null, nombre: ch.nombre, orden: i + 1, codigo: ch.cap,
+        admiteItems: false, valorTipo: 'auto', valorFijo: null, formula: null, activo: true, campos: []
       });
-      ch.items.forEach(function (it) {
-        var v = it.val[region] != null ? it.val[region] : it.val.Bogota;
-        items.push({
-          id: 'it-' + it.cod.replace('.', '_'), nivelId: nid, cod: it.cod,
-          nombre: it.nombre, uni: it.uni, tipo: it.tipo || 'Producto', cantidad: 1,
-          valorUnit: v, formula: null, valorTotal: v
+      ch.items.forEach(function (apu, j) {
+        var nid = 'nv-' + apu.cod, v = apu.val[region] != null ? apu.val[region] : apu.val.Bogota;
+        niveles.push({
+          id: nid, padreId: cid, nombre: apu.nombre, orden: j + 1, codigo: apu.cod, unidad: apu.uni,
+          admiteItems: true, valorTipo: 'auto', valorFijo: null, formula: null, activo: true, campos: camposDefault()
         });
+        composicion(ch.cap, apu.cod, v).forEach(function (it) { it.nivelId = nid; items.push(it); });
       });
     });
-    // PPTO-08 / 10: dos fórmulas reales en Pinturas para que la demo las muestre desde el
-    // inicio — el nivel suma 5 % de imprevistos y un ítem aplica su desperdicio.
-    var pint = niveles.filter(function (n) { return n.codigo === '16'; })[0];
-    if (pint) {
-      pint.valorTipo = 'formula'; pint.formula = 'SUMA(items) * 1,05';
-      pint.descripcion = 'Incluye 5 % de imprevistos de acabados.';
-      pint.campos = camposDefault().concat([{ key: 'desperdicio', label: 'Desperdicio', tipo: 'porcentaje', req: false, core: false }]);
-      items.forEach(function (it) {
-        if (it.nivelId !== pint.id) return;
-        it.extra = { desperdicio: it.cod === '16.3' ? 8 : 0 };
-        if (it.cod === '16.3') { it.formula = 'cantidad * valorUnit * (1 + desperdicio%)'; it.valorTotal = Math.round(it.valorUnit * 1.08); }
-      });
-    }
-    return { niveles: niveles, items: items };
+    // PPTO-08: Pinturas suma 5 % de imprevistos de acabados sobre sus APU.
+    var pint = niveles.filter(function (n) { return n.id === 'nv-16'; })[0];
+    if (pint) { pint.valorTipo = 'formula'; pint.formula = 'SUMA(hijos) * 1,05'; pint.descripcion = 'Incluye 5 % de imprevistos de acabados.'; }
+    return { esquema: esquemaDefault(), niveles: niveles, items: items };
   }
 
   // Fecha local AAAA-MM-DD. toISOString() da la fecha en UTC: en Colombia, después de
@@ -155,12 +172,14 @@
     // una evolución real (capítulos que se suman, precios que se actualizan).
     var MOTIVOS = ['Versión inicial del catálogo', 'Se agregan estructuras en concreto y mampostería', 'Se agregan instalaciones hidrosanitarias y pinturas'];
     function congelar(est, k) {
-      var nv = est.niveles.slice(0, Math.min(est.niveles.length, 3 + 2 * k));
+      // Los primeros capítulos (3, 5, 7…) con todos sus APU e insumos.
+      var caps = est.niveles.filter(function (n) { return !n.padreId; }).slice(0, 3 + 2 * k).map(function (n) { return n.id; });
+      var nv = est.niveles.filter(function (n) { return caps.indexOf(n.id) >= 0 || caps.indexOf(n.padreId) >= 0; });
       var ids = nv.map(function (n) { return n.id; }), f = Math.min(0.99, 0.94 + 0.025 * k);
       var its = est.items.filter(function (it) { return ids.indexOf(it.nivelId) >= 0; }).map(function (it) {
         var c = JSON.parse(JSON.stringify(it)); c.valorUnit = Math.round(c.valorUnit * f); c.valorTotal = Math.round(c.valorUnit * c.cantidad); return c;
       });
-      return { niveles: JSON.parse(JSON.stringify(nv)), items: its };
+      return { esquema: est.esquema, niveles: JSON.parse(JSON.stringify(nv)), items: its };
     }
     function mk(nombre, region, estado, ver, dias) {
       var est = buildEstructura(region);
@@ -179,7 +198,7 @@
         id: uid('cat'), nombre: nombre, region: region,
         vigenciaIni: '2026-01-01', vigenciaFin: '2026-12-31',
         estado: estado, versionActiva: ver, creado: nuevaFecha(dias), creadoPor: 'Jesús Díaz',
-        niveles: est.niveles, items: est.items,
+        esquema: est.esquema, niveles: est.niveles, items: est.items,
         cambiosSinVersionar: 0,
         versiones: versiones,
         // La P1 corresponde a una estructura anterior: así el "ejemplo con una versión
@@ -195,7 +214,7 @@
         id: uid('cat'), nombre: nombre, region: region,
         vigenciaIni: '2026-01-01', vigenciaFin: '2026-12-31',
         estado: 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(dias), creadoPor: 'Jesús Díaz',
-        niveles: [], items: [],
+        esquema: esquemaDefault(), niveles: [], items: [],
         cambiosSinVersionar: 0,
         versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: 'Jesús Díaz', fecha: nuevaFecha(dias) }]
       };
@@ -244,7 +263,8 @@
     var ant = cats.filter(function (c) { return /Antioquia/.test(c.nombre); })[0];
     var out = [];
     function add(cat, nombre, version, estado, items, resp) {
-      if (cat) out.push({ id: uid('pp'), catId: cat.id, nombre: nombre, version: version, estado: estado, responsable: resp, itemsUsados: items.map(function (c) { return 'it-' + c.replace('.', '_'); }) });
+      // El presupuesto consume APU (nodos del nivel que admite ítems), no insumos sueltos.
+      if (cat) out.push({ id: uid('pp'), catId: cat.id, nombre: nombre, version: version, estado: estado, responsable: resp, nodosUsados: items.map(function (c) { return 'nv-' + c; }) });
     }
     add(bog, 'Mejoramiento de vivienda rural — Usme, lote 1', 'v1.3', 'En elaboración', ['1.1', '3.4', '4.4', '16.4'], 'Laura Gómez');
     add(bog, 'Vivienda rural nueva — Sumapaz, fase 2', 'v1.3', 'En revisión', ['2.1', '3.4', '5.6'], 'Andrés Pérez');
@@ -258,9 +278,10 @@
   function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
   // Sube cuando cambia la semilla: fuerza a resembrar datos guardados con una semilla vieja.
-  var SEED_V = 6, LS_SEEDV = 'obras-ppto-seedv';
+  var SEED_V = 7, LS_SEEDV = 'obras-ppto-seedv';
   function ensure() {
     var cats = read(LS_KEY);
+    if (cats && cats.length) cats.forEach(normalizar);
     if (!cats || !cats.length || read(LS_SEEDV) !== SEED_V) {
       write(LS_SEEDV, SEED_V);
       cats = seedCatalogos();
@@ -276,13 +297,59 @@
   function usuarioActual() {
     try { return window.OBRAS_SHELL.roleData.who; } catch (e) { return 'Jesús Díaz'; }
   }
+  // Un nivel cuenta como activo solo si él y todos sus ancestros lo están (D12: desactivar
+  // un capítulo saca también sus APU e insumos de los totales).
   function nivelesActivos(cat) {
-    var m = {}; (cat.niveles || []).forEach(function (n) { if (n.activo !== false) m[n.id] = 1; }); return m;
+    var por = {}, m = {};
+    (cat.niveles || []).forEach(function (n) { por[n.id] = n; });
+    (cat.niveles || []).forEach(function (n) {
+      var x = n, ok = true, guard = 0;
+      while (x && guard++ < 20) { if (x.activo === false) { ok = false; break; } x = x.padreId ? por[x.padreId] : null; }
+      if (ok) m[n.id] = 1;
+    });
+    return m;
   }
+  // Normaliza catálogos guardados antes del modelo jerárquico (y sus snapshots).
+  function normalizar(c) {
+    if (!c) return c;
+    if (!c.esquema || !c.esquema.length) c.esquema = esquemaDefault();
+    (c.niveles || []).forEach(function (n) { if (n.padreId === undefined) n.padreId = null; });
+    (c.versiones || []).forEach(function (v) { if (v.snapshot) normalizar(v.snapshot); });
+    return c;
+  }
+
 
   // ── API pública ──
   window.OBRAS = {
     usuarioActual: usuarioActual,
+    esquemaDefault: esquemaDefault,
+    MAX_PROFUNDIDAD: MAX_PROFUNDIDAD,
+    normalizar: normalizar,
+    // ── Árbol (D4-D7): el nivel del esquema de un nodo lo da su profundidad ──
+    hijosDe: function (cat, id) {
+      return (cat.niveles || []).filter(function (n) { return (n.padreId || null) === (id || null); }).sort(function (a, b) { return a.orden - b.orden; });
+    },
+    rutaDe: function (cat, id) {
+      var por = {}, out = [], x, g = 0; (cat.niveles || []).forEach(function (n) { por[n.id] = n; });
+      x = por[id]; while (x && g++ < 20) { out.unshift(x); x = x.padreId ? por[x.padreId] : null; }
+      return out;
+    },
+    profundidadDe: function (cat, id) { return this.rutaDe(cat, id).length; },
+    tipoNivelDe: function (cat, id) {
+      var d = this.profundidadDe(cat, id); return (cat.esquema || [])[d - 1] || { nombre: 'Nivel ' + d, profundidad: d };
+    },
+    descendientesDe: function (cat, id) {
+      var self = this, out = [];
+      (function walk(pid) { self.hijosDe(cat, pid).forEach(function (h) { out.push(h); walk(h.id); }); })(id);
+      return out;
+    },
+    // Árbol aplanado en orden de lectura (padre, luego sus hijos), con su profundidad.
+    arbol: function (cat) {
+      var self = this, out = [];
+      (function walk(pid, d) { self.hijosDe(cat, pid).forEach(function (n) { out.push({ n: n, d: d }); walk(n.id, d + 1); }); })(null, 1);
+      return out;
+    },
+    activos: function (cat) { return nivelesActivos(cat); },
     hoy: function () { return nuevaFecha(0); },
     // Ítems vigentes: los de un nivel desactivado se conservan para la traza, pero no suman.
     itemsActivos: function (cat) {
@@ -321,13 +388,14 @@
       write(LS_KEY, cats); return cat;
     },
     newCatalogo: function (data) {
-      var est = buildEstructura(data.region || 'Bogota');
+      var est = buildEstructura(REGIONES.indexOf(data.region) >= 0 ? data.region : 'Bogota');
       est.niveles.forEach(function (nv) { nv.creado = nuevaFecha(0); nv.creadoPor = usuarioActual(); });
       var cat = {
         id: uid('cat'), nombre: data.nombre, region: data.region,
         vigenciaIni: data.vigenciaIni, vigenciaFin: data.vigenciaFin,
         estado: data.estado || 'Borrador', versionActiva: 'v1.0', creado: nuevaFecha(0), creadoPor: usuarioActual(),
-        niveles: data.conEstructura ? est.niveles : [], items: data.conEstructura ? est.items : [],
+        condicion: data.condicion || '',
+        esquema: est.esquema, niveles: data.conEstructura ? est.niveles : [], items: data.conEstructura ? est.items : [],
         cambiosSinVersionar: 0,
         versiones: [{ v: 'v1.0', motivo: 'Versión inicial del catálogo', autor: usuarioActual(), fecha: nuevaFecha(0) }]
       };
@@ -367,14 +435,19 @@
       ensure();
       return (read(LS_PPTOS) || []).filter(function (p) { return p.catId === catId && p.estado !== 'Cerrado'; });
     },
+    // Presupuestos que usan alguno de estos nodos (APU) o, si se pasa un ítem, el nodo de ese ítem.
+    presupuestosConNodos: function (catId, nodoIds) {
+      return this.presupuestosDe(catId).filter(function (p) { return (p.nodosUsados || []).some(function (n) { return nodoIds.indexOf(n) >= 0; }); });
+    },
     presupuestosConItem: function (catId, itemId) {
-      return this.presupuestosDe(catId).filter(function (p) { return p.itemsUsados.indexOf(itemId) >= 0; });
+      var c = this.getCatalogo(catId), it = c && c.items.filter(function (x) { return x.id === itemId; })[0];
+      return it ? this.presupuestosConNodos(catId, [it.nivelId]) : [];
     },
     // PPTO-12.3: la plantilla de carga tiene su propia versión. Sube sola cuando cambia lo
     // que define sus columnas (niveles y sus campos), aunque no se haya publicado versión.
     plantillaVigente: function (cat) {
       var firma = JSON.stringify((cat.niveles || []).filter(function (n) { return n.activo !== false; })
-        .map(function (n) { return [n.id, n.nombre, n.admiteItems ? 1 : 0, (n.admiteItems ? (n.campos && n.campos.length ? n.campos : CAMPOS_DEFAULT) : []).map(function (c) { return c.key + ':' + c.tipo + (c.req ? '*' : ''); })]; }));
+        .map(function (n) { return [n.id, n.padreId || '', n.nombre, n.admiteItems ? 1 : 0, (n.admiteItems ? (n.campos && n.campos.length ? n.campos : CAMPOS_DEFAULT) : []).map(function (c) { return c.key + ':' + c.tipo + (c.req ? '*' : ''); })]; }));
       cat.plantillas = cat.plantillas || [];
       var last = cat.plantillas[cat.plantillas.length - 1];
       if (!last || last.firma !== firma) {
@@ -388,6 +461,13 @@
       return '$' + Math.round(n).toLocaleString('es-CO');
     },
     // Campos numéricos de un nivel, como los espera el motor: { claveNorm: etiqueta }.
+    // Tipos de ítem de un nivel, como los espera el motor para SUMA(tipo.X): { tipoNorm: etiqueta }.
+    specTipos: function (nivel) {
+      var FX = window.OBRAS_FX, out = {};
+      var c = ((nivel && nivel.campos && nivel.campos.length) ? nivel.campos : CAMPOS_DEFAULT).filter(function (x) { return x.key === 'tipo'; })[0];
+      ((c && c.opciones) || []).forEach(function (o) { out[FX ? FX.norm(o) : o] = o; });
+      return out;
+    },
     specCampos: function (nivel) {
       var FX = window.OBRAS_FX, out = {};
       ((nivel && nivel.campos && nivel.campos.length) ? nivel.campos : CAMPOS_DEFAULT).forEach(function (c) {
@@ -397,13 +477,22 @@
     },
     // Valor de un ítem: su fórmula si la tiene; si no, el V. total guardado (cantidad × V. unitario,
     // o el total escrito a mano). Lanza con el mensaje del motor si la fórmula falla.
-    valorItem: function (it, nivel) {
+    // hermanos (opcional): ítems del mismo nivel con su valor ya calculado, para SUMA(tipo.X).
+    valorItem: function (it, nivel, hermanos) {
       var FX = window.OBRAS_FX;
       if (!it.formula || !FX) return it.valorTotal || 0;
       var vals = { cantidad: it.cantidad == null ? 1 : it.cantidad, valorunit: it.valorUnit };
       Object.keys(it.extra || {}).forEach(function (k) { vals[FX.norm(k)] = it.extra[k]; });
-      return Math.round(FX.calcular(it.formula, { campos: this.specCampos(nivel) }, { ref: function (k) { return vals[k]; } }));
+      return Math.round(FX.calcular(it.formula, { campos: this.specCampos(nivel), tipos: this.specTipos(nivel) }, {
+        ref: function (k) { return vals[k]; },
+        agg: function (tipo, t) {
+          return (hermanos || []).filter(function (h) { return h.id !== it.id && FX.norm(h.tipo || '') === t; })
+            .reduce(function (s, h) { return s + (h.valorTotal || 0); }, 0);
+        }
+      }));
     },
+    // ¿La fórmula del ítem depende de sus hermanos? (se calcula en una segunda pasada)
+    usaHermanos: function (it) { return !!(it.formula && /suma\s*\(\s*tipo\./i.test(it.formula)); },
     // PPTO-08 / 10 / 17: calcula el catálogo completo. Primero los ítems (su fórmula o su
     // total), después cada nivel según su tipo de valor:
     //   auto → suma de sus ítems · formula → la expresión · fijo → el valor fijo (reemplaza
@@ -412,34 +501,55 @@
     calcular: function (cat) {
       var self = this, FX = window.OBRAS_FX, act = nivelesActivos(cat);
       var r = { item: {}, nodo: {}, suma: {}, errores: {}, excluidos: {}, total: 0 };
-      var porNivel = {};
-      (cat.niveles || []).forEach(function (n) { porNivel[n.id] = n; });
-      (cat.items || []).forEach(function (it) {
-        var v;
-        try { v = self.valorItem(it, porNivel[it.nivelId]); } catch (e) { r.errores[it.id] = e.message; v = 0; }
-        r.item[it.id] = v; it.valorTotal = v;
+      var porNivel = {}, itemsPor = {};
+      (cat.niveles || []).forEach(function (n) { porNivel[n.id] = n; itemsPor[n.id] = []; });
+      (cat.items || []).forEach(function (it) { (itemsPor[it.nivelId] = itemsPor[it.nivelId] || []).push(it); });
+      // 1 · Ítems: primero los que no dependen de sus hermanos; después los de SUMA(tipo.X),
+      //     que solo suman hermanos de la primera pasada (así no hay ciclos).
+      Object.keys(itemsPor).forEach(function (nid) {
+        var its = itemsPor[nid], n = porNivel[nid];
+        function uno(it, herm) {
+          var v;
+          try { v = self.valorItem(it, n, herm); } catch (e) { r.errores[it.id] = e.message; v = 0; }
+          r.item[it.id] = v; it.valorTotal = v;
+        }
+        var simples = its.filter(function (it) { return !self.usaHermanos(it); });
+        simples.forEach(function (it) { uno(it, null); });
+        its.filter(function (it) { return self.usaHermanos(it); }).forEach(function (it) { uno(it, simples); });
       });
-      (cat.niveles || []).forEach(function (n) {
-        var its = (cat.items || []).filter(function (it) { return it.nivelId === n.id; });
-        var suma = its.reduce(function (s, it) { return s + (r.item[it.id] || 0); }, 0), v = suma;
-        r.suma[n.id] = suma;
+      // 2 · Niveles de abajo hacia arriba (D8): auto = sus ítems + sus hijos; formula; fijo
+      //     (reemplaza); ninguno (se muestra, no sube). Un nivel inactivo no sube a su padre.
+      function valorDe(n) {
+        var hijos = self.hijosDe(cat, n.id);
+        hijos.forEach(valorDe);
+        var its = itemsPor[n.id] || [];
+        var sItems = its.reduce(function (s, it) { return s + (r.item[it.id] || 0); }, 0);
+        var sHijos = hijos.filter(function (h) { return act[h.id] && h.valorTipo !== 'ninguno'; }).reduce(function (s, h) { return s + (r.nodo[h.id] || 0); }, 0);
+        var v = sItems + sHijos;
+        r.suma[n.id] = v;
         if (n.valorTipo === 'fijo') v = n.valorFijo || 0;
         else if (n.valorTipo === 'formula' && n.formula && FX) {
           try {
-            var spec = { nivel: true, itemCampos: self.specCampos(n), admiteItems: n.admiteItems !== false, tieneHijos: false };
+            var spec = { nivel: true, itemCampos: self.specCampos(n), admiteItems: n.admiteItems !== false, tieneHijos: hijos.length > 0 };
             v = Math.round(FX.calcular(n.formula, spec, {
               ref: function () { return 0; },
               agg: function (tipo, campo) {
-                if (tipo === 'hijos') return 0;   // la estructura aún no tiene subniveles (F5)
-                if (!campo) return suma;
-                return its.reduce(function (s, it) { var x = campo === 'cantidad' ? it.cantidad : campo === 'valorunit' ? it.valorUnit : (it.extra || {})[Object.keys(it.extra || {}).filter(function (k) { return FX.norm(k) === campo; })[0]]; return s + (+x || 0); }, 0);
+                if (tipo === 'hijos') return sHijos;
+                if (!campo) return sItems;
+                return its.reduce(function (s, it) {
+                  var x = campo === 'cantidad' ? it.cantidad : campo === 'valorunit' ? it.valorUnit : (it.extra || {})[Object.keys(it.extra || {}).filter(function (k) { return FX.norm(k) === campo; })[0]];
+                  return s + (+x || 0);
+                }, 0);
               }
             }));
           } catch (e) { r.errores[n.id] = e.message; v = 0; }
         }
         r.nodo[n.id] = v;
         if (n.valorTipo === 'ninguno') r.excluidos[n.id] = 1;
-        else if (act[n.id]) r.total += v;
+      }
+      self.hijosDe(cat, null).forEach(function (raiz) {
+        valorDe(raiz);
+        if (act[raiz.id] && raiz.valorTipo !== 'ninguno') r.total += r.nodo[raiz.id] || 0;
       });
       return r;
     },

@@ -9,7 +9,9 @@
  *   primary := NÚMERO | CAMPO | SUMA '(' items | items.CAMPO | hijos ')' | '(' expr ')'
  *
  * Dos contextos:
- *  - Fórmula de ÍTEM: usa los campos numéricos del ítem (cantidad, valorUnit, propios).
+ *  - Fórmula de ÍTEM: usa los campos numéricos del ítem (cantidad, valorUnit, propios) y
+ *    SUMA(tipo.X): la suma de los ítems hermanos (mismo nivel) de ese tipo. Es la "relación
+ *    con el nivel" de PPTO-10.2; p. ej. herramienta menor = 5% * SUMA(tipo.MO).
  *  - Fórmula de NIVEL: usa agregados — SUMA(items), SUMA(items.campo), SUMA(hijos).
  * Los nombres no distinguen mayúsculas ni tildes; los decimales aceptan coma o punto.
  * ========================================================================== */
@@ -54,8 +56,17 @@
       if (is('(')) { i++; var n = expr(); expect(')'); return n; }
       if (k.k !== 'id') throw err('El operador «' + k.v + '» está fuera de lugar (posición ' + (k.p + 1) + ').');
       i++;
+      if (k.v === 'suma' && !spec.nivel) {
+        expect('(');
+        var tk = t[i];
+        if (!tk || tk.k !== 'id' || tk.v.split('.')[0] !== 'tipo' || !tk.v.split('.')[1]) throw err('En la fórmula de un ítem, SUMA solo admite un tipo de sus hermanos: SUMA(tipo.MO), SUMA(tipo.Material)…');
+        i++; expect(')');
+        var tipos = spec.tipos || {}, tv = tk.v.split('.')[1];
+        if (!tipos[tv]) throw err('El tipo «' + tk.raw.split('.')[1] + '» no existe en este nivel. Tipos: ' + (Object.keys(tipos).map(function (x) { return tipos[x]; }).join(', ') || 'ninguno') + '.');
+        refs.push('tipo.' + tv);
+        return { agg: 'tipo', campo: tv };
+      }
       if (k.v === 'suma') {
-        if (!spec.nivel) throw err('SUMA(...) solo se puede usar en la fórmula de un nivel, no en la de un ítem.');
         expect('(');
         var a = t[i];
         if (!a || a.k !== 'id') throw err('SUMA necesita un argumento: SUMA(items), SUMA(hijos) o SUMA(items.campo).');

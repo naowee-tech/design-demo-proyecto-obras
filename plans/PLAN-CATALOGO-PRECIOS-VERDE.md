@@ -141,8 +141,8 @@ Cada fase cierra con verificación en navegador, recorrido de los tours tocados,
 | **F2** ✅ | Cierres rápidos | 01, 03, 04, 09, 18, 20, 21 (07 parcial) | v0.5.2 | M |
 | **F3** ✅ | Carga masiva (P7) | 12, 13, 14 | v0.5.3 | M |
 | **F4** ✅ | Motor de fórmulas (P4) | 08, 10 | v0.5.4 | M |
-| **F5** | Jerarquía (P5) — **requiere D4-D7 validadas** | 04, 05, 07 (completa), 17 | v0.6.0 | L |
-| **F6** | Barrido final: tours, índice, matriz de cobertura, QA | todas | v0.6.1 | S |
+| **F5** ✅ | Jerarquía (P5) — D4-D7 cerradas en 1b | 04, 05, 07 (completa), 17 | v0.6.0 | L |
+| **F6** ✅ | Barrido final: tours, índice, matriz de cobertura, QA (hecho junto con F5) | todas | v0.6.0 | S |
 
 \* PPTO-07 queda verde en F2 salvo "jerarquía visual"; ese criterio cierra en F5.
 
@@ -229,6 +229,20 @@ Van primero porque varios contaminan las demás HU.
 - **Modal del ítem**: fórmula validada en vivo, chips con sus campos numéricos, V. total calculado y de solo lectura cuando hay fórmula; sin fórmula sigue el cálculo en 3 direcciones.
 - Cabecera avisa "N fórmulas con error"; tabla de estructura muestra `Σ` / `ƒ fórmula` / `Fijo` / `Sin valor`; Consulta muestra el total calculado por nivel con su etiqueta y marca ítems con error.
 - No se puede quitar un campo que usan fórmulas (del nivel o de sus ítems).
+
+## 4f. F5 + F6 — cerradas 2026-09-22 (v0.6.0) · **21 de 21 HU en verde**
+
+- **Modelo** (D4-D7, sección 1b): `cat.esquema` = nombres de nivel por profundidad (por defecto **Capítulo › APU**, renombrable, se pueden agregar hasta 6); `cat.niveles` = nodos con `padreId`. Helpers `hijosDe`, `rutaDe`, `arbol`, `descendientesDe`, `tipoNivelDe`, `activos` (un nodo es activo si él y sus ancestros lo son). `normalizar` para datos guardados sin esquema.
+- **Semilla v7** con la estructura real de la matriz: 7 capítulos → 45 APU → 159 insumos (MO, Material, Transporte y *herramienta menor* `5% * SUMA(tipo.MO)`), valores sintéticos. APU 3.4 = $672.479 (antes $672.480). Presupuestos de ejemplo ligados a APU (`nodosUsados`).
+- **Cálculo** de abajo hacia arriba: ítems simples, luego ítems con `SUMA(tipo.X)` (solo suman hermanos simples: sin ciclos), luego nodos (auto = ítems + hijos; fórmula con `SUMA(hijos)`; fijo; ninguno no sube). Pinturas = `SUMA(hijos) * 1,05`.
+- **Estructura**: panel del esquema (renombrar / agregar nivel), árbol con código por ruta, sangría, chevrons, flechas de teclado, expandir/contraer todo, filtro por estado con ancestros atenuados, columna Tipo de nivel. "Agregar APU" desde el menú de un capítulo. Mover un nivel (nivel superior) avisa el traslado de valor entre ramas, renumera el código del subárbol y bloquea si no cabe en el esquema (D7). Desactivar en cascada con aviso de subniveles e ítems.
+- **Ítems**: tipos de la matriz (Material · MO · Equipo · Transporte); código único **dentro del nivel** (D13 revisado: el mismo insumo se repite entre APU); nivel mostrado con código y ruta.
+- **Consulta**: acordeones anidados capítulo → APU → insumos (corregido: los selectores del DS abrían todos los hijos a la vez y el tema recortaba el encabezado anidado), búsqueda que abre la ruta, filtro por cualquier nivel (muestra su rama), detalle del ítem con ruta completa y valor de su nivel.
+- **Carga**: destino = APU con código; plantilla de estructura con `codigo_padre` (valida existencia y profundidad); alias de unidades de la matriz (`lm`→`ml`, `libra`→`lb`).
+- **Versiones**: el contenido congelado se muestra en árbol y se recalcula con su estructura.
+- **Condición de aplicación** (D16): región + otra condición opcional; retirado "Todos · base nacional".
+- **Tours** 04, 05, 07, 08, 09, 10, 11, 17 reescritos; `catMode: 'vacio'` crea un catálogo en blanco si ya no hay (pendiente de F0).
+- Verificación: 37 criterios de F5 en Chromium, regresión de F0-F4 (fallas solo por ids de la semilla vieja, revisadas una a una), los 21 tours de punta a punta, 390 px sin desborde.
 
 ## 5. Fichas por HU (qué se hace, cómo fluye, cuándo es verde)
 
@@ -414,7 +428,7 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | 04 Crear nivel | 🟡 | F2 (+ F5 padre/tipo) | ✅ v0.5.2 |
 | 05 Editar nivel | 🔴 | F1 (+ F5 padre/tipo) | ✅ v0.5.1 |
 | 06 Desactivar nivel | 🟡 | F0 + F1 (reactivar en F2) | ✅ v0.5.1 |
-| 07 Consultar niveles | 🟡 | F2 + F5 (falta jerarquía visual) | ☐ |
+| 07 Consultar niveles | 🟡 | F2 + F5 | ✅ v0.6.0 |
 | 08 Valor o fórmula | 🟡 | F4 | ✅ v0.5.4 |
 | 09 Admite ítems | ✅ | retoques | ✅ v0.5.2 |
 | 10 Crear ítem | 🟡 | F0 + F2 + F4 | ✅ v0.5.4 |
@@ -422,9 +436,9 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | 12 Descargar plantilla | 🟡 | F3 | ✅ v0.5.3 |
 | 13 Carga masiva | 🔴 | F3 | ✅ v0.5.3 |
 | 14 Resultado de carga | 🟡 | F3 | ✅ v0.5.3 |
-| 15 Nueva versión | ✅ | retoques | ☐ |
-| 16 Historial de versiones | ✅ | F0 (B13) | ☐ |
-| 17 Consultar catálogo | ✅ | F4 + F5 | ☐ |
+| 15 Nueva versión | ✅ | retoques | ✅ v0.6.0 |
+| 16 Historial de versiones | ✅ | F0 (B13) + F5 (árbol) | ✅ v0.6.0 |
+| 17 Consultar catálogo | ✅ | F4 + F5 | ✅ v0.6.0 |
 | 18 Buscar ítems | 🟡 | F2 | ✅ v0.5.2 |
 | 19 Historial de cambios | ✅ | F1 | ✅ v0.5.1 |
 | 20 Filtrar historial | 🟡 | F2 | ✅ v0.5.2 |
