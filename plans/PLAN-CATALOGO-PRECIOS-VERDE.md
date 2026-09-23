@@ -115,7 +115,7 @@ Cada fase cierra con verificación en navegador, recorrido de los tours tocados,
 |---|---|---|---|---|
 | **F0** ✅ | Bugs base + tours rotos | (desbloquea 06, 10, 13) | v0.5.0 | S |
 | **F1** ✅ | P1 + P2 + P3 | 02, 05, 06, 11 (+19 con detalle) | v0.5.1 | M |
-| **F2** | Cierres rápidos | 01, 06, 07*, 18, 20, 21 | v0.5.2 | M |
+| **F2** ✅ | Cierres rápidos | 01, 03, 04, 09, 18, 20, 21 (07 parcial) | v0.5.2 | M |
 | **F3** | Carga masiva (P7) | 12, 13, 14 | v0.5.3 | M |
 | **F4** | Motor de fórmulas (P4) | 08, 10 | v0.5.4 | M |
 | **F5** | Jerarquía (P5) — **requiere D4-D7 validadas** | 04, 05, 07 (completa), 17 | v0.6.0 | L |
@@ -169,6 +169,20 @@ Van primero porque varios contaminan las demás HU.
 - Editar ítem: resumen incluye V. total recalculado y total del nivel; ya no resetea `tipo`.
 - Tour: nuevo campo `fill` en los pasos (el tour escribe un valor para mostrar un cambio real; una vez por paso). Tours 02, 05, 11 y 19 reescritos y verificados.
 - Nota: `smoke-tours.js` marca como "sin objetivo" los pasos finales `center:true`; es esperado.
+
+## 4c. F2 — cerrada 2026-09-22 (v0.5.2)
+
+- **01** nace Activo (D1), vigencia completa y fin ≥ inicio, toast con enlace a "Configurar su estructura" (el enlace del toast sí recibe clics). Aparece en Consulta de inmediato.
+- **03** búsqueda sin tildes.
+- **04** nombre de nivel único en la estructura (sin tildes ni mayúsculas, incluye inactivos), con mensaje bajo el campo. **Verde por criterios**; F5 agrega padre/tipo.
+- **06** menú según estado: un nivel inactivo ofrece *Reactivar* (con auditoría) en lugar de *Desactivar*.
+- **07** columna Creado, filtro por estado con conteo, la fila abre el detalle del nivel. **Sigue 🟡**: la jerarquía visual llega en F5.
+- **09** aviso al apagar "admite ítems" en un nivel con ítems; campos nuevos: porcentaje, fecha, sí/no, lista de opciones.
+- **10** campo core *Tipo* (Producto/Servicio), un control por tipo de campo, código único en el catálogo (D13), porcentaje 0-100, *Guardar y agregar otro*. **Sigue 🟡**: la fórmula del ítem se evalúa en F4.
+- **18** ítems Servicio en la semilla (1.7, 8.7, 16.7), columna Tipo, filtro por nivel, conteo, resaltado también del código, panel lateral `.t-fold` con el detalle (Escape / clic fuera cierra). Mismos filtros en la pestaña Ítems del detalle.
+- **20** filtro por responsable, rango de fechas (`[data-dp-range]` en `initDP`), conteo "N de M registros".
+- **21** menú Excel / PDF / CSV (`OBRAS_UI.exportar`), exporta lo filtrado y declara los filtros en el archivo, nombre con fecha y hora de generación, queda en la auditoría.
+- Semilla v4.
 
 ## 5. Fichas por HU (qué se hace, cómo fluye, cuándo es verde)
 
@@ -348,16 +362,16 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 
 | HU | Hoy | Fase | Verde |
 |---|---|---|---|
-| 01 Crear catálogo | 🟡 | F2 | ☐ |
+| 01 Crear catálogo | 🟡 | F2 | ✅ v0.5.2 |
 | 02 Editar catálogo | 🔴 | F1 | ✅ v0.5.1 |
-| 03 Consultar y buscar catálogos | ✅ | F2 (retoque) | ☐ |
-| 04 Crear nivel | 🟡 | F2 + F5 | ☐ |
+| 03 Consultar y buscar catálogos | ✅ | F2 (retoque) | ✅ v0.5.2 |
+| 04 Crear nivel | 🟡 | F2 (+ F5 padre/tipo) | ✅ v0.5.2 |
 | 05 Editar nivel | 🔴 | F1 (+ F5 padre/tipo) | ✅ v0.5.1 |
 | 06 Desactivar nivel | 🟡 | F0 + F1 (reactivar en F2) | ✅ v0.5.1 |
-| 07 Consultar niveles | 🟡 | F2 + F5 | ☐ |
+| 07 Consultar niveles | 🟡 | F2 + F5 (falta jerarquía visual) | ☐ |
 | 08 Valor o fórmula | 🟡 | F4 | ☐ |
-| 09 Admite ítems | ✅ | retoques | ☐ |
-| 10 Crear ítem | 🟡 | F0 + F2 + F4 | ☐ |
+| 09 Admite ítems | ✅ | retoques | ✅ v0.5.2 |
+| 10 Crear ítem | 🟡 | F0 + F2 + F4 (falta evaluar fórmula) | ☐ |
 | 11 Editar ítem | 🔴 | F1 | ✅ v0.5.1 |
 | 12 Descargar plantilla | 🟡 | F3 | ☐ |
 | 13 Carga masiva | 🔴 | F3 | ☐ |
@@ -365,10 +379,10 @@ Formato: **Criterios que faltan → Cambios → Flujo (tour) → Verde cuando.**
 | 15 Nueva versión | ✅ | retoques | ☐ |
 | 16 Historial de versiones | ✅ | F0 (B13) | ☐ |
 | 17 Consultar catálogo | ✅ | F4 + F5 | ☐ |
-| 18 Buscar ítems | 🟡 | F2 | ☐ |
+| 18 Buscar ítems | 🟡 | F2 | ✅ v0.5.2 |
 | 19 Historial de cambios | ✅ | F1 | ✅ v0.5.1 |
-| 20 Filtrar historial | 🟡 | F2 | ☐ |
-| 21 Exportar historial | 🟡 | F2 | ☐ |
+| 20 Filtrar historial | 🟡 | F2 | ✅ v0.5.2 |
+| 21 Exportar historial | 🟡 | F2 | ✅ v0.5.2 |
 
 ---
 

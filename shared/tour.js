@@ -22,7 +22,10 @@
         { sel: '#btnCrear', body: 'Clic en <b>Crear catálogo</b> para abrir el formulario.', click: true },
         { sel: '#catNombre', body: 'Escribe el <b>nombre del catálogo</b> (obligatorio y único por condición).' },
         { sel: '#catRegion', body: 'Elige la <b>condición de aplicación</b>: la <b>región</b>. Así pueden coexistir varios catálogos activos, uno por región.' },
-        { sel: '#mCrear .naowee-modal__footer .naowee-btn--loud', body: 'Clic en <b>Guardar</b>: queda registrado quién lo creó y cuándo, listo para configurar su estructura.' }
+        { sel: '#dpIni', body: 'Define la <b>vigencia</b> (desde y hasta). El sistema no deja guardar si termina antes de empezar.' },
+        { sel: '#catEstado', body: 'El catálogo nace <b>Activo</b>, disponible para los presupuestos. Si aún no está listo, se puede guardar como <b>Borrador</b>.' },
+        { sel: '#catModo', body: 'Elige el <b>punto de partida</b>: en blanco, o con la estructura base de la región.' },
+        { sel: '#catGuardar', body: 'Al <b>guardar</b> se crea la <b>v1.0</b> y queda registrado quién lo creó y cuándo. El aviso ofrece ir directo a <b>configurar su estructura</b>. No guarda si el nombre está vacío o ya existe con la misma condición.' }
       ] },
     'PPTO-02': { ph: '1 · CRUD del Catálogo', page: 'catalogos.html', role: 'ADMIN',
       title: 'Editar catálogo', purpose: 'Actualizar nombre, condición de aplicación o vigencia de un catálogo existente, con traza.',
@@ -50,7 +53,7 @@
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Este catálogo está <b>en blanco</b>: se creó sin estructura base, así que arrancas desde cero. Entra a la pestaña <b>Estructura</b>.', click: true },
         { sel: '#btnNivel', body: 'Clic en <b>Crear nivel</b> para agregar un nivel de agrupación.', click: true },
-        { sel: '#nvNombre', body: 'Nombre del nivel, posición jerárquica y descripción. No guarda si el nombre está vacío o repetido.' },
+        { sel: '#nvNombre', body: 'Nombre del nivel, <b>posición</b> y descripción opcional. Si el nombre está vacío o <b>ya existe</b> en la estructura, no guarda y lo señala debajo del campo.' },
         { sel: '#mNivel .naowee-modal__footer .naowee-btn--loud', body: 'Guarda: el nivel se suma a la estructura del catálogo.' }
       ] },
     'PPTO-05': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -73,13 +76,15 @@
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
         { sel: '#panel-estructura .t-kebab', body: 'Abre el menú de <b>acciones</b> (⋮) del nivel.', click: true },
         { sel: '#rmNivelOff', body: 'Elige <b>Desactivar nivel</b>. Si tiene ítems o valores, el sistema advierte antes.', click: true },
-        { sel: '#motivoTxt, #mMotivo .naowee-modal', body: 'La desactivación exige un <b>motivo obligatorio</b>. El nivel deja de aparecer como opción pero queda en la traza.' }
+        { sel: '#motivoTxt, #mMotivo .naowee-modal', body: 'La desactivación exige un <b>motivo obligatorio</b>. El nivel deja de ser opción para ítems nuevos y sus ítems salen de los totales, pero todo queda en la traza con el motivo. Desde su menú ⋮ se puede <b>reactivar</b>.' }
       ] },
     'PPTO-07': { ph: '2 · Estructura', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Consultar niveles configurados', purpose: 'Revisar la organización jerárquica de la estructura y su estado.',
       steps: [
         { sel: '[data-tab="estructura"]', body: 'Pestaña <b>Estructura</b>.', click: true },
-        { sel: '#nivelList', body: 'La <b>jerarquía</b> se muestra de forma visual, con estado y fecha. Se puede filtrar por activo/inactivo.' }
+        { sel: '#nivelList', body: 'Los niveles se listan en su <b>posición</b>, con valor, campos, ítems, <b>estado</b> y <b>fecha de creación</b>.' },
+        { sel: '#nvFiltroEstado', body: '<b>Filtra</b> por estado: activos o inactivos. Al lado se indica cuántos se muestran.' },
+        { sel: '#nivelBody tr', body: 'Clic en una fila para abrir el <b>detalle del nivel</b>.' }
       ] },
     // 3 · Valor y Ítems
     'PPTO-08': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -99,7 +104,7 @@
         { sel: '#rmNivelEdit', body: 'Elige <b>Editar nivel</b>.', click: true },
         { sel: '#nvAdmiteItems', body: 'Activa <b>Admite ítems</b>. Varios niveles pueden admitirlos a la vez.' },
         { sel: '#nvCampos', body: 'Al habilitarlo se configuran los <b>campos (columnas)</b> que tendrá cada ítem de este nivel: código, ítem, unidad, cantidad, valor unitario…' },
-        { sel: '#nvAddBtn', body: 'Con <b>Agregar campo</b> se añaden columnas propias del nivel (texto, número o moneda). La tabla de ítems y la plantilla de carga se ajustan solas.' }
+        { sel: '#nvAddBtn', body: 'Con <b>Agregar campo</b> se añaden columnas propias del nivel: texto, número, moneda, porcentaje, unidad, fecha, sí/no o lista de opciones, y se marcan como obligatorias. La tabla de ítems y la plantilla de carga se ajustan solas.' }
       ] },
     'PPTO-10': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Crear ítem en un nivel', purpose: 'Agregar un ítem (con o sin fórmula) al catálogo; el sistema calcula su valor.',
@@ -107,8 +112,9 @@
         { sel: '[data-tab="items"]', body: 'Entra a la pestaña <b>Ítems</b>.', click: true },
         { sel: '#btnItem', body: 'Clic en <b>Crear ítem</b>.', click: true },
         { sel: '#itNivel', body: 'Primero elige el <b>nivel</b> del ítem: el formulario se arma con los campos que ese nivel tiene configurados.' },
-        { sel: '#itf-nombre, #itNivel', body: 'Diligencia código, nombre, unidad y valor. El <b>V. total</b> se calcula solo y puedes asignarle o no una <b>fórmula</b>.' },
-        { sel: '#mItem .naowee-modal__footer .naowee-btn--loud', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan campos obligatorios.' }
+        { sel: '#itf-nombre, #itNivel', body: 'Diligencia código, nombre, <b>tipo</b> (producto o servicio), unidad y valor. El <b>V. total</b> se calcula solo y puedes asignarle o no una <b>fórmula</b>.' },
+        { sel: '#itGuardarOtro', body: '<b>Guardar y agregar otro</b> deja el formulario listo para el siguiente ítem del mismo nivel.' },
+        { sel: '#itGuardar', body: 'El sistema <b>calcula el valor</b> del ítem y no guarda si faltan obligatorios o si el <b>código</b> ya existe en el catálogo.' }
       ] },
     'PPTO-11': { ph: '3 · Valor y Ítems', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Editar ítem', purpose: 'Actualizar precios, unidades u otros campos; el sistema recalcula lo impactado.',
@@ -169,8 +175,11 @@
     'PPTO-18': { ph: '6 · Consulta (lectura)', page: 'consulta.html', role: 'USUARIO',
       title: 'Buscar y filtrar ítems dentro del catálogo', purpose: 'Encontrar rápidamente un producto/servicio sin recorrer toda la estructura.',
       steps: [
-        { sel: '#itemSearch', body: '<b>Busca</b> un ítem por código o nombre.' },
-        { sel: '#itemFiltro', body: '<b>Filtra</b> por tipo. El resultado muestra nivel, código, nombre, unidad, cantidad, valor unitario y total.' }
+        { sel: '#itemSearch', body: '<b>Busca</b> un ítem por código o nombre (sin importar tildes).', fill: { sel: '#itemSearch', value: 'transporte' } },
+        { sel: '#itemFiltro', body: '<b>Filtra</b> por tipo: producto o servicio.' },
+        { sel: '#itemNivel', body: '…y por <b>nivel de agrupación</b>. Arriba se indica cuántos ítems coinciden.' },
+        { sel: '#catTree tr[data-item]', body: 'Cada resultado muestra su nivel, código, nombre, tipo, unidad, cantidad y valores. Clic para ver el <b>detalle</b>.', click: true },
+        { sel: '#itemFold .t-fold', body: 'El <b>detalle del ítem</b>: ruta de niveles, todos sus campos y cómo se calculó su valor. Solo lectura.' }
       ] },
     // 7 · Auditoría
     'PPTO-19': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
@@ -185,14 +194,19 @@
       title: 'Filtrar historial por acción, elemento y fecha', purpose: 'Ubicar rápidamente un cambio específico.',
       steps: [
         { sel: '[data-tab="auditoria"]', body: 'Pestaña <b>Auditoría</b>.', click: true },
-        { sel: '#audAccion', body: 'Filtros combinables por <b>acción</b>, elemento afectado y responsable…' },
-        { sel: '#audFecha', body: '…y por <b>rango de fechas</b>. El historial se actualiza al instante e indica cuántos resultados hay.' }
+        { sel: '#audAccion', body: 'Filtros independientes y combinables: <b>acción</b>…' },
+        { sel: '#audElemento', body: '…<b>elemento afectado</b> (catálogo, nivel, ítem, versión)…' },
+        { sel: '#audUsuario', body: '…<b>responsable</b>…' },
+        { sel: '#audFecha', body: '…y <b>rango de fechas</b>: primer clic para el inicio, segundo para el fin.' },
+        { sel: '#audCount', body: 'El historial se actualiza al instante e indica <b>cuántos registros</b> coinciden.' }
       ] },
     'PPTO-21': { ph: '7 · Auditoría', page: 'catalogo-detalle.html', role: 'ADMIN', catMode: 'lleno',
       title: 'Exportar historial de auditoría', purpose: 'Usar la traza en reportes externos, auditorías o procesos legales.',
       steps: [
         { sel: '[data-tab="auditoria"]', body: 'Pestaña <b>Auditoría</b>.', click: true },
-        { sel: '#btnExport', body: 'Exporta el historial visible (con o sin filtros) en <b>Excel o PDF</b>. El archivo incluye todos los campos y la fecha de generación.' }
+        { sel: '#btnExport', body: '<b>Exportar</b> toma el historial tal como se ve: con los filtros aplicados, o completo si no hay filtros.', click: true },
+        { sel: '#rmExportXls', body: 'Formatos: <b>Excel</b>, <b>PDF</b> o CSV. El archivo trae acción, elemento, responsable, fecha, hora y detalle, y su nombre lleva la <b>fecha de generación</b>.' },
+        { center: true, body: 'Cada exportación queda registrada en la auditoría (<b>Exportar historial</b>) con quién, cuándo y el archivo generado.' }
       ] }
   };
   var ORDER = ['PPTO-01','PPTO-02','PPTO-03','PPTO-04','PPTO-05','PPTO-06','PPTO-07','PPTO-08','PPTO-09','PPTO-10','PPTO-11','PPTO-12','PPTO-13','PPTO-14','PPTO-15','PPTO-16','PPTO-17','PPTO-18','PPTO-19','PPTO-20','PPTO-21'];

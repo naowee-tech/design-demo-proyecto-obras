@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.1">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.1">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.2">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.2">
 <style>
   /* Sin overflow:visible aquí: el DS hace que el body scrollee entre el header y el
      footer fijos, y forzarlo rompía ese scroll (el contenido crecía por debajo del footer). */
@@ -76,18 +76,22 @@
       <!-- ══ ESTRUCTURA ══ -->
       <section class="t-panel active" id="panel-estructura" role="tabpanel" aria-labelledby="tab-estructura">
         <div class="t-sechead">
-          <div class="t-sec-title">Niveles de agrupación</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div class="t-sec-title">Niveles de agrupación</div>
+            <div class="naowee-dropdown naowee-dropdown--small" id="nvFiltroEstado" style="width:150px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo estado</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo estado</div><div class="naowee-dropdown__option" data-value="activo">Activos</div><div class="naowee-dropdown__option" data-value="inactivo">Inactivos</div></div></div>
+            <span class="t-count" id="nvCount"></span>
+          </div>
           <button class="naowee-btn naowee-btn--loud naowee-btn--small" id="btnNivel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear nivel</button>
         </div>
         <div class="naowee-table-wrap" id="nivelList">
           <table class="naowee-table naowee-table--sticky-header" id="nivelTable">
-            <thead><tr><th>#</th><th>Nivel</th><th>Valor</th><th>Campos</th><th>Ítems</th><th>Estado</th><th>Total</th><th>Acciones</th></tr></thead>
+            <thead><tr><th>#</th><th>Nivel</th><th>Valor</th><th>Campos</th><th>Ítems</th><th>Estado</th><th>Creado</th><th>Total</th><th>Acciones</th></tr></thead>
             <tbody id="nivelBody"></tbody>
           </table>
         </div>
         <div class="t-empty" id="nivelEmpty">
           <div class="t-icontile"><svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg></div>
-          <b>Aún no hay niveles</b><span>Crea el primero con <b>+ Crear nivel</b> para estructurar el catálogo.</span>
+          <b id="nivelEmptyT">Aún no hay niveles</b><span id="nivelEmptyM">Crea el primero con <b>+ Crear nivel</b> para estructurar el catálogo.</span>
         </div>
       </section>
 
@@ -100,6 +104,9 @@
               <input class="naowee-searchbox__input" id="itSearch" placeholder="Buscar ítem…" aria-label="Buscar ítem">
             </div>
           </div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="itFiltroTipo" style="width:140px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo tipo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo tipo</div><div class="naowee-dropdown__option" data-value="Producto">Producto</div><div class="naowee-dropdown__option" data-value="Servicio">Servicio</div></div></div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="itFiltroNivel" data-search style="width:200px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo nivel</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
+          <span class="t-count" id="itCount" style="margin-right:auto"></span>
           <button class="naowee-btn naowee-btn--loud naowee-btn--small" id="btnItem"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Crear ítem</button>
         </div>
         <div class="naowee-table-wrap" id="itemList">
@@ -110,7 +117,7 @@
         </div>
         <div class="t-empty" id="itemEmpty">
           <div class="t-icontile"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></div>
-          <b>Sin ítems</b><span>Ningún ítem coincide con la búsqueda.</span>
+          <b>Sin ítems</b><span>Ningún ítem coincide con la búsqueda o los filtros.</span>
         </div>
       </section>
 
@@ -176,15 +183,17 @@
                 <div class="naowee-dropdown__option" data-value="Versión">Versión</div>
               </div>
             </div>
-            <div class="naowee-datepicker-field" data-dp id="audFecha" style="width:186px">
+<div class="naowee-dropdown naowee-dropdown--small" id="audUsuario" style="width:170px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo responsable</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"><div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo responsable</div></div></div>
+            <div class="naowee-datepicker-field" data-dp data-dp-range id="audFecha" style="width:232px">
               <div class="naowee-datepicker-field__input" tabindex="0" role="button" aria-haspopup="dialog">
                 <span class="naowee-datepicker-field__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/></svg></span>
-                <span class="naowee-datepicker-field__value naowee-dropdown__placeholder" data-dp-value>Fecha</span>
+                <span class="naowee-datepicker-field__value naowee-dropdown__placeholder" data-dp-value>Rango de fechas</span>
                 <span class="naowee-datepicker-field__controls"><span class="naowee-datepicker-field__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span>
               </div>
               <div class="t-dp-pop" data-dp-pop></div>
             </div>
             <button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnLimpiar">Limpiar</button>
+            <span class="t-count" id="audCount" aria-live="polite"></span>
           </div>
           <button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 3v12M8 11l4 4 4-4M4 21h16"/></svg>Exportar</button>
         </div>
@@ -248,9 +257,14 @@
                     <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="texto">Texto</div>
                     <div class="naowee-dropdown__option" data-value="numero">Número</div>
                     <div class="naowee-dropdown__option" data-value="moneda">Moneda</div>
+                    <div class="naowee-dropdown__option" data-value="porcentaje">Porcentaje</div>
                     <div class="naowee-dropdown__option" data-value="unidad">Unidad de medida</div>
+                    <div class="naowee-dropdown__option" data-value="fecha">Fecha</div>
+                    <div class="naowee-dropdown__option" data-value="booleano">Sí / No</div>
+                    <div class="naowee-dropdown__option" data-value="lista">Lista de opciones</div>
                   </div>
                 </div>
+                <input class="t-esq-add-in" id="nvAddOpc" placeholder="Opciones separadas por coma (ej. Alta, Media, Baja)" autocomplete="off" style="display:none;flex-basis:100%;order:5">
                 <div class="naowee-checkbox" id="nvAddReq" role="checkbox" aria-checked="false" tabindex="0"><span class="naowee-checkbox__box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg></span><span class="naowee-checkbox__label" style="font-size:12.5px">Obligatorio</span></div>
                 <button type="button" class="t-esq-add-ok" id="nvAddOk">Agregar</button>
               </div>
@@ -290,7 +304,7 @@
       </div>
       <p id="itHint" style="font-size:12px;color:var(--t-text-2);margin:12px 0 0;line-height:1.5">Selecciona un nivel: el formulario mostrará los <b>campos configurados</b> para ese nivel.</p>
     </div>
-    <div class="naowee-modal__footer naowee-modal__footer--end"><button class="naowee-btn naowee-btn--mute" style="margin-right:8px" onclick="closeModal('mItem')">Cancelar</button><button class="naowee-btn naowee-btn--loud" id="itGuardar">Guardar ítem</button></div>
+    <div class="naowee-modal__footer naowee-modal__footer--end"><button class="naowee-btn naowee-btn--mute" style="margin-right:8px" onclick="closeModal('mItem')">Cancelar</button><button class="naowee-btn naowee-btn--mute" style="margin-right:8px" id="itGuardarOtro">Guardar y agregar otro</button><button class="naowee-btn naowee-btn--loud" id="itGuardar">Guardar ítem</button></div>
   </div>
 </div>
 
@@ -321,10 +335,10 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.1"></script>
-<script src="../shared/ui.js?v=0.5.1"></script>
-<script src="../shared/shell.js?v=0.5.1"></script>
-<script src="detalle.js?v=0.5.1"></script>
-<script src="../shared/tour.js?v=0.5.1"></script>
+<script src="../shared/data-catalogo.js?v=0.5.2"></script>
+<script src="../shared/ui.js?v=0.5.2"></script>
+<script src="../shared/shell.js?v=0.5.2"></script>
+<script src="detalle.js?v=0.5.2"></script>
+<script src="../shared/tour.js?v=0.5.2"></script>
 </body>
 </html>

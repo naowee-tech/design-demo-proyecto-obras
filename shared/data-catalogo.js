@@ -27,7 +27,8 @@
       {cod:"1.3",nombre:"Demolición de caja de inspección 0,80 x 0,80 m (incluye retiro)",uni:"un",val:{Bogota:96480,Antioquia:100150,Amazonas:102030,Vichada:101240}},
       {cod:"1.4",nombre:"Demolición de caja de inspección 1,00 x 1,00 m (incluye retiro)",uni:"un",val:{Bogota:158700,Antioquia:164350,Amazonas:167110,Vichada:165890}},
       {cod:"1.5",nombre:"Demolición de caja de inspección 1,20 x 1,20 m (incluye retiro)",uni:"un",val:{Bogota:139240,Antioquia:145080,Amazonas:147620,Vichada:146410}},
-      {cod:"1.6",nombre:"Demolición de mesón en concreto (incluye retiro)",uni:"m",val:{Bogota:81560,Antioquia:83790,Amazonas:84720,Vichada:84260}}
+      {cod:"1.6",nombre:"Demolición de mesón en concreto (incluye retiro)",uni:"m",val:{Bogota:81560,Antioquia:83790,Amazonas:84720,Vichada:84260}},
+      {cod:"1.7",nombre:"Transporte y disposición de escombros en volqueta",uni:"vj",tipo:"Servicio",val:{Bogota:385000,Antioquia:372000,Amazonas:512000,Vichada:498000}}
     ]},
     {cap:"2",nombre:"Excavaciones y rellenos",items:[
       {cod:"2.1",nombre:"Excavación manual en conglomerado h=0.0-2.0 m (retiro <5 km)",uni:"m3",val:{Bogota:63920,Antioquia:63810,Amazonas:63980,Vichada:63950}},
@@ -67,7 +68,8 @@
       {cod:"8.3",nombre:"Caja de inspección 100 x 100 (incluye excavación)",uni:"un",val:{Bogota:762680,Antioquia:757760,Amazonas:777130,Vichada:789210}},
       {cod:"8.4",nombre:"Caja de inspección 40 x 40 (incluye excavación)",uni:"un",val:{Bogota:496760,Antioquia:465990,Amazonas:476910,Vichada:484030}},
       {cod:"8.5",nombre:"Caja de inspección 60 x 60 (incluye excavación)",uni:"un",val:{Bogota:454150,Antioquia:431730,Amazonas:442060,Vichada:448770}},
-      {cod:"8.6",nombre:"Caja de inspección 80 x 80 (incluye excavación)",uni:"un",val:{Bogota:751790,Antioquia:723750,Amazonas:742450,Vichada:754690}}
+      {cod:"8.6",nombre:"Caja de inspección 80 x 80 (incluye excavación)",uni:"un",val:{Bogota:751790,Antioquia:723750,Amazonas:742450,Vichada:754690}},
+      {cod:"8.7",nombre:"Prueba hidrostática de red de suministro",uni:"glb",tipo:"Servicio",val:{Bogota:640000,Antioquia:615000,Amazonas:790000,Vichada:772000}}
     ]},
     {cap:"16",nombre:"Pinturas",items:[
       {cod:"16.1",nombre:"Estuco",uni:"m2",val:{Bogota:17590,Antioquia:17595,Amazonas:17747,Vichada:17840}},
@@ -75,7 +77,8 @@
       {cod:"16.3",nombre:"Estuco plástico acrílico sobre muros (incluye filos y dilataciones)",uni:"m2",val:{Bogota:31550,Antioquia:31553,Amazonas:32270,Vichada:32745}},
       {cod:"16.4",nombre:"Estuco y vinilo 3 manos",uni:"m2",val:{Bogota:31005,Antioquia:31006,Amazonas:31425,Vichada:31702}},
       {cod:"16.5",nombre:"Estuco y vinilo 3 manos (lineal)",uni:"m",val:{Bogota:24090,Antioquia:24097,Amazonas:24360,Vichada:24529}},
-      {cod:"16.6",nombre:"Impermeabilización fachada en Sika transparente o similar",uni:"m2",val:{Bogota:14456,Antioquia:14466,Amazonas:14736,Vichada:14903}}
+      {cod:"16.6",nombre:"Impermeabilización fachada en Sika transparente o similar",uni:"m2",val:{Bogota:14456,Antioquia:14466,Amazonas:14736,Vichada:14903}},
+      {cod:"16.7",nombre:"Cuadrilla de pintura (oficial + ayudante)",uni:"día",tipo:"Servicio",val:{Bogota:265000,Antioquia:251000,Amazonas:318000,Vichada:309000}}
     ]}
   ];
 
@@ -86,10 +89,12 @@
 
   // PPTO-09 · campos que tendrá cada ítem del nivel. Se configuran por nivel al
   // habilitar "admite ítems". Los 'core' no se pueden quitar (el sistema calcula sobre ellos).
-  // tipo: texto | numero | moneda | unidad  → determina el control y la validación.
+  // tipo: texto · numero · moneda · porcentaje · unidad · fecha · booleano · lista (con opciones)
+  // → determina el control del formulario y la validación.
   var CAMPOS_DEFAULT = [
     { key: 'cod',       label: 'Código',      tipo: 'texto',  req: true,  core: true },
     { key: 'nombre',    label: 'Ítem',        tipo: 'texto',  req: true,  core: true },
+    { key: 'tipo',      label: 'Tipo',        tipo: 'lista',  req: true,  core: true, opciones: ['Producto', 'Servicio'] },
     { key: 'uni',       label: 'Unidad',      tipo: 'unidad', req: false, core: false },
     { key: 'cantidad',  label: 'Cantidad',    tipo: 'numero', req: false, core: false },
     { key: 'valorUnit', label: 'V. unitario', tipo: 'moneda', req: true,  core: true }
@@ -110,7 +115,7 @@
         var v = it.val[region] != null ? it.val[region] : it.val.Bogota;
         items.push({
           id: 'it-' + it.cod.replace('.', '_'), nivelId: nid, cod: it.cod,
-          nombre: it.nombre, uni: it.uni, tipo: 'Producto', cantidad: 1,
+          nombre: it.nombre, uni: it.uni, tipo: it.tipo || 'Producto', cantidad: 1,
           valorUnit: v, formula: null, valorTotal: v
         });
       });
@@ -146,6 +151,7 @@
     }
     function mk(nombre, region, estado, ver, dias) {
       var est = buildEstructura(region);
+      est.niveles.forEach(function (nv) { nv.creado = nuevaFecha(dias); nv.creadoPor = 'Jesús Díaz'; });
       var n = parseInt(ver.split('.')[1], 10) || 0, versiones = [];
       for (var k = 0; k <= n; k++) {
         var d = n ? Math.round(dias - (dias - 6) * k / n) : dias;
@@ -235,7 +241,7 @@
   function write(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
 
   // Sube cuando cambia la semilla: fuerza a resembrar datos guardados con una semilla vieja.
-  var SEED_V = 3, LS_SEEDV = 'obras-ppto-seedv';
+  var SEED_V = 4, LS_SEEDV = 'obras-ppto-seedv';
   function ensure() {
     var cats = read(LS_KEY);
     if (!cats || !cats.length || read(LS_SEEDV) !== SEED_V) {
@@ -299,6 +305,7 @@
     },
     newCatalogo: function (data) {
       var est = buildEstructura(data.region || 'Bogota');
+      est.niveles.forEach(function (nv) { nv.creado = nuevaFecha(0); nv.creadoPor = usuarioActual(); });
       var cat = {
         id: uid('cat'), nombre: data.nombre, region: data.region,
         vigenciaIni: data.vigenciaIni, vigenciaFin: data.vigenciaFin,

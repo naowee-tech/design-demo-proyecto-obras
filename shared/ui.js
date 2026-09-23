@@ -128,6 +128,10 @@
     var placeholder = valEl.textContent;
     var today = new Date();
     var view = new Date(today.getFullYear(), today.getMonth(), 1), selected = null;
+    // [data-dp-range]: el primer clic fija "desde" y el segundo "hasta" (PPTO-20).
+    var isRange = dp.hasAttribute('data-dp-range'), desde = null, hasta = null;
+    function isoOf(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    function lblOf(d) { return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); }
     function sameDay(a, b) { return a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
     function render() {
       var y = view.getFullYear(), m = view.getMonth();
@@ -141,6 +145,12 @@
           else {
             var cur = new Date(y, m, day);
             var cls = (sameDay(cur, selected) ? ' naowee-datepicker__day--selected' : '') + (sameDay(cur, today) ? ' naowee-datepicker__day--today' : '');
+            if (isRange) {
+              cls = (sameDay(cur, today) ? ' naowee-datepicker__day--today' : '') +
+                (sameDay(cur, desde) ? ' naowee-datepicker__day--range-start naowee-datepicker__day--selected' : '') +
+                (sameDay(cur, hasta) ? ' naowee-datepicker__day--range-end naowee-datepicker__day--selected' : '') +
+                (desde && hasta && cur > desde && cur < hasta ? ' naowee-datepicker__day--in-range' : '');
+            }
             row += '<button class="naowee-datepicker__day' + cls + '" data-day="' + day + '">' + day + '</button>'; day++;
           }
         }
@@ -158,6 +168,16 @@
       var nav = e.target.closest('[data-nav]');
       if (nav) { view = new Date(view.getFullYear(), view.getMonth() + (+nav.dataset.nav), 1); render(); return; }
       var d = e.target.closest('[data-day]');
+      if (d && isRange) {
+        var pick = new Date(view.getFullYear(), view.getMonth(), +d.dataset.day);
+        if (!desde || hasta) { desde = pick; hasta = null; render(); valEl.textContent = lblOf(desde) + ' → …'; valEl.classList.remove('naowee-dropdown__placeholder'); return; }
+        if (pick < desde) { hasta = desde; desde = pick; } else hasta = pick;
+        dp.dataset.desde = isoOf(desde); dp.dataset.hasta = isoOf(hasta); dp.dataset.value = dp.dataset.desde + '|' + dp.dataset.hasta;
+        valEl.textContent = lblOf(desde) + ' → ' + lblOf(hasta);
+        close();
+        dp.dispatchEvent(new CustomEvent('dp:change', { bubbles: true, detail: { desde: dp.dataset.desde, hasta: dp.dataset.hasta } }));
+        return;
+      }
       if (d) {
         selected = new Date(view.getFullYear(), view.getMonth(), +d.dataset.day);
         dp.dataset.value = selected.getFullYear() + '-' + pad(selected.getMonth() + 1) + '-' + pad(selected.getDate());
@@ -169,6 +189,7 @@
     });
     document.addEventListener('click', close);
     dp.__set = function (iso) {
+      if (isRange && !iso) { desde = hasta = null; dp.dataset.value = dp.dataset.desde = dp.dataset.hasta = ''; valEl.textContent = placeholder; valEl.classList.add('naowee-dropdown__placeholder'); return; }
       if (!iso) { selected = null; dp.dataset.value = ''; valEl.textContent = placeholder; valEl.classList.add('naowee-dropdown__placeholder'); return; }
       var p = iso.split('-');
       selected = new Date(+p[0], +p[1] - 1, +p[2]); view = new Date(+p[0], +p[1] - 1, 1);
@@ -179,6 +200,7 @@
   }
   window.OBRAS_UI.initDatepickers = function (root) { (root || document).querySelectorAll('[data-dp]').forEach(initDP); };
   window.OBRAS_UI.dpSet = function (id, iso) { var dp = document.getElementById(id); if (dp && dp.__set) dp.__set(iso); };
+  window.OBRAS_UI.dpRange = function (id) { var dp = document.getElementById(id); return { desde: dp ? (dp.dataset.desde || '') : '', hasta: dp ? (dp.dataset.hasta || '') : '' }; };
   window.OBRAS_UI.dpGet = function (id) { var dp = document.getElementById(id); return dp ? (dp.dataset.value || '') : ''; };
 
   // ── Toast (.t-toast del shell + .naowee-message) ──
@@ -190,14 +212,14 @@
   };
   function msgIcon(tono) { return '<span class="naowee-message__icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">' + (IC_MSG[tono] || IC_MSG.informative) + '</svg></span>'; }
   var _toastT = null;
-  window.OBRAS_UI.toast = function (html, tono) {
+  window.OBRAS_UI.toast = function (html, tono, ms) {
     tono = tono || 'positive';
     var t = document.getElementById('tToast');
     if (!t) { t = document.createElement('div'); t.id = 'tToast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
     t.className = 't-toast naowee-message naowee-message--' + tono;
     t.innerHTML = '<div class="naowee-message__header">' + msgIcon(tono) + '<div class="naowee-message__body">' + html + '</div></div>';
     requestAnimationFrame(function () { t.classList.add('show'); });
-    clearTimeout(_toastT); _toastT = setTimeout(function () { t.classList.remove('show'); }, 3200);
+    clearTimeout(_toastT); _toastT = setTimeout(function () { t.classList.remove('show'); }, ms || 3200);
   };
 
   // ── Aviso de impacto sobre presupuestos (PPTO-02, 11, 15) ──
@@ -255,6 +277,42 @@
         };
       });
     });
+  };
+
+  // ── Exportar una tabla a Excel, PDF o CSV (PPTO-14, 21) ──
+  // Excel: tabla HTML con tipo de Excel (abre en Excel y Sheets, sin librerías).
+  // PDF: vista de impresión con encabezado; el navegador ofrece "Guardar como PDF".
+  // opts: { nombre, titulo, meta:[texto], columnas:[titulo], filas:[[valor]], formato }
+  function stamp() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' + pad(d.getHours()) + pad(d.getMinutes()); }
+  function descargar(nombre, contenido, tipo) {
+    try {
+      var blob = new Blob([contenido], { type: tipo });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    } catch (e) {}
+  }
+  window.OBRAS_UI.descargar = descargar;
+  window.OBRAS_UI.stamp = stamp;
+  window.OBRAS_UI.exportar = function (o) {
+    var base = o.nombre + '-' + stamp();
+    var tabla = '<table border="1" cellspacing="0" cellpadding="4"><thead><tr>' + o.columnas.map(function (c) { return '<th>' + escH(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      o.filas.map(function (r) { return '<tr>' + r.map(function (v) { return '<td>' + escH(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+    var cab = '<h2 style="font-family:Arial;margin:0 0 4px">' + escH(o.titulo) + '</h2>' + (o.meta || []).map(function (m) { return '<div style="font-family:Arial;font-size:12px;color:#555">' + escH(m) + '</div>'; }).join('');
+    if (o.formato === 'csv') {
+      var q = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
+      descargar(base + '.csv', '\uFEFF' + [o.columnas].concat(o.filas).map(function (r) { return r.map(q).join(','); }).join('\r\n'), 'text/csv;charset=utf-8');
+      return base + '.csv';
+    }
+    if (o.formato === 'pdf') {
+      var w = window.open('', '_blank');
+      if (!w) { window.OBRAS_UI.toast('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes para exportar a PDF.', 'caution'); return null; }
+      w.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>' + escH(base) + '</title><style>body{font-family:Arial,sans-serif;margin:24px}table{border-collapse:collapse;width:100%;margin-top:14px;font-size:11px}th{background:#eef3f6;text-align:left}th,td{border:1px solid #ccd;padding:5px 7px}</style></head><body>' + cab + tabla + '<script>window.onload=function(){window.print()}<\/script></body></html>');
+      w.document.close();
+      return base + '.pdf';
+    }
+    descargar(base + '.xls', '\uFEFF<html><head><meta charset="utf-8"></head><body>' + cab + '<br>' + tabla + '</body></html>', 'application/vnd.ms-excel;charset=utf-8');
+    return base + '.xls';
   };
 
   document.addEventListener('click', function () { closeAllDD(null); });

@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.1">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.1">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.2">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.2">
 <style>
   /* Override pattern: el acordeón del DS abre con max-height fijo; aquí el contenido es una tabla */
   .naowee-accordion__item--open .naowee-accordion__body{ max-height:none; padding-bottom:14px; }
@@ -65,6 +65,7 @@
               <div class="naowee-dropdown__option" data-value="Servicio">Servicio</div>
             </div>
           </div>
+          <div class="naowee-dropdown naowee-dropdown--small" id="itemNivel" data-search style="width:190px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo nivel</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
           <div style="width:1px;height:24px;background:var(--t-line);flex-shrink:0"></div>
           <div class="naowee-dropdown naowee-dropdown--small" id="cSel" data-search style="width:240px;flex-shrink:0">
             <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Catálogo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
@@ -81,6 +82,7 @@
         <div class="t-esq-chips" id="cChips"></div>
       </section>
 
+      <div class="t-count" id="itemCount" style="margin:0 0 8px 4px"></div>
       <div class="naowee-accordion naowee-accordion--medium" id="catTree"></div>
 
       <div class="t-empty" id="treeEmpty">
@@ -91,9 +93,24 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.1"></script>
-<script src="../shared/ui.js?v=0.5.1"></script>
-<script src="../shared/shell.js?v=0.5.1"></script>
+<!-- ════ Panel lateral · detalle de ítem (PPTO-18.4) ════ -->
+<div class="naowee-modal-overlay t-fold-overlay" id="itemFold" aria-hidden="true">
+  <div class="naowee-modal t-fold" role="dialog" aria-modal="true" aria-labelledby="foldTitle">
+    <div class="naowee-modal__header t-fold__header">
+      <div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="foldTitle">Ítem</h2><p class="naowee-modal__subtitle" id="foldRuta"></p></div>
+      <button class="naowee-modal__dismiss" aria-label="Cerrar" id="foldClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="naowee-modal__body t-fold__body">
+      <div class="t-fold__stats" id="foldStats"></div>
+      <div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><tbody id="foldCampos"></tbody></table></div>
+      <div id="foldCalc" style="font-size:12.5px;color:var(--t-text-2);margin-top:12px;line-height:1.55"></div>
+    </div>
+  </div>
+</div>
+
+<script src="../shared/data-catalogo.js?v=0.5.2"></script>
+<script src="../shared/ui.js?v=0.5.2"></script>
+<script src="../shared/shell.js?v=0.5.2"></script>
 <script>
 (function () {
   var D = window.OBRAS, UI = window.OBRAS_UI, cat = null;
@@ -137,27 +154,33 @@
     return esc(txt.slice(0, i)) + '<mark>' + esc(txt.slice(i, i + q.length)) + '</mark>' + esc(txt.slice(i + q.length));
   }
 
+  function fillNiveles() {
+    var ns = cat.niveles.filter(function (n) { return n.activo; }).sort(function (a, b) { return a.orden - b.orden; });
+    UI.fillDD('itemNivel', [{ value: '', label: 'Todo nivel' }].concat(ns.map(function (n) { return { value: n.id, label: n.nombre }; })), null);
+    UI.setDD('itemNivel', '', 'Todo nivel');
+  }
   function render() {
     var q = norm(document.getElementById('itemSearch').value);
-    var tipo = UI.getDD('itemFiltro');
+    var tipo = UI.getDD('itemFiltro'), fNivel = UI.getDD('itemNivel');
     var host = document.getElementById('catTree');
-    var ns = cat.niveles.filter(function (n) { return n.activo; }).sort(function (a, b) { return a.orden - b.orden; });
-    var total = 0;
+    var ns = cat.niveles.filter(function (n) { return n.activo && (!fNivel || n.id === fNivel); }).sort(function (a, b) { return a.orden - b.orden; });
+    var total = 0, filtrando = !!(q || tipo || fNivel);
 
     host.innerHTML = ns.map(function (n) {
       var items = itemsDe(n.id).filter(function (it) {
-        if (tipo && it.tipo !== tipo) return false;
+        if (tipo && (it.tipo || 'Producto') !== tipo) return false;
         if (q && norm(it.nombre).indexOf(q) < 0 && norm(it.cod).indexOf(q) < 0) return false;
         return true;
       });
       if ((q || tipo) && !items.length) return '';
       total += items.length;
       var tot = items.reduce(function (s, it) { return s + it.valorTotal; }, 0);
-      var open = (q || tipo) ? ' naowee-accordion__item--open' : '';
+      var open = filtrando ? ' naowee-accordion__item--open' : '';
       var rows = items.map(function (it) {
-        return '<tr>' +
-          '<td data-label="Código">' + esc(it.cod) + '</td>' +
+        return '<tr class="t-row-click" data-item="' + it.id + '" tabindex="0" title="Ver detalle del ítem">' +
+          '<td data-label="Código">' + highlight(it.cod, q) + '</td>' +
           '<td data-label="Ítem">' + highlight(it.nombre, q) + '</td>' +
+          '<td data-label="Tipo"><span class="naowee-badge naowee-badge--' + ((it.tipo || 'Producto') === 'Servicio' ? 'informative' : 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + esc(it.tipo || 'Producto') + '</span></td>' +
           '<td data-label="Unidad">' + esc(it.uni) + '</td>' +
           '<td data-label="Cantidad" class="tnum">' + it.cantidad + '</td>' +
           '<td data-label="V. unitario" class="tnum">' + D.fmtCOP(it.valorUnit) + '</td>' +
@@ -172,14 +195,20 @@
           '<span class="naowee-accordion__action tnum" style="font-weight:700">' + D.fmtCOP(tot) + '</span>' +
         '</div>' +
         '<div class="naowee-accordion__body"><div class="naowee-accordion__content">' +
-          '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><thead><tr><th>Código</th><th>Ítem</th><th>Unidad</th><th>Cantidad</th><th>V. unitario</th><th>V. total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+          '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><thead><tr><th>Código</th><th>Ítem</th><th>Tipo</th><th>Unidad</th><th>Cantidad</th><th>V. unitario</th><th>V. total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
         '</div></div></div>';
     }).join('');
 
-    var empty = (q || tipo) && total === 0;
+    var disp = D.itemsActivos(cat).length;
+    document.getElementById('itemCount').innerHTML = filtrando ? '<b>' + total + '</b> de ' + disp + ' ítems coinciden' : '';
+    var empty = filtrando && total === 0;
     document.getElementById('treeEmpty').classList.toggle('show', empty);
     host.style.display = empty ? 'none' : '';
 
+    host.querySelectorAll('tr[data-item]').forEach(function (tr) {
+      tr.onclick = function () { abrirItem(tr.dataset.item); };
+      tr.onkeydown = function (e) { if (e.key === 'Enter') abrirItem(tr.dataset.item); };
+    });
     host.querySelectorAll('.naowee-accordion__header').forEach(function (h) {
       function toggle() { h.parentElement.classList.toggle('naowee-accordion__item--open'); }
       h.onclick = toggle;
@@ -187,7 +216,45 @@
     });
   }
 
+  // Detalle de solo lectura: ruta de niveles, todos los campos y cómo se calculó el total.
+  function abrirItem(id) {
+    var it = cat.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
+    var n = cat.niveles.filter(function (x) { return x.id === it.nivelId; })[0] || {};
+    var campos = (n.campos && n.campos.length) ? n.campos : D.camposDefault();
+    document.getElementById('foldTitle').textContent = it.cod + ' · ' + it.nombre;
+    document.getElementById('foldRuta').textContent = cat.nombre + ' › ' + (n.codigo ? n.codigo + '. ' : '') + (n.nombre || '—');
+    document.getElementById('foldStats').innerHTML =
+      '<div class="t-statchip"><div class="v">' + D.fmtCOP(it.valorTotal) + '</div><span class="l">Valor total</span></div>' +
+      '<div class="t-statchip"><div class="v">' + esc(it.tipo || 'Producto') + '</div><span class="l">Tipo</span></div>' +
+      '<div class="t-statchip"><div class="v">' + esc(cat.versionActiva) + '</div><span class="l">Versión</span></div>';
+    function val(c) {
+      var v = ({ cod: 1, nombre: 1, tipo: 1, uni: 1, cantidad: 1, valorUnit: 1 })[c.key] ? it[c.key] : (it.extra || {})[c.key];
+      if (v == null || v === '') return '—';
+      if (c.tipo === 'moneda') return D.fmtCOP(v);
+      if (c.tipo === 'porcentaje') return esc(v) + ' %';
+      if (c.tipo === 'fecha') return fdate(v);
+      return esc(v);
+    }
+    document.getElementById('foldCampos').innerHTML = campos.map(function (c) {
+      return '<tr><td style="color:var(--t-text-2);width:42%">' + esc(c.label) + '</td><td><b>' + val(c) + '</b></td></tr>';
+    }).join('');
+    document.getElementById('foldCalc').innerHTML = it.formula
+      ? 'Fórmula del ítem: <code>' + esc(it.formula) + '</code>'
+      : 'V. total = cantidad (' + (it.cantidad == null ? 1 : it.cantidad) + ') × V. unitario (' + D.fmtCOP(it.valorUnit) + ') = <b>' + D.fmtCOP(it.valorTotal) + '</b>.';
+    var o = document.getElementById('itemFold');
+    o.classList.add('open'); o.setAttribute('aria-hidden', 'false'); void o.offsetWidth; o.classList.add('t-fold--in');
+    document.getElementById('foldClose').focus();
+  }
+  function cerrarItem() {
+    var o = document.getElementById('itemFold');
+    o.classList.remove('t-fold--in'); o.setAttribute('aria-hidden', 'true');
+    setTimeout(function () { o.classList.remove('open'); }, 320);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('foldClose').onclick = cerrarItem;
+    document.getElementById('itemFold').addEventListener('click', function (e) { if (e.target.id === 'itemFold') cerrarItem(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('itemFold').classList.contains('open')) cerrarItem(); });
     pick(new URLSearchParams(location.search).get('cat'));
     if (!cat) {
       document.getElementById('cTitle').textContent = 'No hay catálogos activos';
@@ -198,13 +265,14 @@
     var opts = consultables().map(function (c) { return { value: c.id, label: c.nombre }; });
     UI.fillDD('cSel', opts, null);
     UI.setDD('cSel', cat.id, cat.nombre);
-    renderHead(); render();
-    document.getElementById('cSel').addEventListener('dd:change', function (e) { pick(e.detail.value); renderHead(); render(); });
+    fillNiveles(); renderHead(); render();
+    document.getElementById('cSel').addEventListener('dd:change', function (e) { pick(e.detail.value); fillNiveles(); renderHead(); render(); });
+    document.getElementById('itemNivel').addEventListener('dd:change', render);
     document.getElementById('itemSearch').addEventListener('input', render);
     document.getElementById('itemFiltro').addEventListener('dd:change', render);
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.5.1"></script>
+<script src="../shared/tour.js?v=0.5.2"></script>
 </body>
 </html>

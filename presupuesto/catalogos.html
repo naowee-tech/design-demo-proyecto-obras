@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.1">
-<link rel="stylesheet" href="../shared/theme.css?v=0.5.1">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.5.2">
+<link rel="stylesheet" href="../shared/theme.css?v=0.5.2">
 <style>
   /* Override pattern local (después del DS) — solo medidas de este modal */
   #mCrear .naowee-modal{ overflow:visible !important; width:720px; max-width:92vw; }
@@ -204,15 +204,16 @@
   </div>
 </div>
 
-<script src="../shared/data-catalogo.js?v=0.5.1"></script>
-<script src="../shared/ui.js?v=0.5.1"></script>
-<script src="../shared/shell.js?v=0.5.1"></script>
+<script src="../shared/data-catalogo.js?v=0.5.2"></script>
+<script src="../shared/ui.js?v=0.5.2"></script>
+<script src="../shared/shell.js?v=0.5.2"></script>
 <script>
 (function () {
   var UI = window.OBRAS_UI, D = window.OBRAS;
   var editId = null, sortIdx = null, sortDir = 1;
   function qsAll(extra) { var p = new URLSearchParams(location.search); if (extra) Object.keys(extra).forEach(function (k) { p.set(k, extra[k]); }); return '?' + p.toString(); }
   function esc(s) { return (s || '').toString().replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function norm(s) { return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
   function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
 
   var badgeMap = { Activo: 'positive', Borrador: 'caution', Inactivo: 'neutral' };
@@ -231,10 +232,10 @@
   }
 
   function filtered() {
-    var q = (document.getElementById('tblSearch').value || '').toLowerCase();
+    var q = norm(document.getElementById('tblSearch').value);
     var fe = UI.getDD('fEstado'), fr = UI.getDD('fRegion');
     var rows = D.listCatalogos().filter(function (c) {
-      if (q && c.nombre.toLowerCase().indexOf(q) < 0 && c.region.toLowerCase().indexOf(q) < 0) return false;
+      if (q && norm(c.nombre).indexOf(q) < 0 && norm(c.region).indexOf(q) < 0) return false;
       if (fe && c.estado !== fe) return false;
       if (fr && c.region !== fr) return false;
       return true;
@@ -337,7 +338,8 @@
     document.getElementById('catNombre').value = '';
     UI.setDD('catRegion', '', 'Seleccione una opción');
     document.getElementById('catRegion').querySelector('.naowee-dropdown__value').classList.add('naowee-dropdown__placeholder');
-    UI.setDD('catEstado', 'Borrador', 'Borrador');
+    // D1 · PPTO-01.4: al guardar queda activo y disponible. Borrador sigue como opción explícita.
+    UI.setDD('catEstado', 'Activo', 'Activo');
     dpSet('dpIni', '2026-01-01'); dpSet('dpFin', '2026-12-31');
     setModo('');
     document.getElementById('estructuraRow').style.display = '';
@@ -367,7 +369,7 @@
   function save() {
     var nombreEl = document.getElementById('catNombre');
     var nombre = nombreEl.value.trim(), region = UI.getDD('catRegion');
-    var estado = UI.getDD('catEstado') || 'Borrador';
+    var estado = UI.getDD('catEstado') || 'Activo';
     var err = document.getElementById('crearError');
     nombreEl.closest('.naowee-textfield__input-wrap').classList.remove('t-invalid');
     if (!nombre || !region || (!editId && !getModo())) {
@@ -381,7 +383,11 @@
     }
     var dup = D.listCatalogos().filter(function (c) { return c.id !== editId && c.nombre.toLowerCase() === nombre.toLowerCase() && c.region === region; });
     if (dup.length) { document.getElementById('crearErrorMsg').textContent = 'Ya existe un catálogo con ese nombre y condición.'; err.style.display = ''; return; }
-    var ini = dpGet('dpIni') || '2026-01-01', fin = dpGet('dpFin') || '2026-12-31';
+    var ini = dpGet('dpIni'), fin = dpGet('dpFin');
+    if (!ini || !fin || fin < ini) {
+      document.getElementById('crearErrorMsg').textContent = (!ini || !fin) ? 'Indica la vigencia completa (desde y hasta).' : 'La vigencia debe terminar después de la fecha de inicio.';
+      err.style.display = ''; return;
+    }
     if (editId) {
       // PPTO-02: resumen antes de confirmar, aviso si hay presupuestos activos, traza con
       // antes/después, y el cambio queda pendiente de versionar.
@@ -403,7 +409,10 @@
       });
       return;
     } else {
-      D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
+      var nuevo = D.newCatalogo({ nombre: nombre, region: region, estado: estado, vigenciaIni: ini, vigenciaFin: fin, conEstructura: getModo() === 'base' });
+      closeModal('mCrear'); render(); renderKpis();
+      UI.toast('Catálogo <b>' + esc(nuevo.nombre) + '</b> creado (' + nuevo.estado + ', v1.0). <a href="catalogo-detalle.html?' + new URLSearchParams(Object.assign({ role: 'ADMIN', cat: nuevo.id }, new URLSearchParams(location.search).get('proyecto') ? { proyecto: new URLSearchParams(location.search).get('proyecto') } : {})).toString() + '" id="toastIrEstructura" style="color:inherit;text-decoration:underline">Configurar su estructura →</a>', 'positive', 6000);
+      return;
     }
     closeModal('mCrear'); render(); renderKpis();
   }
@@ -443,6 +452,6 @@
   });
 })();
 </script>
-<script src="../shared/tour.js?v=0.5.1"></script>
+<script src="../shared/tour.js?v=0.5.2"></script>
 </body>
 </html>

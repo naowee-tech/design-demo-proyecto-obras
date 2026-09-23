@@ -159,3 +159,13 @@
 .t-aud-diff { background: #fff; border-radius: 8px; }
 .t-aud-old { color: var(--t-text-2); text-decoration: line-through; }
 .t-aud-kv { font-size: 12.5px; margin-top: 6px; }
+
+/* ── Contador de resultados junto a filtros (PPTO-07, 18, 20) ─────────────── */
+.t-count { font-size: 12px; font-weight: 600; color: var(--t-text-2); white-space: nowrap; }
+.t-count b { color: var(--t-text); }
+/* Fila clickable que abre el detalle (niveles, ítems de consulta) */
+.t-row-click { cursor: pointer; }
+.t-row-click:hover td { background: #f7f9fb; }
+.t-row-off td { opacity: .6; }
+/* El toast no captura clics (no tapa la página), pero un enlace dentro sí debe poder usarse */
+.t-toast.show a { pointer-events: auto; }
