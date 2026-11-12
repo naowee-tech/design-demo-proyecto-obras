@@ -6,13 +6,19 @@
  * ========================================================================== */
 (function () {
   'use strict';
-  var VERSION = 'v0.6.0';
+  var VERSION = 'v0.7.0';
 
+  // alcance: el rol del backend con el que se cruza el alcance del catálogo (HU17). El Admin
+  // hace bypass (role_id 1), por eso no tiene uno.
   var ROLES = {
-    ADMIN:   { who: 'Jesús Díaz', rol: 'Admin Naowee',       av: 'JD', col: 'var(--naowee-color-territorio-700)' },
-    USUARIO: { who: 'Marta Ríos', rol: 'Usuario autorizado', av: 'MR', col: '#1f78d1' }
+    ADMIN:   { who: 'Jesús Díaz',   rol: 'Admin Naowee',                         av: 'JD', col: 'var(--naowee-color-territorio-700)', alcance: null,
+               ve: 'Arma, importa y activa catálogos' },
+    USUARIO: { who: 'Marta Ríos',   rol: 'Usuario autorizado · Gestor de presupuesto', av: 'MR', col: '#1f78d1', alcance: 'Gestor de presupuesto',
+               ve: 'Consulta los catálogos para gestores' },
+    REVISOR: { who: 'Andrés Pérez', rol: 'Usuario autorizado · Revisor técnico',  av: 'AP', col: '#7a4bc2', alcance: 'Revisor técnico',
+               ve: 'Consulta los catálogos para revisores' }
   };
-  var ROLE_ORDER = ['ADMIN', 'USUARIO'];
+  var ROLE_ORDER = ['ADMIN', 'USUARIO', 'REVISOR'];
 
   var IC = {
     home:  '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -23,11 +29,11 @@
 
   var NAV = [
     { head: 'General', items: [
-      { label: 'Inicio', file: '../index.html', roles: 'ADMIN USUARIO', icon: IC.home }
+      { label: 'Inicio', file: '../index.html', roles: 'ADMIN USUARIO REVISOR', icon: IC.home }
     ]},
     { head: 'Presupuesto', items: [
       { label: 'Catálogo de Precios', file: 'catalogos.html', roles: 'ADMIN', icon: IC.book },
-      { label: 'Consulta de catálogo', file: 'consulta.html', roles: 'ADMIN USUARIO', icon: IC.eye }
+      { label: 'Consulta de precios', file: 'consulta.html', roles: 'ADMIN USUARIO REVISOR', icon: IC.eye }
     ]},
     { head: 'Costos', items: [
       { label: 'Parámetros de Costos', file: '', roles: 'ADMIN', icon: IC.calc, soon: 'Fase 2' }
@@ -47,7 +53,7 @@
   }
   // Guarda de página: el menú ya esconde lo de ADMIN, pero la URL directa
   // (catalogos.html?role=USUARIO) dejaba editar. Se conserva ?proyecto= y ?cat=.
-  var SOLO_ADMIN = { 'catalogos.html': 1, 'catalogo-detalle.html': 1 };
+  var SOLO_ADMIN = { 'catalogos.html': 1, 'catalogo-detalle.html': 1, 'importar.html': 1 };
   if (SOLO_ADMIN[PAGE] && role !== 'ADMIN') {
     var dest = new URLSearchParams(); dest.set('role', role);
     ['proyecto', 'cat'].forEach(function (k) { var v = qsGet(k); if (v) dest.set(k, v); });
@@ -62,7 +68,7 @@
     if (!file) return false;
     var f = file.split('/').pop();
     if (f === PAGE) return true;
-    if (file === 'catalogos.html' && PAGE === 'catalogo-detalle.html') return true;
+    if (file === 'catalogos.html' && (PAGE === 'catalogo-detalle.html' || PAGE === 'importar.html')) return true;
     return false;
   }
 
@@ -110,7 +116,7 @@
       var r = ROLES[k];
       return '<button data-role="' + k + '"' + (k === role ? ' class="sel"' : '') + ' onclick="setRole(this)">' +
         '<span class="ava" style="background:' + r.col + ';color:#fff;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700">' + r.av + '</span>' +
-        '<span>' + r.who + '<small>' + r.rol + '</small></span></button>';
+        '<span>' + r.who + '<small>' + r.rol + '</small><small style="opacity:.75">' + r.ve + '</small></span></button>';
     }).join('');
     var panel = document.createElement('div');
     panel.className = 't-rolepanel'; panel.id = 'rolePanel';
@@ -137,8 +143,11 @@
   window.setRole = function (btn) {
     var nr = btn.dataset.role;
     var target = location.pathname.split('/').pop();
-    if (nr === 'USUARIO' && (target === 'catalogos.html' || target === 'catalogo-detalle.html')) target = 'consulta.html';
-    location.href = target + '?role=' + nr;
+    if (nr !== 'ADMIN' && SOLO_ADMIN[target]) target = 'consulta.html';
+    // Se conserva ?proyecto= (datos aislados por proyecto); ?cat= solo si sigue en la misma página.
+    var p = new URLSearchParams(); p.set('role', nr);
+    var pr = qsGet('proyecto'); if (pr) p.set('proyecto', pr);
+    location.href = target + '?' + p.toString();
   };
   window.togglePanel = function () {
     var p = document.getElementById('rolePanel'), pill = document.getElementById('rolePill');

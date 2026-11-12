@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es" data-theme="territorio">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proyecto de Obras · Presupuesto · Importar matriz de precios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="../shared/proyecto-ns.js"></script>
+<link rel="stylesheet" href="../shared/design-system.css">
+<link rel="stylesheet" href="../shared/theme-territorio.css">
+<link rel="stylesheet" href="../shared/glass-theme.css">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.7.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.7.0">
+<link rel="stylesheet" href="../shared/rediseno.css?v=0.7.0">
+<style>
+  body{ margin:0; font-family:'Manrope',system-ui,sans-serif; }
+  .imp-cur{ display:flex; flex-direction:column; gap:12px; }
+  .imp-cur .big{ font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--rd-ink); }
+  .imp-order{ display:inline-flex; gap:2px; }
+  .imp-order button{ width:28px; height:28px; border-radius:8px; border:1px solid var(--rd-line); background:#fff; cursor:pointer; display:grid; place-items:center; color:var(--rd-muted); }
+  .imp-order button:disabled{ opacity:.35; cursor:default; }
+  .imp-avisos{ margin:6px 0 0 16px; padding:0; font-size:12px; color:var(--rd-warn); }
+  .imp-errores{ margin:6px 0 0 16px; padding:0; font-size:12px; color:var(--rd-bad); }
+</style>
+</head>
+<body data-role="ADMIN">
+<div class="rd-flow">
+  <header class="rd-flow-h">
+    <a class="naowee-btn naowee-btn--mute" id="impSalir" aria-label="Salir de Importar" style="width:40px;padding:0;justify-content:center"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+    <div class="rd-grow"><div class="rd-flow-s" id="impCat"></div><div class="rd-flow-t">Importar matriz de precios</div></div>
+    <span class="rd-flow-s" id="impArchivo"></span>
+  </header>
+  <nav class="rd-flow-steps" aria-label="Pasos de la importación">
+    <div class="naowee-stepper naowee-stepper--distributed" id="impSteps"></div>
+  </nav>
+  <main class="rd-flow-b" id="impBody"></main>
+  <footer class="rd-flow-f" id="impFoot"></footer>
+</div>
+<input type="file" id="impFile" accept=".xlsx,.xls" hidden>
+
+<script src="../shared/data-catalogo.js?v=0.7.0"></script>
+<script src="../shared/ui.js?v=0.7.0"></script>
+<script src="../shared/shell.js?v=0.7.0"></script>
+<script src="../shared/rd.js?v=0.7.0"></script>
+<script src="../shared/matriz.js?v=0.7.0"></script>
+<script src="importar.js?v=0.7.0"></script>
+<script src="../shared/tour.js?v=0.7.0"></script>
+</body>
+</html>

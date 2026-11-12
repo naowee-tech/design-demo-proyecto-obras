@@ -87,7 +87,7 @@
       <span class="hub-stat"><b>Presupuesto</b> · módulo activo</span>
       <span class="hub-stat"><b>3</b> pantallas navegables</span>
       <span class="hub-stat"><b>21</b> HU cubiertas</span>
-      <span class="hub-stat">v0.6.0</span>
+      <span class="hub-stat">v0.7.0</span>
     </div>
   </div>
 
@@ -96,12 +96,12 @@
     <div class="hub-grid">
       <a class="hub-card" href="presupuesto/catalogos.html?role=ADMIN">
         <div class="hub-card-ic"><svg viewBox="0 0 24 24"><path d="M4 4h11a2 2 0 0 1 2 2v13H6a2 2 0 0 0-2 2V4z"/><path d="M17 19H6a2 2 0 0 0-2 2"/></svg></div>
-        <div><h3>Catálogo de Precios</h3><p>Administración autónoma de catálogos: estructura, ítems, versiones y auditoría. Rol Admin Naowee.</p></div>
+        <div><h3>Catálogo de Precios</h3><p>Bases de precios por departamento: contenido, importación de la matriz, versiones y trazabilidad. Rol Admin Naowee.</p></div>
         <span class="scr-badge b-live" style="align-self:flex-start">Entrar</span>
       </a>
       <a class="hub-card" href="presupuesto/catalogos.html?role=ADMIN&amp;tour=PPTO-01">
         <div class="hub-card-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5L11 11l-1.5 3.5L13 13z"/></svg></div>
-        <div><h3>Recorrido guiado</h3><p>Las 21 historias de usuario del Proceso A, una tras otra, con tarea, propósito y dónde hacer clic.</p></div>
+        <div><h3>Recorrido guiado</h3><p>Las 21 historias de usuario del Proceso A, ajustadas al backend, una tras otra: cada una cambia sola a su pantalla y a su perfil.</p></div>
         <span class="scr-badge b-live" style="align-self:flex-start">Iniciar</span>
       </a>
     </div>
@@ -112,7 +112,7 @@
     <div class="hub-grid">
       <a class="hub-card" href="presupuesto/catalogos.html?role=ADMIN">
         <div class="hub-card-ic"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-        <div><h3>Presupuesto</h3><p>Catálogo de precios de obra: estructura parametrizable, ítems, carga masiva, versiones y trazabilidad.</p></div>
+        <div><h3>Presupuesto</h3><p>Catálogo de precios de obra: Capítulo › APU › insumo por departamento, importación de la matriz, versiones y trazabilidad.</p></div>
         <span class="scr-badge b-live" style="align-self:flex-start">En curso</span>
       </a>
       <div class="hub-card disabled">
@@ -124,26 +124,36 @@
   </section>
 
   <section class="hub-section">
-    <div class="hub-section-h"><h2>Presupuesto · pantallas</h2><span>flujo navegable del módulo (v0.6.0)</span></div>
+    <div class="hub-section-h"><h2>Presupuesto · pantallas</h2><span>flujo navegable del módulo (v0.7.0)</span></div>
     <div class="scr-grid">
       <a class="scr-card live" href="presupuesto/catalogos.html?role=ADMIN">
         <span class="scr-code">PPTO<br>01–03</span>
-        <div class="scr-body"><h4>Catálogos de precios</h4><p>Listado, búsqueda y filtros; crear y editar catálogo con su condición y vigencia.</p></div>
+        <div class="scr-body"><h4>Catálogos de precios</h4><p>Lista con alcance, versión vigente y en preparación; nuevo catálogo con departamentos y roles.</p></div>
         <span class="scr-badge b-live">Live</span>
       </a>
-      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN">
-        <span class="scr-code">PPTO<br>04–16</span>
-        <div class="scr-body"><h4>Detalle del catálogo</h4><p>Estructura de niveles, ítems, carga masiva y versionamiento.</p></div>
+      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN&amp;cat=cat-general">
+        <span class="scr-code">PPTO<br>04–11</span>
+        <div class="scr-body"><h4>Espacio de trabajo</h4><p>Árbol por departamento con el detalle del APU, control del valor y edición en panel lateral.</p></div>
         <span class="scr-badge b-live">Live</span>
       </a>
-      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN&amp;tour=PPTO-19">
-        <span class="scr-code">PPTO<br>19–21</span>
-        <div class="scr-body"><h4>Auditoría del catálogo</h4><p>Historial de cambios, filtros por acción/elemento/fecha y exportación.</p></div>
+      <a class="scr-card live" href="presupuesto/importar.html?role=ADMIN&amp;cat=cat-general">
+        <span class="scr-code">PPTO<br>12–14</span>
+        <div class="scr-body"><h4>Importar la matriz</h4><p>Ajustes, diagnóstico y carga de a un departamento dentro del flujo, reanudable; resultado y reporte.</p></div>
+        <span class="scr-badge b-live">Live</span>
+      </a>
+      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN&amp;cat=cat-general&amp;tab=versiones">
+        <span class="scr-code">PPTO<br>15–16</span>
+        <div class="scr-body"><h4>Versiones</h4><p>Revisar y activar la versión en preparación; historial con el contenido de cada versión.</p></div>
         <span class="scr-badge b-live">Live</span>
       </a>
       <a class="scr-card live" href="presupuesto/consulta.html?role=USUARIO">
         <span class="scr-code">PPTO<br>17–18</span>
-        <div class="scr-body"><h4>Consulta de catálogo</h4><p>Vista de solo lectura, jerárquica y expandible, con búsqueda de ítems. Rol Usuario autorizado.</p></div>
+        <div class="scr-body"><h4>Consulta de precios</h4><p>Solo la versión vigente de los catálogos de tu rol, por departamento, con búsqueda. Usuario autorizado.</p></div>
+        <span class="scr-badge b-live">Live</span>
+      </a>
+      <a class="scr-card live" href="presupuesto/catalogo-detalle.html?role=ADMIN&amp;cat=cat-general&amp;tab=historial">
+        <span class="scr-code">PPTO<br>19–21</span>
+        <div class="scr-body"><h4>Historial</h4><p>Traza por acción, elemento, versión, departamento y responsable; filtros y exportación.</p></div>
         <span class="scr-badge b-live">Live</span>
       </a>
       <div class="scr-card soon">
@@ -155,9 +165,9 @@
   </section>
 
   <div class="hub-footer">
-    <span>Datos sembrados desde la matriz APU real · 33 regiones</span>
+    <span>Estructura de la matriz APU real · precios sintéticos · 33 departamentos</span>
     <span>·</span>
-    <span>Proyecto de Obras v0.6.0</span>
+    <span>Proyecto de Obras v0.7.0</span>
   </div>
 
 </div>
