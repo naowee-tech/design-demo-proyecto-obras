@@ -94,6 +94,7 @@
   function getDD(dd) { return dd ? (dd.dataset.value || '') : ''; }
 
   window.OBRAS_UI = {
+    norm: norm,
     initDropdowns: function (root) { (root || document).querySelectorAll('.naowee-dropdown').forEach(wireDropdown); },
     setDD: function (id, v, l) { var dd = document.getElementById(id); if (dd) setDD(dd, v, l); },
     getDD: function (id) { return getDD(document.getElementById(id)); },

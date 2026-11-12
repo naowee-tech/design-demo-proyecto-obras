@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Proyecto de Obras · Presupuesto · Consulta de catálogo</title>
+<title>Proyecto de Obras · Presupuesto · Consulta de precios</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,24 +12,19 @@
 <link rel="stylesheet" href="../shared/design-system.css">
 <link rel="stylesheet" href="../shared/theme-territorio.css">
 <link rel="stylesheet" href="../shared/glass-theme.css">
-<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.6.0">
-<link rel="stylesheet" href="../shared/theme.css?v=0.6.0">
+<link rel="stylesheet" href="../shared/territorio-shell.css?v=0.7.0">
+<link rel="stylesheet" href="../shared/theme.css?v=0.7.0">
+<link rel="stylesheet" href="../shared/rediseno.css?v=0.7.0">
 <style>
-  /* Override pattern: el acordeón del DS abre con max-height fijo; aquí el contenido es una tabla */
-  /* Acordeones anidados (PPTO-17): el estado abierto aplica solo al hijo directo; si no,
-     abrir un capítulo abría también todos sus APU (el DS usa selectores descendientes). */
-  .naowee-accordion__item > .naowee-accordion__body{ max-height:0; padding-bottom:0; }
-  .naowee-accordion__item--open > .naowee-accordion__body{ max-height:none; padding-bottom:10px; }
-  .naowee-accordion__header{ padding:13px 4px; }
-  .naowee-accordion__chevron{ transition:transform .18s; transform:none !important; }
-  .naowee-accordion__item--open > .naowee-accordion__header .naowee-accordion__chevron{ transform:rotate(90deg) !important; }
-  /* El tema abre el encabezado con margin 0 -8px; anidado, ese sobrante queda recortado. */
-  .naowee-accordion .naowee-accordion .naowee-accordion__header{ padding:9px 8px 9px 4px; margin:0 !important; }
-  .t-lvl-uni{ font-size:11px;color:var(--t-text-2);font-weight:600;background:#f1f4f7;border-radius:5px;padding:1px 6px;margin-left:6px; }
-  .t-lvl-code{ width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;
-    background:var(--naowee-color-territorio-100);color:var(--naowee-color-territorio-700);font-size:12.5px;font-weight:700; }
-  .t-lvl-count{ font-size:11.5px;color:var(--t-text-2);font-weight:500; }
-  mark{ background:#ffe9b8; border-radius:3px; }
+  .cq-search{ position:relative; }
+  .cq-search .naowee-searchbox__input-wrap{ height:52px; border-radius:14px; }
+  .cq-search input{ font-size:15px; }
+  .cq-res{ position:absolute; z-index:30; top:calc(100% + 6px); left:0; right:0; background:#fff; border:1px solid var(--rd-line); border-radius:14px; box-shadow:0 18px 40px -18px rgba(16,30,50,.35); padding:6px; max-height:360px; overflow:auto; }
+  .cq-res button{ width:100%; display:flex; gap:10px; align-items:center; padding:9px 10px; border:0; background:none; border-radius:10px; text-align:left; font-family:inherit; font-size:13px; cursor:pointer; color:var(--rd-ink); }
+  .cq-res button:hover, .cq-res button:focus{ background:var(--rd-soft); outline:none; }
+  .cq-res .k{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--rd-muted); padding:8px 10px 2px; }
+  .rd-tree-apu .rd-pr{ font-size:12px; font-weight:700; color:var(--rd-muted); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .rd-tree-apu.sel .rd-pr{ color:var(--rd-brand-ink); }
 </style>
 </head>
 <body data-role="USUARIO">
@@ -44,268 +39,178 @@
         <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div class="t-topbar-left">
-        <div class="t-bc"><a href="../index.html" id="bcHome" style="color:inherit;text-decoration:none">Proyecto de Obras</a><span class="sep">/</span><span id="bcProy">Presupuesto</span><span class="sep">/</span><b>Consulta</b></div>
-        <h1>Consulta de catálogo</h1>
+        <div class="t-bc"><a href="../index.html" style="color:inherit;text-decoration:none">Proyecto de Obras</a><span class="sep">/</span><span>Presupuesto</span><span class="sep">/</span><b>Consulta de precios</b></div>
+        <h1>Consulta de precios</h1>
       </div>
       <div class="t-topbar-right">
-        <button class="t-iconbtn" aria-label="Notificaciones"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
         <button class="t-userchip" aria-label="Perfil" onclick="togglePanel()"><span class="ava" id="ucAva">MR</span><span id="ucWho">Marta Ríos<small>Usuario autorizado</small></span><svg class="cv" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
       </div>
     </header>
-
-    <main class="t-board">
-      <div class="t-board-head">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="kpiWrap"></div>
-        <div class="t-board-actions">
-          <div class="naowee-searchbox naowee-searchbox--small">
-            <div class="naowee-searchbox__input-wrap">
-              <span class="naowee-searchbox__icon"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
-              <input class="naowee-searchbox__input" id="itemSearch" placeholder="Buscar ítem…" aria-label="Buscar ítem por código o nombre">
-            </div>
-          </div>
-          <div class="naowee-dropdown naowee-dropdown--small" id="itemFiltro" style="width:150px;flex-shrink:0">
-            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo tipo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
-            <div class="naowee-dropdown__menu" role="listbox">
-              <div class="naowee-dropdown__option naowee-dropdown__option--selected" data-value="">Todo tipo</div>
-              <div class="naowee-dropdown__option" data-value="Material">Material</div><div class="naowee-dropdown__option" data-value="MO">Mano de obra (MO)</div><div class="naowee-dropdown__option" data-value="Equipo">Equipo</div><div class="naowee-dropdown__option" data-value="Transporte">Transporte</div>
-            </div>
-          </div>
-          <div class="naowee-dropdown naowee-dropdown--small" id="itemNivel" data-search style="width:190px;flex-shrink:0"><button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Todo nivel</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button><div class="naowee-dropdown__menu" role="listbox"></div></div>
-          <div style="width:1px;height:24px;background:var(--t-line);flex-shrink:0"></div>
-          <div class="naowee-dropdown naowee-dropdown--small" id="cSel" data-search style="width:240px;flex-shrink:0">
-            <button class="naowee-dropdown__trigger" type="button" aria-haspopup="listbox"><span class="naowee-dropdown__value">Catálogo</span><span class="naowee-dropdown__controls"><span class="naowee-dropdown__chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span></span></button>
-            <div class="naowee-dropdown__menu" role="listbox"></div>
-          </div>
-        </div>
-      </div>
-
-      <section class="t-esq-panel" id="catPanel">
-        <div class="t-esq-panel-head">
-          <div class="t-esq-panel-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/></svg></div>
-          <div><h3 id="cTitle">—</h3><p id="cMeta">Vista de solo lectura del catálogo vigente, organizada por su estructura jerárquica. Expande cada nivel para ver sus ítems y totales.</p></div>
-        </div>
-        <div class="t-esq-chips" id="cChips"></div>
-      </section>
-
-      <div style="display:flex;align-items:center;gap:8px;margin:0 0 8px 4px;flex-wrap:wrap">
-        <span class="t-count" id="itemCount" style="margin-right:auto"></span>
-        <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnAbrirTodo">Expandir todo</button>
-        <button type="button" class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnCerrarTodo">Contraer todo</button>
-      </div>
-      <div class="naowee-accordion naowee-accordion--medium" id="catTree"></div>
-
-      <div class="t-empty" id="treeEmpty">
-        <div class="t-icontile"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
-        <b>Sin resultados</b><span>Ningún ítem coincide con la búsqueda o el filtro aplicado.</span>
-      </div>
-    </main>
+    <main class="t-board" id="cqMain"></main>
   </div>
 </div>
 
-<!-- ════ Panel lateral · detalle de ítem (PPTO-18.4) ════ -->
-<div class="naowee-modal-overlay t-fold-overlay" id="itemFold" aria-hidden="true">
-  <div class="naowee-modal t-fold" role="dialog" aria-modal="true" aria-labelledby="foldTitle">
-    <div class="naowee-modal__header t-fold__header">
-      <div class="naowee-modal__title-group"><h2 class="naowee-modal__title" id="foldTitle">Ítem</h2><p class="naowee-modal__subtitle" id="foldRuta"></p></div>
-      <button class="naowee-modal__dismiss" aria-label="Cerrar" id="foldClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    </div>
-    <div class="naowee-modal__body t-fold__body">
-      <div class="t-fold__stats" id="foldStats"></div>
-      <div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><tbody id="foldCampos"></tbody></table></div>
-      <div id="foldCalc" style="font-size:12.5px;color:var(--t-text-2);margin-top:12px;line-height:1.55"></div>
-    </div>
-  </div>
-</div>
-
-<script src="../shared/formula.js?v=0.6.0"></script>
-<script src="../shared/data-catalogo.js?v=0.6.0"></script>
-<script src="../shared/ui.js?v=0.6.0"></script>
-<script src="../shared/shell.js?v=0.6.0"></script>
+<script src="../shared/data-catalogo.js?v=0.7.0"></script>
+<script src="../shared/ui.js?v=0.7.0"></script>
+<script src="../shared/shell.js?v=0.7.0"></script>
+<script src="../shared/rd.js?v=0.7.0"></script>
 <script>
+/* ============================================================================
+ * Consulta de precios (docs/rediseno V6 · HU17, HU18) — Usuario autorizado.
+ * Primero qué rige (catálogo para tu rol, versión vigente y desde cuándo) y después
+ * encontrar un precio. Solo lee la versión VIGENTE: lo que se edita en la versión en
+ * preparación no se filtra aquí. El alcance del catálogo se cruza con el rol del perfil;
+ * el Admin (bypass en el backend) ve todos los activos.
+ * ========================================================================== */
 (function () {
-  var D = window.OBRAS, UI = window.OBRAS_UI, cat = null;
-  function esc(s) { return (s || '').toString().replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function norm(s) { return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
-  function fdate(iso) { if (!iso) return '—'; var p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
-  function itemsDe(id) { return cat.items.filter(function (it) { return it.nivelId === id; }); }
+  'use strict';
+  var D = window.OBRAS, U = window.OBRAS_UI, R = window.RD, esc = R.esc, ic = R.ic;
+  var SH = window.OBRAS_SHELL || { role: 'USUARIO', roleData: { alcance: 'Gestor de presupuesto' } };
+  var rolAlc = SH.roleData.alcance;
+  var S = { cat: R.qs('cat'), depto: R.qs('dep'), sel: R.qs('apu'), abiertos: {}, cerrados: {}, q: '', filtro: '' };
 
-  // Solo catálogos Activos: un Borrador todavía se está armando y un Inactivo ya no rige.
-  // Un ?cat= que apunte a otro estado cae al primer Activo.
-  function consultables() { return D.listCatalogos().filter(function (c) { return c.estado === 'Activo'; }); }
-  function pick(id) {
-    var list = consultables();
-    cat = list.filter(function (c) { return c.id === id; })[0] || list[0] || null;
+  function cats() { return D.catalogosParaRol(rolAlc); }
+  function uso() {
+    // En cuántos APU de la versión aparece cada insumo (para "insumo compartido").
+    var m = {}, v = vig(); if (!v) return m;
+    var p = v.contenido.precios[S.depto] || {};
+    Object.keys(p).forEach(function (a) { p[a].det.forEach(function (d) { m[d.ins] = (m[d.ins] || 0) + 1; }); });
+    return m;
   }
-  function vigencia(c) {
-    var hoy = D.hoy();
-    if (c.vigenciaIni && hoy < c.vigenciaIni) return { txt: 'Vigencia futura', tono: 'informative' };
-    if (c.vigenciaFin && hoy > c.vigenciaFin) return { txt: 'Vencido', tono: 'caution' };
-    return { txt: 'Vigente', tono: 'positive' };
-  }
+  function cat() { return D.getCatalogo(S.cat); }
+  function vig() { var c = cat(); return c ? D.vigente(c) : null; }
 
-  function renderHead() {
-    var IC_LIST = '<svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>';
-    var IC_MONEY = '<svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-    document.getElementById('kpiWrap').innerHTML =
-      '<div class="t-kpi"><div class="kpi-ic">' + IC_MONEY + '</div><div><div class="kpi-l">Valor total</div><div class="kpi-v">' + D.fmtCOP(D.totalCatalogo(cat)) + '</div></div></div>' +
-      '<div class="t-kpi"><div class="kpi-ic">' + IC_LIST + '</div><div><div class="kpi-l">Ítems</div><div class="kpi-v">' + D.itemsActivos(cat).length + '</div></div></div>';
-    document.getElementById('cTitle').textContent = cat.nombre;
-    document.getElementById('cChips').innerHTML =
-      '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small">' + cat.versionActiva + '</span>' +
-      '<span class="naowee-badge naowee-badge--' + vigencia(cat).tono + ' naowee-badge--quiet naowee-badge--small">' + vigencia(cat).txt + '</span>' +
-      '<span class="t-esq-chip">' + esc(cat.region) + '</span>' +
-      '<span class="t-esq-chip">Vigencia ' + fdate(cat.vigenciaIni) + ' → ' + fdate(cat.vigenciaFin) + '</span>';
-  }
-
-  var TONO_TIPO = { Material: 'informative', MO: 'positive', Equipo: 'caution', Transporte: 'neutral' };
-  function highlight(txt, q) {
-    if (!q) return esc(txt);
-    var i = norm(txt).indexOf(q);
-    if (i < 0) return esc(txt);
-    return esc(txt.slice(0, i)) + '<mark>' + esc(txt.slice(i, i + q.length)) + '</mark>' + esc(txt.slice(i + q.length));
-  }
-
-  function fillNiveles() {
-    var act = D.activos(cat);
-    var ns = D.arbol(cat).filter(function (x) { return act[x.n.id]; });
-    UI.fillDD('itemNivel', [{ value: '', label: 'Todo nivel' }].concat(ns.map(function (x) { return { value: x.n.id, label: ' '.repeat((x.d - 1) * 3) + (x.n.codigo ? x.n.codigo + ' · ' : '') + x.n.nombre }; })), null);
-    UI.setDD('itemNivel', '', 'Todo nivel');
-  }
-  var IC_CHEV = '<span class="naowee-accordion__chevron"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></span>';
-  function tagDe(n, R) {
-    return R.errores[n.id] ? '<span class="naowee-badge naowee-badge--negative naowee-badge--quiet naowee-badge--small" title="' + esc(R.errores[n.id]) + '">Error de fórmula</span>'
-      : n.valorTipo === 'formula' ? '<span class="naowee-badge naowee-badge--informative naowee-badge--quiet naowee-badge--small" title="' + esc(n.formula) + '">ƒ ' + esc(n.formula) + '</span>'
-      : n.valorTipo === 'fijo' ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small" title="Reemplaza la suma de lo que contiene">Valor fijo</span>'
-      : n.valorTipo === 'ninguno' ? '<span class="naowee-badge naowee-badge--neutral naowee-badge--quiet naowee-badge--small">No suma al total</span>' : '';
-  }
-  // PPTO-17: el catálogo se recorre como su estructura (capítulo → APU → insumos). Con búsqueda
-  // o filtros se podan las ramas sin coincidencias y se abren las que quedan.
   function render() {
-    var q = norm(document.getElementById('itemSearch').value);
-    var tipo = UI.getDD('itemFiltro'), fNivel = UI.getDD('itemNivel');
-    var host = document.getElementById('catTree');
-    var filtrando = !!(q || tipo), R = D.calcular(cat), act = D.activos(cat), total = 0;
-
-    function renderNodo(n, d) {
-      var hijosHtml = D.hijosDe(cat, n.id).filter(function (h) { return act[h.id]; }).map(function (h) { return renderNodo(h, d + 1); }).join('');
-      var items = itemsDe(n.id).filter(function (it) {
-        if (tipo && (it.tipo || '') !== tipo) return false;
-        if (q && norm(it.nombre).indexOf(q) < 0 && norm(it.cod).indexOf(q) < 0 && norm(n.nombre).indexOf(q) < 0) return false;
-        return true;
-      });
-      if (filtrando && !items.length && !hijosHtml) return '';
-      total += items.length;
-      var nHijos = D.hijosDe(cat, n.id).filter(function (h) { return act[h.id]; }).length;
-      var sub = (cat.esquema[d] || {}).nombre;
-      var conteo = [nHijos ? nHijos + ' ' + (sub || 'subniveles') : '', n.admiteItems ? itemsDe(n.id).length + ' ítems' : ''].filter(Boolean).join(' · ');
-      var tot = filtrando ? null : (R.nodo[n.id] || 0);
-      var rows = items.map(function (it) {
-        return '<tr class="t-row-click" data-item="' + it.id + '" tabindex="0" title="Ver detalle del ítem">' +
-          '<td data-label="Código">' + highlight(it.cod, q) + '</td>' +
-          '<td data-label="Ítem">' + highlight(it.nombre, q) + (it.formula ? ' <span title="' + esc(it.formula) + '" style="color:var(--t-text-2)">ƒ</span>' : '') + '</td>' +
-          '<td data-label="Tipo"><span class="naowee-badge naowee-badge--' + (TONO_TIPO[it.tipo] || 'neutral') + ' naowee-badge--quiet naowee-badge--small">' + esc(it.tipo || '—') + '</span></td>' +
-          '<td data-label="Unidad">' + esc(it.uni) + '</td>' +
-          '<td data-label="Cantidad" class="tnum">' + it.cantidad + '</td>' +
-          '<td data-label="V. unitario" class="tnum">' + D.fmtCOP(it.valorUnit) + '</td>' +
-          '<td data-label="V. total" class="tnum">' + (R.errores[it.id] ? '<span style="color:#b42318;font-weight:700" title="' + esc(R.errores[it.id]) + '">Error de fórmula</span>' : D.fmtCOP(it.valorTotal)) + '</td>' +
-          '</tr>';
-      }).join('');
-      return '<div class="naowee-accordion__item' + (filtrando ? ' naowee-accordion__item--open' : '') + '" data-nivel="' + n.id + '">' +
-        '<div class="naowee-accordion__header" role="button" tabindex="0" aria-expanded="' + filtrando + '">' + IC_CHEV +
-          '<span class="t-lvl-code">' + esc(n.codigo || n.orden) + '</span>' +
-          '<span class="naowee-accordion__title">' + highlight(n.nombre, q) + (n.unidad ? '<span class="t-lvl-uni">' + esc(n.unidad) + '</span>' : '') + ' <span class="t-lvl-count">· ' + conteo + '</span></span>' +
-          '<span class="naowee-accordion__action tnum" style="font-weight:700;display:inline-flex;gap:8px;align-items:center">' + (tot == null ? '' : tagDe(n, R) + D.fmtCOP(tot)) + '</span>' +
-        '</div>' +
-        '<div class="naowee-accordion__body"><div class="naowee-accordion__content">' +
-          (hijosHtml ? '<div class="naowee-accordion naowee-accordion--small">' + hijosHtml + '</div>' : '') +
-          (rows ? '<div class="naowee-table-wrap"><table class="naowee-table naowee-table--compact"><thead><tr><th>Código</th><th>Ítem</th><th>Tipo</th><th>Unidad</th><th>Cantidad</th><th>V. unitario</th><th>V. total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' : '') +
-        '</div></div></div>';
-    }
-    var raices = fNivel ? [nivelDe(fNivel)].filter(Boolean) : D.hijosDe(cat, null).filter(function (n) { return act[n.id]; });
-    host.innerHTML = raices.map(function (n) { return renderNodo(n, fNivel ? D.profundidadDe(cat, n.id) : 1); }).join('');
-    if (fNivel && !filtrando) { var it0 = host.querySelector('.naowee-accordion__item'); if (it0) it0.classList.add('naowee-accordion__item--open'); }
-
-    var disp = D.itemsActivos(cat).length;
-    document.getElementById('itemCount').innerHTML = (filtrando || fNivel) ? '<b>' + total + '</b> de ' + disp + ' ítems coinciden' : '';
-    var empty = filtrando && total === 0;
-    document.getElementById('treeEmpty').classList.toggle('show', empty);
-    host.style.display = empty ? 'none' : '';
-
-    host.querySelectorAll('tr[data-item]').forEach(function (tr) {
-      tr.onclick = function () { abrirItem(tr.dataset.item); };
-      tr.onkeydown = function (e) { if (e.key === 'Enter') abrirItem(tr.dataset.item); };
-    });
-    host.querySelectorAll('.naowee-accordion__header').forEach(function (h) {
-      function toggle() { var o = h.parentElement.classList.toggle('naowee-accordion__item--open'); h.setAttribute('aria-expanded', o); }
-      h.onclick = toggle;
-      h.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } };
-    });
-  }
-  function nivelDe(id) { return cat.niveles.filter(function (n) { return n.id === id; })[0]; }
-  function abrirTodo(on) {
-    document.querySelectorAll('#catTree .naowee-accordion__item').forEach(function (i) { i.classList.toggle('naowee-accordion__item--open', on); var h = i.querySelector(':scope > .naowee-accordion__header'); if (h) h.setAttribute('aria-expanded', on); });
-  }
-
-  // Detalle de solo lectura: ruta de niveles, todos los campos y cómo se calculó el total.
-  function abrirItem(id) {
-    var it = cat.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
-    var n = cat.niveles.filter(function (x) { return x.id === it.nivelId; })[0] || {};
-    var campos = (n.campos && n.campos.length) ? n.campos : D.camposDefault();
-    document.getElementById('foldTitle').textContent = it.cod + ' · ' + it.nombre;
-    document.getElementById('foldRuta').textContent = [cat.nombre].concat(D.rutaDe(cat, it.nivelId).map(function (x) { return (x.codigo ? x.codigo + ' ' : '') + x.nombre; })).join(' › ');
-    document.getElementById('foldStats').innerHTML =
-      '<div class="t-statchip"><div class="v">' + D.fmtCOP(it.valorTotal) + '</div><span class="l">Valor total</span></div>' +
-      '<div class="t-statchip"><div class="v">' + esc(it.tipo || '—') + '</div><span class="l">Tipo</span></div>' +
-      '<div class="t-statchip"><div class="v">' + esc(cat.versionActiva) + '</div><span class="l">Versión</span></div>';
-    function val(c) {
-      var v = ({ cod: 1, nombre: 1, tipo: 1, uni: 1, cantidad: 1, valorUnit: 1 })[c.key] ? it[c.key] : (it.extra || {})[c.key];
-      if (v == null || v === '') return '—';
-      if (c.tipo === 'moneda') return D.fmtCOP(v);
-      if (c.tipo === 'porcentaje') return esc(v) + ' %';
-      if (c.tipo === 'fecha') return fdate(v);
-      return esc(v);
-    }
-    document.getElementById('foldCampos').innerHTML = campos.map(function (c) {
-      return '<tr><td style="color:var(--t-text-2);width:42%">' + esc(c.label) + '</td><td><b>' + val(c) + '</b></td></tr>';
-    }).join('');
-    document.getElementById('foldCalc').innerHTML = it.formula
-      ? 'V. total calculado con la fórmula del ítem: <code>' + esc(it.formula) + '</code> = <b>' + D.fmtCOP(it.valorTotal) + '</b>.'
-      : 'V. total = cantidad (' + (it.cantidad == null ? 1 : it.cantidad) + ') × V. unitario (' + D.fmtCOP(it.valorUnit) + ') = <b>' + D.fmtCOP(it.valorTotal) + '</b>.';
-    document.getElementById('foldCalc').innerHTML += '<br>Su nivel «' + esc(n.nombre || '') + '» vale <b>' + D.fmtCOP(D.calcular(cat).nodo[n.id] || 0) + '</b> (' + (n.valorTipo === 'formula' ? 'fórmula ' + esc(n.formula) : n.valorTipo === 'fijo' ? 'valor fijo' : 'suma de sus ítems') + ').';
-    var o = document.getElementById('itemFold');
-    o.classList.add('open'); o.setAttribute('aria-hidden', 'false'); void o.offsetWidth; o.classList.add('t-fold--in');
-    document.getElementById('foldClose').focus();
-  }
-  function cerrarItem() {
-    var o = document.getElementById('itemFold');
-    o.classList.remove('t-fold--in'); o.setAttribute('aria-hidden', 'true');
-    setTimeout(function () { o.classList.remove('open'); }, 320);
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('foldClose').onclick = cerrarItem;
-    document.getElementById('itemFold').addEventListener('click', function (e) { if (e.target.id === 'itemFold') cerrarItem(); });
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && document.getElementById('itemFold').classList.contains('open')) cerrarItem(); });
-    pick(new URLSearchParams(location.search).get('cat'));
-    if (!cat) {
-      document.getElementById('cTitle').textContent = 'No hay catálogos activos';
-      document.getElementById('cMeta').textContent = 'Cuando un administrador active un catálogo de precios, aparecerá aquí para consulta.';
-      document.querySelector('.t-board-actions').style.display = 'none';
+    var lista = cats(), el = document.getElementById('cqMain');
+    if (!lista.length) {
+      el.innerHTML = '<div class="rd-card rd-empty" id="cqVacio"><b>No hay catálogos vigentes para tu rol</b>Tu perfil es <b>' + esc(rolAlc || '—') + '</b>. Un catálogo aparece aquí cuando su alcance incluye tu rol y tiene una versión activa. Pídele al administrador que lo revise.</div>';
       return;
     }
-    var opts = consultables().map(function (c) { return { value: c.id, label: c.nombre }; });
-    UI.fillDD('cSel', opts, null);
-    UI.setDD('cSel', cat.id, cat.nombre);
-    fillNiveles(); renderHead(); render();
-    document.getElementById('cSel').addEventListener('dd:change', function (e) { pick(e.detail.value); fillNiveles(); renderHead(); render(); });
-    document.getElementById('itemNivel').addEventListener('dd:change', render);
-    document.getElementById('btnAbrirTodo').onclick = function () { abrirTodo(true); };
-    document.getElementById('btnCerrarTodo').onclick = function () { abrirTodo(false); };
-    document.getElementById('itemSearch').addEventListener('input', render);
-    document.getElementById('itemFiltro').addEventListener('dd:change', render);
-  });
+    if (!S.cat || !lista.some(function (c) { return c.id === S.cat; })) S.cat = lista[0].id;
+    var c = cat(), v = D.vigente(c), cargados = D.deptosCargados(v);
+    if (!S.depto || cargados.indexOf(S.depto) < 0) S.depto = cargados[0];
+    var h = '<div class="rd-card" id="cqContexto"><div class="rd-row"><div class="rd-grow"><div class="rd-row">' + R.chip('Solo lectura', 'neutral') + R.chip(v.v + ' vigente', 'ok') + '</div>' +
+      (lista.length > 1 ? '<label class="sr-only" for="cqCat">Catálogo</label><select id="cqCat" class="rd-select" style="margin-top:10px;max-width:520px;font-weight:800;font-size:16px">' + lista.map(function (x) { return '<option value="' + x.id + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(x.nombre) + '</option>'; }).join('') + '</select>'
+        : '<h2 class="rd-ws-title" style="margin-top:8px">' + esc(c.nombre) + '</h2>') +
+      '<p class="rd-sub" style="margin-top:6px">' + esc(v.v) + ' · vigente desde el ' + D.fmtFecha(v.activada) + ' · ' + (rolAlc ? 'para tu rol: <b>' + esc(rolAlc) + '</b>' : 'Admin: ves todos los catálogos activos') + (lista.length > 1 ? ' · ' + lista.length + ' catálogos disponibles' : '') + '</p></div></div>' +
+      '<div class="cq-search" style="margin-top:14px"><div class="naowee-searchbox"><div class="naowee-searchbox__input-wrap"><span class="naowee-searchbox__icon">' + ic('search', 18) + '</span><input class="naowee-searchbox__input" id="itemSearch" placeholder="Buscar un APU o insumo por código o nombre" aria-label="Buscar un APU o insumo" autocomplete="off" aria-controls="cqRes" aria-expanded="false"></div></div><div class="cq-res" id="cqRes" hidden role="listbox" aria-label="Resultados"></div></div></div>';
+    // Sin APU elegido, los capítulos se ven a todo lo ancho y expandidos; al elegir uno, la
+    // tabla se contrae a árbol y entra el detalle (en vez de un detalle vacío al lado).
+    var a = S.sel && D.apu(v, S.sel);
+    if (!a || a.activo === false || !D.precio(v, S.depto, a.id)) { S.sel = null; h += tabla(c, v, cargados); }
+    else h += '<div class="rd-split" style="margin-top:14px">' + arbol(c, v, cargados) + '<div id="cqDetalle">' + detalle(c, v) + '</div></div>';
+    el.innerHTML = h;
+    wire(c, v);
+  }
+
+  function arbol(c, v, cargados) {
+    var q = U.norm(S.filtro);
+    var t = '<div class="rd-tree" id="catTree" data-modo="arbol"><div class="rd-tree-head"><label class="naowee-textfield__label" for="cqDepto" style="margin:0">Departamento</label>' +
+      '<select id="cqDepto" class="rd-select">' + cargados.map(function (d) { return '<option' + (d === S.depto ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select>' +
+      '<span class="rd-sub">' + cargados.length + ' de ' + c.alcance.deptos.length + ' departamentos con precios · ' + v.contenido.capitulos.length + ' capítulos · ' + D.nApus(v) + ' APU</span>' +
+      '<div class="rd-row"><button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnAbrirTodo">Expandir todo</button><button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnCerrarTodo">Contraer todo</button></div></div>' +
+      '<div class="rd-tree-body" role="tree" aria-label="Capítulos y APU">';
+    v.contenido.capitulos.slice().sort(function (a, b) { return D.capitulo(a.id).orden - D.capitulo(b.id).orden; }).forEach(function (cp) {
+      var g = D.capitulo(cp.id), apus = D.apusDeCapitulo(v, cp.id).filter(function (a) { return a.activo !== false && D.precio(v, S.depto, a.id); });
+      if (!apus.length) return;
+      var sel = apus.some(function (a) { return a.id === S.sel; }), open = S.abiertos[cp.id] || sel;
+      t += '<div role="treeitem" aria-expanded="' + !!open + '" data-nivel="' + cp.id + '"><button class="rd-tree-cap" data-cap="' + cp.id + '" aria-expanded="' + !!open + '"><svg class="rd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg><span>' + esc(g.cod) + ' · ' + esc(g.nombre) + '</span><span class="rd-tree-n">' + apus.length + ' APU</span></button>' +
+        '<div class="rd-tree-apus" role="group"' + (open ? '' : ' hidden') + '>' + apus.map(function (a) {
+          var p = D.precio(v, S.depto, a.id);
+          return '<button class="rd-tree-apu' + (a.id === S.sel ? ' sel' : '') + '" data-apu="' + a.id + '" role="treeitem" aria-selected="' + (a.id === S.sel) + '"><span class="rd-cod">' + esc(a.cod) + '</span><span class="rd-nm">' + esc(a.nombre) + '</span><span class="rd-pr">' + D.fmtCOP(p.valor) + ' /' + esc(a.unidad) + '</span></button>';
+        }).join('') + '</div></div>';
+    });
+    return t + '</div></div>';
+  }
+
+  function tabla(c, v, cargados) {
+    var p = v.contenido.precios[S.depto] || {};
+    var t = '<div class="rd-card" id="catTree" data-modo="tabla" style="margin-top:14px"><div class="rd-row"><div style="min-width:240px"><label class="naowee-textfield__label" for="cqDepto" style="margin:0 0 6px;display:block">Departamento</label>' +
+      '<select id="cqDepto" class="rd-select">' + cargados.map(function (d) { return '<option' + (d === S.depto ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select></div>' +
+      '<span class="rd-sub rd-grow" style="align-self:flex-end">' + cargados.length + ' de ' + c.alcance.deptos.length + ' departamentos con precios · ' + v.contenido.capitulos.length + ' capítulos · ' + D.nApus(v) + ' APU · elige un APU para ver su composición</span>' +
+      '<div class="rd-row" style="align-self:flex-end"><button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnAbrirTodo">Expandir todo</button><button class="naowee-btn naowee-btn--mute naowee-btn--small" id="btnCerrarTodo">Contraer todo</button></div></div>' +
+      '<div class="rd-tbl-wrap" style="margin-top:12px"><table class="rd-tbl" aria-label="Capítulos y APU en ' + esc(S.depto) + '"><thead><tr><th>Código</th><th>APU</th><th>Unidad</th><th class="r">Valor en ' + esc(S.depto) + '</th><th>Control</th></tr></thead>';
+    v.contenido.capitulos.slice().sort(function (a, b) { return D.capitulo(a.id).orden - D.capitulo(b.id).orden; }).forEach(function (cp) {
+      var g = D.capitulo(cp.id), apus = D.apusDeCapitulo(v, cp.id).filter(function (a) { return a.activo !== false && p[a.id]; });
+      if (!apus.length) return;
+      var open = !S.cerrados[cp.id];
+      t += '<tbody data-nivel="' + cp.id + '"><tr><td colspan="5" style="background:var(--rd-soft);padding:0"><button class="rd-tree-cap" data-cap="' + cp.id + '" aria-expanded="' + open + '" style="border-radius:0;padding:11px 12px"><svg class="rd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg><span>' + esc(g.cod) + ' · ' + esc(g.nombre) + '</span><span class="rd-tree-n">' + apus.length + ' APU</span></button></td></tr>' +
+        (open ? apus.map(function (a) {
+          var pr = p[a.id], ctl = D.control(pr);
+          return '<tr class="rd-click" data-apu="' + a.id + '" tabindex="0"><td><b>' + esc(a.cod) + '</b></td><td>' + esc(a.nombre) + '</td><td>' + esc(a.unidad) + '</td><td class="r"><b>' + D.fmtCOP(pr.valor) + '</b> <span class="rd-muted">/' + esc(a.unidad) + '</span></td><td>' +
+            (ctl.ok ? '<span class="rd-muted" style="display:inline-flex;gap:4px;align-items:center;color:var(--rd-ok)">' + ic('check', 13) + ' Cuadra</span>' : R.chip('Revisar', 'warn', 'warn')) + '</td></tr>';
+        }).join('') : '') + '</tbody>';
+    });
+    return t + '</table></div></div>';
+  }
+
+  function detalle(c, v) {
+    var a = S.sel && D.apu(v, S.sel), p = a && D.precio(v, S.depto, a.id);
+    if (!a || !p || a.activo === false) return '<div class="rd-card rd-empty"><b>Elige un APU</b>Búscalo arriba o recórrelo en el árbol para ver su precio por unidad en ' + esc(S.depto) + ' y su composición.</div>';
+    var g = D.capitulo(a.capId), ctl = D.control(p), u = uso();
+    return '<div class="rd-card" id="itemFold"><div class="rd-crumb">' + esc(S.depto) + ' › Capítulo ' + esc(g.cod) + ' · ' + esc(g.nombre) + ' › APU</div>' +
+      '<div class="rd-detail-head"><h3 class="rd-apu-title rd-grow">' + esc(a.cod) + ' · ' + esc(a.nombre) + '</h3><div class="rd-row"><button class="naowee-btn naowee-btn--mute naowee-btn--small" id="cqCopiar">Copiar código</button><button class="naowee-btn naowee-btn--mute naowee-btn--small" id="cqCerrar" aria-label="Cerrar el detalle y ver todos los capítulos">' + ic('x', 14) + 'Ver todos los capítulos</button></div></div>' +
+      '<div class="rd-row" style="margin-top:8px">' + R.chip('Unidad: ' + a.unidad, 'neutral') + R.chip(v.v + ' vigente', 'ok') + '</div>' +
+      '<div style="margin-top:16px"><div class="rd-crumb">Valor del APU en ' + esc(S.depto) + '</div><div class="rd-price" id="cqPrecio"><b>' + D.fmtCOP(p.valor) + '</b><span>por ' + esc(a.unidad) + '</span></div><div class="rd-sub">Valor cargado desde la matriz</div></div>' +
+      '<div class="rd-control rd-control--' + (ctl.ok ? 'ok' : 'bad') + '">' + ic(ctl.ok ? 'check' : 'warn') + '<span><b>Control del valor:</b> ' + (ctl.ok ? 'coincide con la suma de sus ' + p.det.length + ' insumos.' : 'no coincide con la suma de sus insumos (' + D.fmtCOP(ctl.suma) + '). Consulta con el administrador antes de usarlo.') + '</span></div>' +
+      '<div class="rd-tbl-wrap" style="margin-top:16px"><table class="rd-tbl"><thead><tr><th>Código</th><th>Insumo</th><th>Unidad</th><th class="r">Cantidad por ' + esc(a.unidad) + '</th><th class="r">V. unitario</th><th class="r">V. total</th></tr></thead><tbody>' +
+      p.det.map(function (d) { var i = D.insumo(d.ins); return '<tr><td><b>' + esc(d.ins) + '</b></td><td>' + esc(i.nombre) + (u[d.ins] > 1 ? '<div class="rd-sub">Insumo compartido · en ' + u[d.ins] + ' APU</div>' : '') + '</td><td>' + esc(i.unidad) + '</td><td class="r">' + D.fmtNum(d.cantidad) + '</td><td class="r">' + D.fmtCOP(d.valorUnit) + '</td><td class="r">' + D.fmtCOP(D.totalDet(d)) + '</td></tr>'; }).join('') +
+      '</tbody><tfoot><tr><td colspan="5">Suma de insumos</td><td class="r">' + D.fmtCOP(ctl.suma) + '</td></tr></tfoot></table></div></div>';
+  }
+
+  function buscar(c, v) {
+    var q = U.norm(S.q), res = document.getElementById('cqRes'), inp = document.getElementById('itemSearch');
+    if (q.length < 2) { res.hidden = true; inp.setAttribute('aria-expanded', 'false'); return; }
+    var apus = v.contenido.apus.filter(function (a) { return a.activo !== false && D.precio(v, S.depto, a.id) && U.norm(a.cod + ' ' + a.nombre).indexOf(q) >= 0; }).slice(0, 8);
+    var ins = D.listInsumos().filter(function (i) { return U.norm(i.cod + ' ' + i.nombre).indexOf(q) >= 0; }).slice(0, 5);
+    var p = v.contenido.precios[S.depto] || {};
+    var h = '';
+    if (apus.length) h += '<div class="k">APU en ' + esc(S.depto) + '</div>' + apus.map(function (a) { return '<button role="option" data-go="' + a.id + '"><b>' + esc(a.cod) + '</b><span class="rd-grow">' + esc(a.nombre) + '</span><span class="rd-muted">' + D.fmtCOP(p[a.id].valor) + ' /' + esc(a.unidad) + '</span></button>'; }).join('');
+    ins.forEach(function (i) {
+      var en = Object.keys(p).filter(function (a) { return p[a].det.some(function (d) { return d.ins === i.cod; }); });
+      if (!en.length) return;
+      h += '<div class="k">Insumo ' + esc(i.cod) + ' · ' + esc(i.nombre) + ' — está en ' + en.length + ' APU</div>' + en.slice(0, 4).map(function (id) { var a = D.apu(v, id); return a ? '<button role="option" data-go="' + id + '"><b>' + esc(a.cod) + '</b><span class="rd-grow">' + esc(a.nombre) + '</span></button>' : ''; }).join('');
+    });
+    res.innerHTML = h || '<div class="rd-empty" style="padding:14px"><b>Sin resultados</b>Prueba con el código (p. ej. 3.4) o parte del nombre, sin tildes.</div>';
+    res.hidden = false; inp.setAttribute('aria-expanded', 'true');
+    res.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { R.flip('#catTree', '#cqDetalle', function () { S.sel = b.dataset.go; S.q = ''; render(); }); sync(); document.getElementById('itemFold') && document.getElementById('itemFold').scrollIntoView({ block: 'nearest' }); }; });
+  }
+
+  function sync() {
+    var u = new URL(location.href);
+    ['cat', 'dep', 'apu'].forEach(function (k, i) { var v = [S.cat, S.depto, S.sel][i]; if (v) u.searchParams.set(k, v); else u.searchParams.delete(k); });
+    history.replaceState(null, '', u);
+  }
+  function wire(c, v) {
+    var x;
+    if ((x = document.getElementById('cqCat'))) x.onchange = function () { S.cat = x.value; S.sel = null; S.depto = null; render(); sync(); };
+    document.getElementById('cqDepto').onchange = function () { S.depto = this.value; render(); sync(); };
+    var inp = document.getElementById('itemSearch');
+    inp.oninput = function () { S.q = inp.value; buscar(c, v); };
+    inp.onkeydown = function (e) { if (e.key === 'ArrowDown') { var f = document.querySelector('#cqRes [data-go]'); if (f) { e.preventDefault(); f.focus(); } } if (e.key === 'Escape') { document.getElementById('cqRes').hidden = true; } };
+    var enTabla = !!document.querySelector('#catTree[data-modo="tabla"]');
+    document.querySelectorAll('[data-cap]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.dataset.cap, abierto = b.getAttribute('aria-expanded') === 'true';
+        if (enTabla) S.cerrados[id] = abierto;
+        else { S.abiertos[id] = !abierto; if (abierto && D.apu(v, S.sel) && D.apu(v, S.sel).capId === id) S.sel = null; }
+        render(); sync();
+      };
+    });
+    document.querySelectorAll('[data-apu]').forEach(function (b) {
+      b.onclick = function () { R.flip('#catTree', '#cqDetalle', function () { S.sel = b.dataset.apu; render(); }); sync(); };
+      b.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } };
+    });
+    document.getElementById('btnAbrirTodo').onclick = function () { S.cerrados = {}; v.contenido.capitulos.forEach(function (cp) { S.abiertos[cp.id] = true; }); render(); };
+    document.getElementById('btnCerrarTodo').onclick = function () { v.contenido.capitulos.forEach(function (cp) { S.cerrados[cp.id] = true; }); S.abiertos = {}; S.sel = null; render(); sync(); };
+    if ((x = document.getElementById('cqCerrar'))) x.onclick = function () { R.flip('#catTree', '#cqDetalle', function () { S.sel = null; render(); }); sync(); };
+    if ((x = document.getElementById('cqCopiar'))) x.onclick = function () { var a = D.apu(v, S.sel); try { navigator.clipboard.writeText(a.cod); } catch (e) {} R.toast('Código <b>' + esc(a.cod) + '</b> copiado.'); };
+  }
+  document.addEventListener('click', function (e) { var r = document.getElementById('cqRes'); if (r && !e.target.closest('.cq-search') && !e.target.closest('#ttCoach')) r.hidden = true; });
+  window.CQ = { buscar: function (t) { var i = document.getElementById('itemSearch'); i.value = t; i.dispatchEvent(new Event('input')); }, abrir: function (id) { S.sel = id; render(); sync(); }, render: render };
+  render();
 })();
 </script>
-<script src="../shared/tour.js?v=0.6.0"></script>
+<script src="../shared/tour.js?v=0.7.0"></script>
 </body>
 </html>

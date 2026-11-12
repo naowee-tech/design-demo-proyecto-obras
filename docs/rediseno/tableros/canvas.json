@@ -1,0 +1,228 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Donde-vive.dc.html": {
+      "h": 1040,
+      "title": "Dónde vive cada cosa",
+      "w": 1860,
+      "x": 3880,
+      "y": 1600
+    },
+    "Flujo-actual.dc.html": {
+      "h": 1040,
+      "title": "Flujo actual",
+      "w": 1860,
+      "x": 0,
+      "y": 1600
+    },
+    "Flujo-propuesto.dc.html": {
+      "h": 1040,
+      "title": "Flujo propuesto",
+      "w": 1860,
+      "x": 1940,
+      "y": 1600
+    },
+    "Main.dc.html": {
+      "h": 1180,
+      "title": "0 · Qué rediseñamos, por qué y para qué",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "V1-antes.dc.html": {
+      "h": 960,
+      "title": "Antes · detalle del catálogo",
+      "w": 1820,
+      "x": 0,
+      "y": 3060
+    },
+    "V1-despues-borrador.dc.html": {
+      "h": 960,
+      "title": "Después · v1.0 en preparación",
+      "w": 1820,
+      "x": 1900,
+      "y": 3060
+    },
+    "V1-despues-vigente.dc.html": {
+      "h": 960,
+      "title": "Después · vigente con v1.4 en preparación",
+      "w": 1820,
+      "x": 3800,
+      "y": 3060
+    },
+    "V2-antes.dc.html": {
+      "h": 960,
+      "title": "Antes · estructura y modal de nivel",
+      "w": 1820,
+      "x": 0,
+      "y": 4440
+    },
+    "V2-despues-drawer.dc.html": {
+      "h": 960,
+      "title": "Después · editar APU en contexto",
+      "w": 1820,
+      "x": 3800,
+      "y": 4440
+    },
+    "V2-despues.dc.html": {
+      "h": 960,
+      "title": "Después · árbol por departamento + detalle del APU",
+      "w": 1820,
+      "x": 1900,
+      "y": 4440
+    },
+    "V3-despues.dc.html": {
+      "h": 960,
+      "title": "Después · alcance y estructura",
+      "w": 1820,
+      "x": 5700,
+      "y": 4440
+    },
+    "V4-antes.dc.html": {
+      "h": 960,
+      "title": "Antes · crear versión",
+      "w": 1820,
+      "x": 0,
+      "y": 5820
+    },
+    "V4-despues.dc.html": {
+      "h": 960,
+      "title": "Después · revisar y activar la v1.4",
+      "w": 1820,
+      "x": 1900,
+      "y": 5820
+    },
+    "V5-antes.dc.html": {
+      "h": 960,
+      "title": "Antes · carga masiva como pestaña",
+      "w": 1820,
+      "x": 0,
+      "y": 7200
+    },
+    "V5-despues-ajustes.dc.html": {
+      "h": 960,
+      "title": "Después · 1 ajustes y modo",
+      "w": 1820,
+      "x": 1900,
+      "y": 7200
+    },
+    "V5-despues-carga.dc.html": {
+      "h": 960,
+      "title": "Después · 3 carga dentro del flujo",
+      "w": 1820,
+      "x": 5700,
+      "y": 7200
+    },
+    "V5-despues-diagnostico.dc.html": {
+      "h": 960,
+      "title": "Después · 2 diagnóstico por departamento",
+      "w": 1820,
+      "x": 3800,
+      "y": 7200
+    },
+    "V5-despues-resultado.dc.html": {
+      "h": 960,
+      "title": "Después · 4 resultado",
+      "w": 1820,
+      "x": 7600,
+      "y": 7200
+    },
+    "V6-antes.dc.html": {
+      "h": 960,
+      "title": "Antes · consulta de catálogo",
+      "w": 1820,
+      "x": 0,
+      "y": 8580
+    },
+    "V6-despues.dc.html": {
+      "h": 960,
+      "title": "Después · consulta de precios",
+      "w": 1820,
+      "x": 1900,
+      "y": 8580
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-23T02:24:10Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "r1": {
+      "kind": "title1",
+      "maxW": 5740,
+      "text": "1 · El flujo: cómo está y cómo debió ser",
+      "w": 240,
+      "x": 0,
+      "y": 1300
+    },
+    "r2": {
+      "kind": "title1",
+      "maxW": 5620,
+      "text": "2 · Espacio de trabajo del catálogo",
+      "w": 240,
+      "x": 0,
+      "y": 2760
+    },
+    "r3": {
+      "kind": "title1",
+      "maxW": 7520,
+      "text": "3 · Contenido y alcance",
+      "w": 240,
+      "x": 0,
+      "y": 4140
+    },
+    "r4": {
+      "kind": "title1",
+      "maxW": 3720,
+      "text": "4 · Activar una versión",
+      "w": 240,
+      "x": 0,
+      "y": 5520
+    },
+    "r5": {
+      "kind": "title1",
+      "maxW": 8000,
+      "text": "5 · Importar la matriz (endpoint actual: un departamento a la vez)",
+      "w": 240,
+      "x": 0,
+      "y": 6900
+    },
+    "r6": {
+      "kind": "title1",
+      "maxW": 3720,
+      "text": "6 · Consulta de precios",
+      "w": 240,
+      "x": 0,
+      "y": 8280
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Flujo-actual.dc.html",
+    "Flujo-propuesto.dc.html",
+    "Donde-vive.dc.html",
+    "V1-antes.dc.html",
+    "V1-despues-borrador.dc.html",
+    "V1-despues-vigente.dc.html",
+    "V2-antes.dc.html",
+    "V2-despues.dc.html",
+    "V2-despues-drawer.dc.html",
+    "V3-despues.dc.html",
+    "V4-antes.dc.html",
+    "V4-despues.dc.html",
+    "V5-antes.dc.html",
+    "V5-despues-ajustes.dc.html",
+    "V5-despues-diagnostico.dc.html",
+    "V5-despues-carga.dc.html",
+    "V5-despues-resultado.dc.html",
+    "V6-antes.dc.html",
+    "V6-despues.dc.html"
+  ],
+  "pages": [],
+  "title": "Catálogo de Precios — Rediseño de experiencia"
+}

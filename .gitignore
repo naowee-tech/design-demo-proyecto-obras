@@ -1,3 +1,6 @@
 # Artefactos de verificación de archify (no son entregables)
 docs/*.visual-check.*
 .DS_Store
+
+# Contexto interno del backend: el repo es público
+plans/CONTEXTO-BACKEND-CARGA-APU.md
